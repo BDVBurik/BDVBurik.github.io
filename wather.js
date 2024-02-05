@@ -13,8 +13,8 @@
         };
 
         this.getWeatherData = function (position) {
-            var lat = 49.420045 //position.coords.latitude; 49.420045, 26.991481
-            var lon = 26.991481 //position.coords.longitude;
+            var lat = position.coords.latitude; 
+            var lon = position.coords.longitude;
             var API_KEY = "46a5d8546cc340f69d9123207242801";
 			var url = 'http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q=' +  lat + ',' + lon + '&lang=ru&aqi=no';
             console.log("Погода", "Url: " + url);
@@ -45,8 +45,8 @@
                 var coords = locationData.lat + ',' + locationData.lon;
                 var position = {
                     coords: {
-                        latitude: parseFloat(locationData.lat),
-                        longitude: parseFloat(locationData.lon)
+                        latitude: 49.420045, //parseFloat(locationData.lat), 49.420045, 26.991481
+                        longitude: 26.991481 // parseFloat(locationData.lon)
                     }
                 };
                 console.log("Погода", "Долгота: " + position.coords.latitude + ", " + "Широта: " + position.coords.longitude)
