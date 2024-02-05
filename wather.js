@@ -17,7 +17,7 @@
             var lon = 26.991481 //position.coords.longitude;
             var API_KEY = "46a5d8546cc340f69d9123207242801";
 			var url = 'http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q=' +  lat + ',' + lon + '&lang=ru&aqi=no';
-            console.log(url);
+            console.log("Погода", url);
             network.clear();
             network.timeout(5000);
             network.silent(url, processWeatherData, processError);
