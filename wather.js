@@ -13,8 +13,8 @@
         };
 
         this.getWeatherData = function (position) {
-            var lat = 49.42194 //position.coords.latitude;
-            var lon = 26.98972 //position.coords.longitude;
+            var lat = 49.420045 //position.coords.latitude; 49.420045, 26.991481
+            var lon = 26.991481 //position.coords.longitude;
             var API_KEY = "46a5d8546cc340f69d9123207242801";
 			var url = 'http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q=' +  lat + ',' + lon + '&lang=ru&aqi=no';
 
