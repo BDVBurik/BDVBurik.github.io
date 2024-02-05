@@ -41,7 +41,7 @@
 
         this.getWeatherByIP = function () {
             $.get("http://ip-api.com/json", function (locationData) {
-                console.log("Погода", "Город: " + locationData.city);
+                console.log("Погода", "місто: Хмальницький");
                 var coords = locationData.lat + ',' + locationData.lon;
                 var position = {
                     coords: {
