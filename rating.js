@@ -7,7 +7,7 @@
 		var search_date = card.release_date || card.first_air_date || card.last_air_date || '0000';
 		var search_year = parseInt((search_date + '').slice(0, 4));
 		var orig = card.original_title || card.original_name;
-		var kp_prox = 'https://cors.kp556.workers.dev:8443/';
+		var kp_prox = 'https://cors.kp556.workers.dev:8443/'; // хуй знает сколько єтот проксі проработает
 		var params = {
 			id: card.id,
 			url: kp_prox + 'https://kinopoiskapiunofficial.tech/',
