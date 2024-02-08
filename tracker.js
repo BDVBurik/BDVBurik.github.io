@@ -7,8 +7,7 @@ var proto = location.protocol === "https:" ? 'https://' : 'http://'
 
 var parserBase = [
     'jac_110_18',
-    'jac_110_17',
-	
+    'jac_110_17',	
 	'jacred.xyz',
 	'jacred.ru',
 	//'jack.letz.dev',
@@ -19,6 +18,8 @@ var parserBase = [
 ]
 
 var parserName = [
+    'jac_110_18',
+    'jac_110_17',
 	'Lampa32',
 	'Jacred.xyz',
 	'Jacred.ru',
