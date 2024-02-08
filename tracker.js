@@ -96,7 +96,9 @@ Lampa.SettingsApi.addParam({
     param: {
      name: 'jackett_url_two',
      type: 'select',
-     values: {
+     values: {          
+        jac_110_18:       'jac_110_18',
+        jac_110_17:                'jac_110_17',
         no_parser:          'Не выбран',
         jac_lampa32_ru:     'Lampa32',
         jacred_xyz:         'Jacred.xyz',
