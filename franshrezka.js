@@ -74,25 +74,13 @@
         www += " hide hdhd";
       }
       www += ` "><span  class="${el.children[0].className}">
-      ${el.children[0].innerText}</span><span class="${
-        el.children[1].className
-      }">${el.children[1].innerText}
+      ${el.children[0].innerText}</span><span class="${el.children[1].className}">${el.children[1].innerText}
   </span><span class="${el.children[2].className}">${el.children[2].innerText}
-  </span><span class="${
-    el.children[3].className
-  }" ><i class="hd-tooltip tooltipstered" >${
-        el.children[3].innerText
-      }</i> </span><span id="search${
-        el.children[0].innerText
-      }" class="selector searchfr "><svg width="6" height="5" viewBox="0 0 23 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+  </span><span class="${el.children[3].className}" ><i class="hd-tooltip tooltipstered" >${el.children[3].innerText}</i> </span><span id="search${el.children[0].innerText}" class="selector searchfr "><svg width="6" height="5" viewBox="0 0 23 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="9.9964" cy="9.63489" r="8.43556" stroke="currentColor" stroke-width="2.4"></circle>
                     <path d="M20.7768 20.4334L18.2135 17.8701" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
                 </svg></span>
-</div><script>$('#search${
-        el.children[0].innerText
-      }').on('hover:enter',()=>{Lampa.Search.open({input:'${
-        el.children[1].innerText
-      }  ${el.children[2].innerText.slice(0, 4)}'})});</script>`;
+</div><script>$('#search${el.children[0].innerText}').on('hover:enter',()=>{Lampa.Search.open({input:'${el.children[1].innerText}'})});</script>`;
 
       // if (el.className.includes("current")) {
       //   wid = index;
