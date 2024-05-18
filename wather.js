@@ -1,1 +1,129 @@
-!function(){"use strict";var e=new function(){var t,e=new Lampa.Reguest;function i(t){t.location;var t=t.current,e=Math.floor(t.temp_c),t=t.condition.text;$("#weather-temp").text(e+"°"),$("#weather-condition").text(t).toggleClass("long-text",10<t.length)}function n(){console.log("Error retrieving weather data")}this.create=function(){t=$('<div class="weather-widget"><div class="weather-temp" id="weather-temp"> </div><div class="weather-condition" id="weather-condition"></div></div>')},this.getWeatherData=function(t){t="http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q="+t.coords.latitude+","+t.coords.longitude+"&lang=uk&aqi=no";e.clear(),e.timeout(5e3),e.silent(t,i,n)},this.getWeatherByIP=function(){$.get("http://ip-api.com/json",function(t){t.lat,t.lon;this.getWeatherData({coords:{latitude:49.420045,longitude:26.991481}})}.bind(this))},this.getWeather=function(){"geolocation"in navigator?navigator.geolocation.getCurrentPosition(this.getWeatherData.bind(this),this.getWeatherByIP.bind(this)):this.getWeatherByIP()},this.render=function(){return t},this.destroy=function(){t&&(t.remove(),t=null)}},i=!0;$(document).ready(function(){setTimeout(function(){e.create();var t=e.render();$(".head__time").after(t),setInterval(function(){i?($(".head__time").hide(),$(".weather-widget").show()):($(".head__time").show(),$(".weather-widget").hide()),i=!i},1e4),e.getWeather(),$(".weather-widget").hide();t=document.querySelector(".head__time");$(".weather-widget").css("width",t.offsetWidth+"px"),$(".head__time").css("width",t.offsetWidth+"px")},5e3)})}();
+(function () {
+  //погода хмельницкий лампатв
+  "use strict";
+
+  function WeatherInterface() {
+    var html;
+    var network = new Lampa.Reguest();
+
+    this.create = function () {
+      html = $(
+        '<div class="weather-widget">' +
+          '<div class="weather-temp" id="weather-temp"> </div>' +
+          '<div class="weather-condition" id="weather-condition"></div>' +
+          "</div>"
+      );
+    };
+
+    this.getWeatherData = function (position) {
+      var lat = position.coords.latitude;
+      var lon = position.coords.longitude;
+      var API_KEY = "46a5d8546cc340f69d9123207242801";
+      var url =
+        "http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q=" +
+        lat +
+        "," +
+        lon +
+        "&lang=uk&aqi=no";
+      // console.log("Погода", "Url: " + url);
+      network.clear();
+      network.timeout(5000);
+      network.silent(url, processWeatherData, processError);
+    };
+
+    function processWeatherData(result) {
+      var data1 = result.location;
+      var data2 = result.current;
+      var temp = Math.floor(data2.temp_c); // Температура
+      //console.log("Погода", "Температура: " + temp)
+      var condition = data2.condition.text; // Обстановка
+      //onsole.log("Погода", "Обстановка: " + condition)
+
+      $("#weather-temp").text(temp + "°");
+      $("#weather-condition")
+        .text(condition)
+        .toggleClass("long-text", condition.length > 10);
+    }
+
+    function processError() {
+      console.log("Error retrieving weather data");
+    }
+
+    this.getWeatherByIP = function () {
+      $.get(
+        "http://ip-api.com/json",
+        function (locationData) {
+          //console.log("Погода", "місто: Хмальницький");
+          var coords = locationData.lat + "," + locationData.lon;
+          var position = {
+            coords: {
+              latitude: 49.420045, //parseFloat(locationData.lat), 49.420045, 26.991481
+              longitude: 26.991481, // parseFloat(locationData.lon)
+            },
+          };
+          //console.log("Погода", "Долгота: " + position.coords.latitude + ", " + "Широта: " + position.coords.longitude)
+          this.getWeatherData(position);
+        }.bind(this)
+      );
+    };
+
+    this.getWeather = function () {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          this.getWeatherData.bind(this),
+          this.getWeatherByIP.bind(this)
+        );
+      } else {
+        this.getWeatherByIP();
+      }
+    };
+
+    this.render = function () {
+      return html;
+    };
+
+    this.destroy = function () {
+      if (html) {
+        html.remove();
+        html = null;
+      }
+    };
+  }
+
+  var weatherInterface = new WeatherInterface();
+  var isTimeVisible = true;
+
+  $(document).ready(function () {
+    setTimeout(function () {
+      // Создаем интерфейс погоды
+      weatherInterface.create();
+      var weatherWidget = weatherInterface.render();
+      $(".head__time").after(weatherWidget);
+
+      // Функция для переключения между отображением времени и виджета погоды
+      function toggleDisplay() {
+        if (isTimeVisible) {
+          $(".head__time").hide();
+          $(".weather-widget").show();
+        } else {
+          $(".head__time").show();
+          $(".weather-widget").hide();
+        }
+        isTimeVisible = !isTimeVisible;
+      }
+
+      // Устанавливаем интервал для переключения между временем и погодой каждые 10 секунд
+      setInterval(toggleDisplay, 10000);
+
+      // Получаем начальные данные о погоде
+      weatherInterface.getWeather();
+
+      // Скрываем виджет погоды при загрузке страницы
+      $(".weather-widget").hide();
+      var width_element = document.querySelector(".head__time");
+      //console.log(width_element.offsetWidth);
+      $(".weather-widget").css("width", width_element.offsetWidth + "px");
+      $(".head__time").css("width", width_element.offsetWidth + "px");
+    }, 5000);
+  });
+})();
