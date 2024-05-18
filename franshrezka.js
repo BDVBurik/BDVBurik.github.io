@@ -80,7 +80,7 @@
                     <circle cx="9.9964" cy="9.63489" r="8.43556" stroke="currentColor" stroke-width="2.4"></circle>
                     <path d="M20.7768 20.4334L18.2135 17.8701" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
                 </svg></span>
-</div><script>$('#search${el.children[0].innerText}').on('hover:enter',()=>{Lampa.Search.open({input:'${el.children[1].innerText}'})});</script>`;
+</div><script>$('#search${el.children[0].innerText}').on('hover:enter',()=>{Lampa.Search.open({input:'${el.children[1].innerText}  ${el.children[2].innerText}'})});</script>`;
 
       // if (el.className.includes("current")) {
       //   wid = index;
