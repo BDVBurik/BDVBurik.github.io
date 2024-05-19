@@ -7,7 +7,7 @@
   const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
   var namemovie;
   var www;
-
+  var ew;
   var year;
   var url;
   reazkaParseHtmlDom = async function (url, name, year) {
@@ -56,6 +56,7 @@
 
   collectRender = async function (data) {
     www = "";
+    ew = "";
 
     // console.log("data", data);
 
@@ -65,8 +66,8 @@
     });
     // console.log("цid", wid);
     data.forEach((el, index) => {
-      // console.log("data", el);
-      www += `<div id="stringhide" class="${el.className}`;
+      //console.log("data", $("a", el.children[1])?.attr("href")?.split("/")[3]);
+      www += `<div  id="search${el.children[0].innerText}" class=" stringhide selector  ${el.className}`;
       //console.log(wid, index);
       if (wid + 2 >= index && index >= wid - 2) {
         www += " show";
@@ -74,13 +75,23 @@
         www += " hide hdhd";
       }
       www += ` "><span  class="${el.children[0].className}">
-      ${el.children[0].innerText}</span><span class="${el.children[1].className}">${el.children[1].innerText}
-  </span><span class="${el.children[2].className}">${el.children[2].innerText}
-  </span><span class="${el.children[3].className}" ><i class="hd-tooltip tooltipstered" >${el.children[3].innerText}</i> </span><span id="search${el.children[0].innerText}" class="selector searchfr "><svg width="6" height="5" viewBox="0 0 23 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="9.9964" cy="9.63489" r="8.43556" stroke="currentColor" stroke-width="2.4"></circle>
-                    <path d="M20.7768 20.4334L18.2135 17.8701" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
-                </svg></span>
-</div><script>$('#search${el.children[0].innerText}').on('hover:enter',()=>{Lampa.Search.open({input:'${el.children[1].innerText}'})});</script>`;
+      ${el.children[0].innerText}</span><span class="${
+        el.children[1].className
+      }">${el.children[1].innerText}
+  </span><span class="${el.children[1].className}"> ${
+        $("a", el.children[1]).attr("href")
+          ? $("a", el.children[1])?.attr("href")?.split("/")[3]
+          : ""
+      } </span><span class="${el.children[2].className}">${
+        el.children[2].innerText
+      }
+  </span><span class="${
+    el.children[3].className
+  }" ><i class="hd-tooltip tooltipstered" >${
+        el.children[3].innerText
+      }</i> </span>
+</div>`;
+      ew += `$('.collection' ).on('hover:enter','#search${el.children[0].innerText}',()=>{Lampa.Search.open({input:'${el.children[1].innerText}'})});`;
 
       // if (el.className.includes("current")) {
       //   wid = index;
@@ -97,13 +108,23 @@
     $(".collection").remove();
     $(".full-descr__text").after(collect);
 
-    // html.find('.open--search').on('hover:enter',Search.open.bind(Search))
-    let hide = 1;
-    $(".collection").on("hover:enter", function () {
-      // console.log("asdasdasd");
-      $(".hdhd").removeClass("hide");
+    $("#collect").ready(function () {
+      console.log("ew", ew);
+      //eval(ew);
+      //b-post__partcontent_item
+      // html.find('.open--search').on('hover:enter',Search.open.bind(Search))
 
-      $("#collect").removeClass("collectionfocus");
+      // let hide = 1;
+      $(".collectionfocus").one("hover:enter", function () {
+        // console.log("asdasdasd");
+        $(".hdhd").removeClass("hide");
+        $("#collect").removeClass("collectionfocus selector");
+        $(".b-post__partcontent_item").bind("hover:enter", (e) => {
+          Lampa.Search.open({
+            input: `${e?.currentTarget?.children[1]?.innerText}`,
+          });
+        });
+      });
     });
   };
 
@@ -147,8 +168,16 @@
 
         let styleEl = document.createElement("style");
         styleEl.setAttribute("type", "text/css");
-        styleEl.innerHTML = `.searchfr{border-radius: 100%;}.searchfr.focus{background-color:#fff;color:#000}.td{display:table-cell;border-bottom:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);padding:0 10px}.collection{display:table;width:90%}.collectionfocus{}.collectionfocus.focus{outline:outset #FFF}.rating{text-align:center;width:4em}.year{width:8em;text-align:right}.title{text-align:left}.num{text-align:center;width:3em}.b-post__partcontent_item{display:table-row;width:90%}.current{background-color:#ffffff1f}.show{visibility:visible}.hide{visibility:hidden};`;
-
+        styleEl.innerHTML = `
+        .searchfr{border-radius: 100%;}
+        .td{display:table-cell;border-bottom:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);padding:0 10px}.collection{display:table;width:90%}.collectionfocus{}.collectionfocus.focus{outline:outset #FFF}.rating{text-align:center;width:4em}.year{width:8em;text-align:right}.title{text-align:left}.num{text-align:center;width:3em}
+        .b-post__partcontent_item{display:table-row;width:90%}
+        .searchfr.focus{background-color:#fff;color:#000}
+        .b-post__partcontent_item:hover{background-color:#ffffff11}
+        .focus{background-color:#ffffff11}
+        .current{background-color:#ffffff1f}.show{visibility:visible}.hide{visibility:hidden};`;
+        //
+        //
         document.head.appendChild(styleEl);
       }
     });
