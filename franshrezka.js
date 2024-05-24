@@ -56,7 +56,7 @@
 
   collectRender = async function (data) {
     www = "";
-    ew = "";
+    
 
     // console.log("data", data);
 
@@ -93,13 +93,7 @@
         el.children[3].innerText
       }</i> </span>
 </div>`;
-      ew += `$('.collection' ).on('hover:enter','#search${
-        el.children[0].innerText
-      }',()=>{Lampa.Search.open({input: ${el?.currentTarget?.children[1]?.innerText
-        ?.split("/")[0]
-        .trim()
-        .replace(/\s+$/, "")},
-})});`;
+
 
       // if (el.className.includes("current")) {
       //   wid = index;
@@ -117,10 +111,7 @@
     $(".full-descr__text").after(collect);
 
     $("#collect").ready(function () {
-      console.log("ew", ew);
-      //eval(ew);
-      //b-post__partcontent_item
-      // html.find('.open--search').on('hover:enter',Search.open.bind(Search))
+
 
       // let hide = 1;
       $(".collectionfocus").one("hover:enter", function () {
