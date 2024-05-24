@@ -52,11 +52,11 @@
       if (data) {
         var render = Lampa.Activity.active().activity.render();
         console.log(
-          'Lampa.Storage.get("language") !== "ru"',
+          'Lampa.Storage.get("language") != "ru"',
           Lampa.Storage.get("language"),
-          Lampa.Storage.get("language") !== "ru"
+          Lampa.Storage.get("language") != "ru"
         );
-        if (Lampa.Storage.get("language") !== "ru") {
+        if (Lampa.Storage.get("language") != "ru") {
           ru =
             "<div style='font-size: 1.3em; height: auto;'>Ru:" +
             etRuTitle +
