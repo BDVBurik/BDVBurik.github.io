@@ -37,7 +37,7 @@
   function startPlugin() {
     window.otzyv_plugin = true;
     Lampa.Listener.follow("full", function (e) {
-      $("button--otzyv").remove();
+      $(".button--otzyv").remove();
       if (e.type == "complite") {
         var num = 0;
         $(".full-start-new__buttons").append(
