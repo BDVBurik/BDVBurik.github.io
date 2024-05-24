@@ -43,37 +43,42 @@
         .then((e) => (title = e.title || e.name));
       return title;
     }
-    var etRuTitle = await getRuTitle();
+
     var etEnTitle = await getEnTitle();
-
     _showEnTitle(etEnTitle);
-
+    let ru = "";
     function _showEnTitle(data) {
       if (data) {
         var render = Lampa.Activity.active().activity.render();
-
-        $(".original_title", render)
-          .find("> div")
-          .eq(0)
-          .after(
-            "<div id='titleen'><div>" +
-              "<div style='font-size: 1.3em; height: auto; '>En: " +
-              data +
-              "</div><div style='font-size: 1.3em; height: auto;'>Ru: " +
-              etRuTitle +
-              "</div><div style='font-size: 1.3em; height: auto; '> Orig: " +
-              (card.original_title || card.original_name) +
-              "</div></div></div>"
-          );
+        if (Lampa.Storage.get("language") !== "ru") {
+          var etRuTitle;
+          getRuTitle().then((e) => (etRuTitle = e));
+          ru =
+            "<div style='font-size: 1.3em; height: auto;'>Ru:" +
+            etRuTitle +
+            "</div >";
+        } else ru = "";
       }
+      $(".original_title", render)
+        .find("> div")
+        .eq(0)
+        .after(
+          `<div id='titleen'><div>" +
+              "<div style='font-size: 1.3em; height: auto; '>En: 
+              ${data} </div>${ru}
+              <div style='font-size: 1.3em; height: auto; '> Orig: 
+                ${card.original_title || card.original_name} 
+              </div></div></div>`
+        );
     }
   }
+
   function startPlugin() {
     window.title_plugin = true;
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
         var render = e.object.activity.render();
-        $('.original_title', render).remove()
+        $(".original_title", render).remove();
         $(".full-start-new__title", render).after(
           '<div class="original_title" style="  margin-top:-0.8em ; text-align: right;"><div>'
         );

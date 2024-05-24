@@ -67,6 +67,7 @@
         img: $("img", html).attr("src"),
         quantity: $(".num", html).text() + " видео",
         year: $("div:eq(2)", html).text().split(" - ").shift(),
+        
 
 
       });
