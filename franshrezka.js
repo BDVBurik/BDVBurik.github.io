@@ -93,7 +93,13 @@
         el.children[3].innerText
       }</i> </span>
 </div>`;
-      ew += `$('.collection' ).on('hover:enter','#search${el.children[0].innerText}',()=>{Lampa.Search.open({input:'${el.children[1].innerText}'})});`;
+      ew += `$('.collection' ).on('hover:enter','#search${
+        el.children[0].innerText
+      }',()=>{Lampa.Search.open({input: ${el?.currentTarget?.children[1]?.innerText
+        ?.split("/")[0]
+        .trim()
+        .replace(/\s+$/, "")},
+})});`;
 
       // if (el.className.includes("current")) {
       //   wid = index;
@@ -154,7 +160,6 @@
     window.rezkacoll_plugin = true;
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
-
         Lampa.Lang.add({
           films: {
             ru: "Фильм",
