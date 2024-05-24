@@ -154,7 +154,7 @@
     window.rezkacoll_plugin = true;
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
-        Lang.add({
+        Lampa.Lang.add({
           films: {
             ru: "Фильм",
             uk: "Фільм",
