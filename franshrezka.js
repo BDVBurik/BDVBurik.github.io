@@ -80,7 +80,7 @@
       }">${el.children[1].innerText}
   </span><span class="${el.children[1].className}"> ${
         $("a", el.children[1]).attr("href")
-          ? $("a", el.children[1])?.attr("href")?.split("/")[3]
+          ? Lang.translate($("a", el.children[1])?.attr("href")?.split("/")[3])
           : ""
       } </span><span class="${el.children[2].className}">${
         el.children[2].innerText
@@ -152,6 +152,29 @@
     window.rezkacoll_plugin = true;
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
+        Lang.add({
+          films: {
+            ru: "Фильм",
+            uk: "Фільм",
+            en: "Movie",
+          },
+          series: {
+            ru: "Сериал",
+            uk: "Серіал",
+            en: "series",
+          },
+          cartoons: {
+            ru: "Мультфильм",
+            uk: "Мультфільм",
+            en: "Сartoons",
+          },
+          animation: {
+            ru: "Аниме",
+            uk: "Аніме",
+            en: "Animation",
+          },
+        });
+
         if (e.data.movie.release_date) {
           year = e.data.movie.release_date.slice(0, 4);
         } else if (e.data.movie.first_air) {
