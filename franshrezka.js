@@ -80,7 +80,9 @@
       }">${el.children[1].innerText}
   </span><span class="${el.children[1].className}"> ${
         $("a", el.children[1]).attr("href")
-          ? Lang.translate($("a", el.children[1])?.attr("href")?.split("/")[3])
+          ? Lampa.Lang.translate(
+              $("a", el.children[1])?.attr("href")?.split("/")[3]
+            )
           : ""
       } </span><span class="${el.children[2].className}">${
         el.children[2].innerText
