@@ -114,13 +114,16 @@
       `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -20px;">` +
         www +
         "</div></div></div>"
-    );
+    ); //.style.color = "blue"
     let styleEl = document.createElement("style");
     styleEl.setAttribute("type", "text/css");
     styleEl.innerHTML = `
+    .scroll--mask{
+      margin-top: 10px;
+    }
     .title_spoiler a {
   border-radius: 8px;
-  background-color: #ccc;
+  background-color: #5d5b5b;
   color: #fff;
   padding: 0 2px 0 5px;
   position: relative;
@@ -157,10 +160,10 @@ div.text > div {
 
     var enabled = Lampa.Controller.enabled().name;
     Lampa.Modal.open({
-      title: "",
+      title: ``,
       html: modal,
       size: "large",
-      style: "",
+      style: "margin-top:10px;",
       mask: !0,
       onBack: function () {
         Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
