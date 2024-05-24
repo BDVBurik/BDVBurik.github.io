@@ -23,10 +23,13 @@
           mask: !0,
           onBack: function () {
             Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
-            $(".modal").remove();
+            $(".modal--large").remove();
           },
           onSelect: function () {},
         });
+        $(".modal__head").after(
+          `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+        );
       }
     );
   }
