@@ -47,14 +47,17 @@
     var etEnTitle = await getEnTitle();
     var etRuTitle = await getRuTitle();
     _showEnTitle(etEnTitle);
-    let ru = "";
+
     function _showEnTitle(data) {
+      let ru = "";
       if (data) {
         var render = Lampa.Activity.active().activity.render();
         console.log(
           'Lampa.Storage.get("language") == "ru"',
           Lampa.Storage.get("language"),
-          Lampa.Storage.get("language") == "ru"
+          Lampa.Storage.get("language") == "ru",
+          ru,
+          etRuTitle
         );
         if (Lampa.Storage.get("language") == "ru") {
           ru =
