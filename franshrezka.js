@@ -154,26 +154,31 @@
     window.rezkacoll_plugin = true;
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
+
         Lampa.Lang.add({
           films: {
             ru: "Фильм",
             uk: "Фільм",
-            en: "Movie",
+            en: "Film",
+            be: "Фільм",
           },
           series: {
             ru: "Сериал",
             uk: "Серіал",
-            en: "series",
+            en: "Series",
+            be: "Серыял",
           },
           cartoons: {
             ru: "Мультфильм",
             uk: "Мультфільм",
-            en: "Сartoons",
+            en: "Cartoon",
+            be: "Мультфільм",
           },
           animation: {
             ru: "Аниме",
             uk: "Аніме",
-            en: "Animation",
+            en: "Anime",
+            be: "Анімэ",
           },
         });
 
