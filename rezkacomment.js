@@ -111,7 +111,7 @@
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
     document.head.appendChild(Script);
     var modal = $(
-      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -20px;">` +
+      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
         www +
         "</div></div></div>"
     ); //.style.color = "blue"
