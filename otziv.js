@@ -23,7 +23,7 @@
           mask: !0,
           onBack: function () {
             Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
-            $("otzyv").remove();
+            $("modal").remove();
           },
           onSelect: function () {},
         });
