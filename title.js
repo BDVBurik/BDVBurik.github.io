@@ -45,14 +45,13 @@
     }
 
     var etEnTitle = await getEnTitle();
+    var eRuTitle = await getRuTitle();
     _showEnTitle(etEnTitle);
     let ru = "";
     function _showEnTitle(data) {
       if (data) {
         var render = Lampa.Activity.active().activity.render();
         if (Lampa.Storage.get("language") !== "ru") {
-          var etRuTitle;
-          getRuTitle().then((e) => (etRuTitle = e));
           ru =
             "<div style='font-size: 1.3em; height: auto;'>Ru:" +
             etRuTitle +
