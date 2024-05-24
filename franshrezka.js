@@ -129,7 +129,10 @@
         $("#collect").removeClass("collectionfocus selector");
         $(".b-post__partcontent_item").bind("hover:enter", (e) => {
           Lampa.Search.open({
-            input: `${e?.currentTarget?.children[1]?.innerText}`,
+            input: `${e?.currentTarget?.children[1]?.innerText
+              ?.split("/")[0]
+              .trim()
+              .replace(/\s+$/, "")}`,
           });
         });
       });
