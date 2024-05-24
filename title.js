@@ -52,7 +52,7 @@
       let ru = "";
       if (data) {
         var render = Lampa.Activity.active().activity.render();
- 
+
         if (Lampa.Storage.get("language") != "ru") {
           ru =
             "<div style='font-size: 1.3em; height: auto;'>Ru:" +
@@ -64,8 +64,7 @@
         .find("> div")
         .eq(0)
         .after(
-          `<div id='titleen'><div>" +
-              "<div style='font-size: 1.3em; height: auto; '>En: 
+          `<div id='titleen'><div><div style='font-size: 1.3em; height: auto; '>En: 
               ${data} </div>${ru}
               <div style='font-size: 1.3em; height: auto; '> Orig: 
                 ${card.original_title || card.original_name} 
