@@ -73,7 +73,7 @@
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
         var render = e.object.activity.render();
-
+        $('.original_title', render).remove()
         $(".full-start-new__title", render).after(
           '<div class="original_title" style="  margin-top:-0.8em ; text-align: right;"><div>'
         );
