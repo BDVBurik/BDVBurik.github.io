@@ -38,7 +38,7 @@
 
   searchRezka = async function (name, year) {
     let dom = await reazkaParseHtmlDom(
-      "https://hdrezka.ag/search/?do=search&subaction=search&q=",
+      kp_prox+"https://hdrezka.ag/search/?do=search&subaction=search&q=",
       name,
       year
     );
