@@ -6,12 +6,12 @@
     var orig = card.original_title || card.original_name;
     var params = {
       id: card.id,
-      url: "https://worker-patient-dream-26d7.bdvburik.workers.dev/https://api.themoviedb.org/3/movie/",
+      url: "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/movie/",
       urlEnd: "&api_key=4ef0d7355d9ffb5151e987764708ce96",
     };
 
     if (card.first_air_date) {
-      params.url = "https://worker-patient-dream-26d7.bdvburik.workers.dev/https://api.themoviedb.org/3/tv/";
+      params.url = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/tv/";
       params.urlEnd = "&api_key=4ef0d7355d9ffb5151e987764708ce96";
     }
 
