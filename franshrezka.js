@@ -12,7 +12,7 @@
   var url;
   reazkaParseHtmlDom = async function (url, name, year) {
     let fc = await fetch(
-      //kp_prox + 
+      kp_prox + 
       url + (name ? name : "") + (year ? "+" + year : ""),
       {
         method: "GET",
