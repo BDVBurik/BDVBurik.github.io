@@ -50,8 +50,8 @@
     let enTitle;
     await fetch(url)
       .then((response) => response.json())
-      .then((e) => (enTitle = e.title || e.name));
-    console.log(e);
+  .then((e) => (console.log(e)/*enTitle = e.title || e.name*/));
+    
     searchRezka(ormalizeTitle(enTitle), year);
   }
 
