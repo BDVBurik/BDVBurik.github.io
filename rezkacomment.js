@@ -30,7 +30,7 @@
 
     let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
-
+    consolelog("rcomment", name, ye, arr);
     comment_rezka(arr[0].dataset.id);
   }
 
@@ -72,7 +72,8 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-    console.log("rcomment",
+    console.log(
+      "rcomment",
       kp_prox +
         url +
         (id ? id : "1") +
@@ -97,14 +98,12 @@
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
-    dom
-      .querySelectorAll(".message")
-      .forEach((e) => {
-          var cct = e.closest(".comments-tree-item"); 
-          var gp = e.parentNode.parentNode;
-          cct.appendChild(e);
-          gp.remove();
-      });
+    dom.querySelectorAll(".message").forEach((e) => {
+      var cct = e.closest(".comments-tree-item");
+      var gp = e.parentNode.parentNode;
+      cct.appendChild(e);
+      gp.remove();
+    });
 
     dom.querySelectorAll(".info").forEach((e) => {
       e.childNodes[5].remove();
