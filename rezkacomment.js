@@ -30,7 +30,8 @@
 
     let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
-    consolelog("rcomment", name, ye, arr);
+        console.log
+("rcomment", name, ye, arr);
     comment_rezka(arr[0].dataset.id);
   }
 
