@@ -72,7 +72,7 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-    console.log(
+    console.log("rcomment",
       kp_prox +
         url +
         (id ? id : "1") +
