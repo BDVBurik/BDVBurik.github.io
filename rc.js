@@ -3,7 +3,7 @@
   ("use strict");
 
   let www = ``;
-  let year,name;
+  let year, name;
   let namemovie;
   const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
 
@@ -50,9 +50,10 @@
     let enTitle;
     await fetch(url)
       .then((response) => response.json())
-      .then((e) => (enTitle = e.title || e.name));
+      .then((e) => (  console.log(e)));
 
-    searchRezka(name/*normalizeTitle(enTitle)*/, year);
+    searchRezka(normalizeTitle(enTitle), year);
+    console.log(e);
   }
 
   // Функция для очистки заголовка от лишних символов
@@ -206,9 +207,9 @@ div.text > div {
           } else if (e.data.movie.first_air_date) {
             year = e.data.movie.first_air_date.slice(0, 4);
           }
-          name = e.data.movie.title;
+
           getEnTitle(e.data.movie.id, e.object.method);
-          console.log(e.data)
+          console.log(e.data);
         });
       }
     });
