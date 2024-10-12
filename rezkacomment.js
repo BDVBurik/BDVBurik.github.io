@@ -51,6 +51,7 @@
     await fetch(url)
       .then((response) => response.json())
       .then((e) => (enTitle = e.title || e.name));
+
     searchRezka(normalizeTitle(enTitle), year);
   }
 
@@ -77,6 +78,7 @@
         (id ? id : "1") +
         "&cstart=1&type=0&comment_id=0&skin=hdrezka"
     );
+
     let fc = await fetch(
       kp_prox +
         url +
@@ -97,7 +99,13 @@
 
     dom
       .querySelectorAll(".message")
-      .forEach((e) => e.parentNode.parentNode.before(e));
+      .forEach((e) => {
+          var cct = e.closest(".comments-tree-item"); 
+          var gp = e.parentNode.parentNode;
+          cct.appendChild(e);
+          gp.remove();
+      });
+
     dom.querySelectorAll(".info").forEach((e) => {
       e.childNodes[5].remove();
       e.addClass("myinfo").removeClass("info");
@@ -109,6 +117,7 @@
 
     let Script = document.createElement("Script");
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
+
     document.head.appendChild(Script);
     var modal = $(
       `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
@@ -151,7 +160,7 @@
   color: #cfc9be;
 }
 div.text > div {
-  display: ruby-text;
+  display: block;
 
   padding-left: 1.2em;
 }
@@ -159,6 +168,7 @@ div.text > div {
     document.head.appendChild(styleEl);
 
     var enabled = Lampa.Controller.enabled().name;
+
     Lampa.Modal.open({
       title: ``,
       html: modal,
