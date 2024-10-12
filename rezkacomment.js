@@ -1,5 +1,6 @@
 (function () {
   //BDVBurik 2024
+  //thanks Red Cat
   ("use strict");
 
   let www = ``;
