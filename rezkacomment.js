@@ -30,7 +30,7 @@
 
     let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
-    console.log("rcomment", name, ye, arr);
+    console.log("rezkacomment", name, ye);
     comment_rezka(arr[0].dataset.id);
   }
 
@@ -72,13 +72,13 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-    console.log(
-      "rcomment",
-      kp_prox +
-        url +
-        (id ? id : "1") +
-        "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-    );
+    // console.log(
+    //   "rcomment",
+    //   kp_prox +
+    //     url +
+    //     (id ? id : "1") +
+    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+    // );
 
     let fc = await fetch(
       kp_prox +
@@ -199,7 +199,7 @@ div.text > div {
         );
 
         $(".button--comment").on("hover:enter", function (card) {
-          console.log("rcomment", e.data);
+          //console.log("rcomment", e.data);
           year = 0;
           if (e.data.movie.release_date) {
             year = e.data.movie.release_date.slice(0, 4);
