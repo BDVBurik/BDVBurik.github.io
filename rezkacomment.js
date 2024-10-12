@@ -200,6 +200,7 @@ div.text > div {
         );
 
         $(".button--comment").on("hover:enter", function (card) {
+          console.log("rcomment", e.data);
           if (e.data.movie.release_date) {
             year = e.data.movie.release_date.slice(0, 4);
           }
