@@ -50,10 +50,10 @@
     let enTitle;
     await fetch(url)
       .then((response) => response.json())
-      .then((e) => (enTitle = e.title || e.name));
+      .then((e) => (  console.log(e)));
 
-    searchRezka(ormalizeTitle(enTitle), year);
-    console.log(enTitle);
+    searchRezka(normalizeTitle(enTitle), year);
+    console.log(e);
   }
 
   // Функция для очистки заголовка от лишних символов
