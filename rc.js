@@ -51,8 +51,9 @@
     await fetch(url)
       .then((response) => response.json())
       .then((e) => (enTitle = e.title || e.name));
-    console.log(enTitle);
+
     searchRezka(ormalizeTitle(enTitle), year);
+    console.log(enTitle);
   }
 
   // Функция для очистки заголовка от лишних символов
@@ -208,6 +209,7 @@ div.text > div {
           }
 
           getEnTitle(e.data.movie.id, e.object.method);
+          console.log(e.data);
         });
       }
     });
