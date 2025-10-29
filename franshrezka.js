@@ -59,7 +59,7 @@
     www = "";
     
 
-    // console.log("data", data);
+   console.log("data", data);  //debug
 
     let wid;
     data.filter((el, index) => {
