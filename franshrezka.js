@@ -1,9 +1,9 @@
 (function () {
   //BDVBurik 2024
-  ////rezkacomment без спойлеров
+  ////франшиза в алмпе
   ("use strict");
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  const kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  const kp_prox = "";
   const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
   var namemovie;
   var www;
@@ -51,7 +51,7 @@
 
     dom = await reazkaParseHtmlDom(url, "", "");
     arr = Array.from(dom.getElementsByClassName("b-post__partcontent_item"));
-    console.log("sech rezka arr", arr); //debug
+    //console.log("sech rezka arr", arr); //debug
     collectRender(arr);
   };
 
@@ -59,7 +59,7 @@
     www = "";
     
 
-   console.log("data", data);  //debug
+  // console.log("data", data);  //debug
 
     let wid;
     data.filter((el, index) => {
