@@ -51,7 +51,7 @@
 
     dom = await reazkaParseHtmlDom(url, "", "");
     arr = Array.from(dom.getElementsByClassName("b-post__partcontent_item"));
-    // console.log("sech rezka arr", arr);
+    console.log("sech rezka arr", arr); //debug
     collectRender(arr);
   };
 
