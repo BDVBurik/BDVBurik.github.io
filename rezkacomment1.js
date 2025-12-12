@@ -31,7 +31,7 @@
 
     let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
-    conse.log("rezkacomment", name, ye);
+    console.log("rezkacomment", name, ye);
     comment_rezka(arr[0].dataset.id);
   }
 
@@ -65,7 +65,7 @@
   function normalizeTitle(str) {
     return cleanTitle(
       str
-        .towerCase()
+        .toLowerCase()
         .replace(/[\-\u2010-\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D]+/g, "-")
         .replace(/ё/g, "е")
     );
