@@ -102,7 +102,6 @@ async function comment_rezka(id) {
     info.classList.add("myinfo");
     info.classList.remove("info");
 
-    // Удаляем мусорные текстовые узлы
     Array.from(info.childNodes).forEach((node) => {
       if (node.nodeType === 3 && node.textContent.trim()) {
         node.remove();
@@ -110,43 +109,54 @@ async function comment_rezka(id) {
     });
   });
 
-  // Перестраиваем message: ava слева, myinfo сверху, text снизу
-  dom.querySelectorAll(".comments-tree-item").forEach((item) => {
-    const block = item.querySelector(".b-comment, .comment-item, .comment");
+  // Перестраиваем каждый комментарий
+  dom.querySelectorAll(".comments-tree-item").forEach((li) => {
+    const block = li.querySelector(".b-comment, .comment-item, .comment");
     if (!block) return;
 
-    const ava = block.querySelector(".ava");
+    const ava = block.querySelector(".ava img");
     const info = block.querySelector(".myinfo");
     const message = block.querySelector(".message");
     const text = block.querySelector(".text");
 
     if (!message) return;
 
-    // Очищаем message
-    message.innerHTML = "";
-
-    // Создаём шапку: имя слева, дата справа
+    // Создаём шапку
     const header = document.createElement("div");
     header.className = "myinfo";
 
-    if (info) {
-      const name = info.querySelector(".name");
-      const date = info.querySelector(".date");
+    const name = info?.querySelector(".name");
+    const date = info?.querySelector(".date");
 
-      if (name) name.classList.add("name");
-      if (date) date.classList.add("date");
+    if (name) name.classList.add("name");
+    if (date) date.classList.add("date");
 
-      if (name) header.appendChild(name);
-      if (date) header.appendChild(date);
-    }
+    if (name) header.appendChild(name);
+    if (date) header.appendChild(date);
 
-    // Вставляем всё по порядку
-    if (ava) message.appendChild(ava);
+    // Очищаем message и вставляем шапку + текст
+    message.innerHTML = "";
     message.appendChild(header);
     if (text) message.appendChild(text);
 
-    item.prepend(message);
+    // Удаляем старый контейнер
     block.remove();
+
+    // Оборачиваем li в comment-wrap
+    const wrap = document.createElement("div");
+    wrap.className = "comment-wrap";
+
+    const avatarCol = document.createElement("div");
+    avatarCol.className = "avatar-column";
+
+    if (ava) {
+      ava.classList.add("avatar-img");
+      avatarCol.appendChild(ava);
+    }
+
+    li.parentNode.insertBefore(wrap, li);
+    wrap.appendChild(avatarCol);
+    wrap.appendChild(li);
   });
 
   // Переставляем message перед replies
@@ -164,12 +174,28 @@ async function comment_rezka(id) {
   const styleEl = document.createElement("style");
   styleEl.setAttribute("type", "text/css");
   styleEl.innerHTML = `
+.comment-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.avatar-column {
+  flex-shrink: 0;
+}
+.avatar-column .avatar-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #333;
+}
 .comments-tree-item {
   list-style: none;
   background: #1b1b1b;
   border-radius: 8px;
   padding: 12px 14px;
-  margin: 12px 0;
+  margin: 0;
   color: #e0e0e0;
   font-family: Arial, sans-serif;
   box-shadow: 0 0 4px rgba(0,0,0,0.35);
@@ -178,13 +204,6 @@ async function comment_rezka(id) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-.comments-tree-item .ava img {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  object-fit: cover;
-  background-color: #333;
 }
 .comments-tree-item .myinfo {
   display: flex;
