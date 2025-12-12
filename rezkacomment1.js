@@ -107,7 +107,7 @@
     });
 
     console.log("dom2", dom);
-    /------------------------------------
+    //------------------------------------
 let arr = dom.getElementsByClassName("comments-tree-list");
 
 // если вообще нет ни одного дерева — выходим как раньше, чтобы не падать
@@ -145,7 +145,7 @@ if (!arr || !arr[0]) {
         www = li.outerHTML;
     }
 }
-/---------------------------------------
+//---------------------------------------
     let Script = document.createElement("Script");
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
 
