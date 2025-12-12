@@ -73,7 +73,7 @@
 
   // Функция для получения комментариев с сайта rezka
 async function comment_rezka(id) {
-  conse.log(
+  console.log(
     "rcomment",
     kp_prox +
       url +
@@ -200,7 +200,7 @@ async function comment_rezka(id) {
 
 /* вложенность */
 .comments-tree-list > .comments-tree-item {
-  margin-left: 10px;
+  margin-left: 24px;
 }
 
 /* общий wrap: аватар + карточка */
@@ -270,9 +270,9 @@ async function comment_rezka(id) {
 
   const modal = $(`
     <div>
-<div class="broadcast__text" style="text-align:left;">
-  <div class="comment" style="margin-left: -15px;">${www}</div>
-</div>
+      <div class="broadcast__text" style="text-align:left;">
+        <div class="comment" style="margin-left: -15px;">${www}</div>
+      </div>
     </div>
   `);
 
