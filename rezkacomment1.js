@@ -108,42 +108,16 @@
 
     console.log("dom2", dom);
     ///////////////////////////////////////////////////////////////
-let arr = dom.getElementsByClassName("comments-tree-list");
+// Находим корневой комментарий
+let root = dom.querySelector('.comments-tree-item[data-indent="0"]');
 
-// если вообще нет ни одного дерева — выходим как раньше, чтобы не падать
-if (!arr || !arr[0]) {
-    www = "";
+// Если корень найден — берём его целиком
+if (root) {
+    www = root.outerHTML;
 } else {
-    // Пытаемся найти li, к которому принадлежит первый ol
-    let li = arr[0].closest(".comments-tree-item");
-
-    // если по какой-то причине не нашли li — хотя бы вернём ol
-    if (!li) {
-        www = arr[0].outerHTML;
-    } else {
-        // Ищем message и replies внутри этого li
-        let message = li.querySelector(".message");
-        let replies = li.querySelector("ol.comments-tree-list");
-
-        // Если есть и message, и список ответов — ставим message перед списком
-        if (message && replies && message !== replies.previousSibling) {
-            // удаляем их из текущих мест, чтобы не дублировать
-            if (message.parentElement !== li) {
-                message.parentElement.removeChild(message);
-            }
-            if (replies.parentElement !== li) {
-                replies.parentElement.removeChild(replies);
-            }
-
-            // сначала вставляем message
-            li.appendChild(message);
-            // потом список ответов
-            li.appendChild(replies);
-        }
-
-        // В любом случае в www кладём ВЕСЬ li
-        www = li.outerHTML;
-    }
+    // fallback — как было раньше
+    let arr = dom.getElementsByClassName("comments-tree-list");
+    www = arr[0] ? arr[0].outerHTML : "";
 }
 ///////////////////////////////////////////////////////////
     let Script = document.createElement("Script");
