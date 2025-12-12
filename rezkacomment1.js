@@ -202,23 +202,20 @@
     const enabled = Lampa.Controller.enabled().name;
 
     Lampa.Modal.open({
-      title: "",
+      title: ``,
       html: modal,
       size: "large",
       style: "margin-top:10px;",
       mask: !0,
       onBack: function () {
-        Lampa.Modal.close();
-        Lampa.Controller.toggle(enabled);
+        Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
         $(".modal--large").remove();
         www = "";
       },
       onSelect: function () {},
     });
-Lampa.Loading.stop();
-
     $(".modal__head").after(
-      `${namemovie}`
+      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
     );
   }
 
