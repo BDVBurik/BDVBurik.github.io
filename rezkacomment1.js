@@ -209,10 +209,14 @@ async function comment_rezka(id) {
   margin-left: 6px;
   vertical-align: middle;
 }
-
+.title_spoiler a {
+  color: #e0e0e0 !important;
+  text-decoration: none !important;
+  font-weight: normal;
+}
 .text_spoiler {
   display: none;
-  background-color: #1c1c1c;
+  background-color: ##3e3e3e;
   border-left: 3px solid #555;
   font-size: 14px;
   color: #dcdcdc;
