@@ -24,7 +24,7 @@ console.log ("jhjhghj",
       kp_prox +
         "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
         name +
-        (ye ? "+" + ye : "")
+        (ye ? "+" + ye : "");
     const dom = new DOMParser().parseFromString(fc, "text/html");
     const arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     if (!arr.length) return;
