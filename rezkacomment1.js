@@ -152,10 +152,11 @@ styleEl.innerHTML = `
     flex-direction: column;
 }
 
+/* Аватарка + имя + дата */
 .comments-tree-item .myinfo {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 10px;
     font-size: 12px;
     color: #9a9a9a;
     border-bottom: 1px solid #2d2d2d;
@@ -163,15 +164,27 @@ styleEl.innerHTML = `
     margin-bottom: 8px;
 }
 
+/* Аватарка */
+.comments-tree-item .ava img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #333;
+}
+
+/* Имя и дата */
 .comments-tree-item .name {
     font-weight: bold;
     color: #d0d0d0;
+    margin-right: 8px;
 }
-
 .comments-tree-item .date {
     opacity: 0.8;
+    font-size: 11px;
 }
 
+/* Текст комментария */
 .comments-tree-item .text {
     font-size: 14px;
     line-height: 1.45em;
@@ -179,6 +192,7 @@ styleEl.innerHTML = `
     margin-top: 4px;
 }
 `;
+document.head.appendChild(styleEl);
 document.head.appendChild(styleEl);
 document.head.appendChild(styleEl);
     document.head.appendChild(styleEl);
