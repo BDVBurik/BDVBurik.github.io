@@ -37,6 +37,7 @@
       (type === "movie" ? "movie/" : "tv/") +
       id +
       urlEndTMDB;
+    Lampa.Loading.start();
     ennTitle(url);
   }
 
@@ -213,6 +214,7 @@
       },
       onSelect: function () {},
     });
+Lampa.Loading.stop();
 
     $(".modal__head").after(
       `${namemovie}<button class="selector" tabindex="0" style="float:right;" type="button" onclick="$('.modal--large').remove()" data-dismiss="modal">&times;</button>`
