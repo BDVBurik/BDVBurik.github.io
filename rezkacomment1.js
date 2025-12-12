@@ -94,14 +94,15 @@ async function comment_rezka(id) {
 
   let dom = new DOMParser().parseFromString(fc.comments, "text/html");
 
-  // Удаляем лишнее, но НЕ трогаем .ava
+  // убираем только явный мусор
   dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
 
-  // Преобразуем .info → .myinfo и чистим
+  // приводим .info → .myinfo и чистим её
   dom.querySelectorAll(".info").forEach((info) => {
     info.classList.add("myinfo");
     info.classList.remove("info");
 
+    // удаляем текстовые узлы с мусором (запятые и т.п.)
     Array.from(info.childNodes).forEach((node) => {
       if (node.nodeType === 3 && node.textContent.trim()) {
         node.remove();
@@ -109,57 +110,62 @@ async function comment_rezka(id) {
     });
   });
 
-  // Перестраиваем каждый комментарий
+  // приводим каждый комментарий к нормальной структуре
   dom.querySelectorAll(".comments-tree-item").forEach((li) => {
-    const block = li.querySelector(".b-comment, .comment-item, .comment");
-    if (!block) return;
-
-    const ava = block.querySelector(".ava img");
-    const info = block.querySelector(".myinfo");
-    const message = block.querySelector(".message");
-    const text = block.querySelector(".text");
-
+    const message = li.querySelector(".message");
     if (!message) return;
 
-    // Создаём шапку
-    const header = document.createElement("div");
-    header.className = "myinfo";
+    const avaWrap = li.querySelector(".ava");
+    const avaImg = avaWrap ? avaWrap.querySelector("img") : null;
+    const info = li.querySelector(".myinfo");
+    const text = li.querySelector(".text");
 
-    const name = info?.querySelector(".name");
-    const date = info?.querySelector(".date");
+    // имя и дата
+    const name = info ? info.querySelector(".name") : null;
+    const date = info ? info.querySelector(".date") : null;
 
-    if (name) name.classList.add("name");
-    if (date) date.classList.add("date");
+    // готовим новую шапку
+    const header = dom.createElement("div");
+    header.className = "header";
 
-    if (name) header.appendChild(name);
-    if (date) header.appendChild(date);
+    const headerTop = dom.createElement("div");
+    headerTop.className = "header-top";
 
-    // Очищаем message и вставляем шапку + текст
+    const headerName = dom.createElement("span");
+    headerName.className = "name";
+    headerName.textContent = name ? name.textContent.trim() : "";
+
+    const headerDate = dom.createElement("span");
+    headerDate.className = "date";
+    headerDate.textContent = date ? date.textContent.trim() : "";
+
+    headerTop.appendChild(headerName);
+    headerTop.appendChild(headerDate);
+    header.appendChild(headerTop);
+
+    // очищаем message и собираем заново
     message.innerHTML = "";
-    message.appendChild(header);
-    if (text) message.appendChild(text);
 
-    // Удаляем старый контейнер
-    block.remove();
-
-    // Оборачиваем li в comment-wrap
-    const wrap = document.createElement("div");
-    wrap.className = "comment-wrap";
-
-    const avatarCol = document.createElement("div");
-    avatarCol.className = "avatar-column";
-
-    if (ava) {
-      ava.classList.add("avatar-img");
-      avatarCol.appendChild(ava);
+    // если есть аватарка — добавляем слева отдельным блоком
+    if (avaImg) {
+      const avaSlot = dom.createElement("div");
+      avaSlot.className = "avatar-slot";
+      avaImg.classList.add("avatar-img");
+      avaSlot.appendChild(avaImg);
+      message.appendChild(avaSlot);
     }
 
-    li.parentNode.insertBefore(wrap, li);
-    wrap.appendChild(avatarCol);
-    wrap.appendChild(li);
+    // блок с контентом (шапка + текст)
+    const content = dom.createElement("div");
+    content.className = "content";
+
+    content.appendChild(header);
+    if (text) content.appendChild(text);
+
+    message.appendChild(content);
   });
 
-  // Переставляем message перед replies
+  // убедимся, что message над ответами
   dom.querySelectorAll(".comments-tree-item").forEach((item) => {
     const message = item.querySelector(":scope > .message");
     const replies = item.querySelector(":scope > ol.comments-tree-list");
@@ -170,42 +176,50 @@ async function comment_rezka(id) {
 
   www = dom.body.innerHTML;
 
-  // Стили
+  // СТИЛИ
   const styleEl = document.createElement("style");
   styleEl.setAttribute("type", "text/css");
   styleEl.innerHTML = `
-.comment-wrap {
+.comments-tree-item {
+  list-style: none;
+  background: #1b1b1b;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: #e0e0e0;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 0 4px rgba(0,0,0,0.35);
+}
+
+/* message = аватар слева + контент справа */
+.comments-tree-item .message {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
 }
-.avatar-column {
+
+/* аватарка слева, ВНУТРИ <li>, но как отдельная колонка */
+.comments-tree-item .avatar-slot {
   flex-shrink: 0;
 }
-.avatar-column .avatar-img {
+.comments-tree-item .avatar-slot .avatar-img {
   width: 60px;
   height: 60px;
   border-radius: 8px;
   object-fit: cover;
   background-color: #333;
 }
-.comments-tree-item {
-  list-style: none;
-  background: #1b1b1b;
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin: 0;
-  color: #e0e0e0;
-  font-family: Arial, sans-serif;
-  box-shadow: 0 0 4px rgba(0,0,0,0.35);
-}
-.comments-tree-item .message {
+
+/* контентная колонка */
+.comments-tree-item .content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex: 1;
 }
-.comments-tree-item .myinfo {
+
+/* шапка: имя слева, дата справа */
+.comments-tree-item .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -220,6 +234,8 @@ async function comment_rezka(id) {
   opacity: 0.7;
   font-size: 11px;
 }
+
+/* текст */
 .comments-tree-item .text {
   font-size: 14px;
   line-height: 1.45em;
@@ -228,12 +244,12 @@ async function comment_rezka(id) {
 `;
   document.head.appendChild(styleEl);
 
-  // Модалка
+  // скрипт спойлеров
   let Script = document.createElement("Script");
   Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
   document.head.appendChild(Script);
 
-  var modal = $(`
+  const modal = $(`
     <div>
       <div class="broadcast__text" style="text-align:left;">
         <div class="comment" style="margin-left: -15px;">${www}</div>
@@ -241,7 +257,7 @@ async function comment_rezka(id) {
     </div>
   `);
 
-  var enabled = Lampa.Controller.enabled().name;
+  const enabled = Lampa.Controller.enabled().name;
 
   Lampa.Modal.open({
     title: ``,
@@ -261,7 +277,6 @@ async function comment_rezka(id) {
     `${namemovie}<button class="selector " tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()" data-dismiss="modal">&times;</button>`
   );
 }
-
   // Функция для начала работы плагина
   function startPlugin() {
     window.comment_plugin = true;
