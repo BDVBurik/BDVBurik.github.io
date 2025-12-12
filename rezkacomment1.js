@@ -200,7 +200,7 @@ async function comment_rezka(id) {
 
 /* вложенность */
 .comments-tree-list > .comments-tree-item {
-  margin-left: 24px;
+  margin-left: 12px;
 }
 
 /* общий wrap: аватар + карточка */
@@ -270,9 +270,9 @@ async function comment_rezka(id) {
 
   const modal = $(`
     <div>
-      <div class="broadcast__text" style="text-align:left;">
-        <div class="comment" style="margin-left: -15px;">${www}</div>
-      </div>
+<div class="broadcast__text" style="padding-left: 8px; padding-right: 8px;">
+  <div class="comment">${www}</div>
+</div>
     </div>
   `);
 
