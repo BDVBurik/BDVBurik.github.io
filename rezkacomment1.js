@@ -73,7 +73,13 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-     console.log(       "rcomment",       kp_prox +         url +         (id ? id : "1") +         "&cstart=1&type=0&comment_id=0&skin=hdrezka"     );
+    // console.log(
+    //   "rcomment",
+    //   kp_prox +
+    //     url +
+    //     (id ? id : "1") +
+    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+    // );
 
     let fc = await fetch(
       kp_prox +
@@ -89,7 +95,6 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-     console.log("dom0", dom);
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
@@ -106,20 +111,20 @@
       e.addClass("myinfo").removeClass("info");
     });
 
-    console.log("dom2", dom);
-    ///////////////////////////////////////////////////////////////
-// Находим корневой комментарий
-let root = dom.querySelector('.comments-tree-item[data-indent="0"]');
+    //console.log("dom", dom);
+// Переставляем message наверх во всех LI
+dom.querySelectorAll(".comments-tree-item").forEach(item => {
+  const message = item.querySelector(":scope > .message");
+  const replies = item.querySelector(":scope > ol.comments-tree-list");
 
-// Если корень найден — берём его целиком
-if (root) {
-    www = root.outerHTML;
-} else {
-    // fallback — как было раньше
-    let arr = dom.getElementsByClassName("comments-tree-list");
-    www = arr[0] ? arr[0].outerHTML : "";
-}
-///////////////////////////////////////////////////////////
+  if (message && replies) {
+    item.insertBefore(message, replies);
+  }
+});
+
+// Берём весь HTML, а не кусок
+www = dom.body.innerHTML;
+
     let Script = document.createElement("Script");
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
 
