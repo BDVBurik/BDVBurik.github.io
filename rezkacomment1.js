@@ -105,11 +105,11 @@
       cct.appendChild(e);
       gp.remove();
     });
-
+/*
     dom.querySelectorAll(".info").forEach((e) => {
       e.childNodes[5].remove();
       e.addClass("myinfo").removeClass("info");
-    });
+    });*/
 
     
 // Переставляем message наверх во всех LI
