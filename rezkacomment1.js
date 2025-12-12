@@ -95,11 +95,7 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-    dom.querySelectorAll(".comments-tree-item").forEach(item => {
-    const message = item.querySelector(":scope > .message");
-    const replies = item.querySelector(":scope > ol.comments-tree-list");
-    if (message && replies) item.insertBefore(message, replies);
-});
+
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
