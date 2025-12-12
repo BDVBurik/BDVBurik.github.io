@@ -94,64 +94,54 @@
       .then((response) => response.json())
       .then((qwe) => qwe);
 
-    let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-    dom
-      .querySelectorAll(" .actions, i, .share-link")
-      .forEach((elem) => elem.remove());
-    
-console.log("dom", dom);
-    
-  /*  dom.querySelectorAll(".message").forEach((e) => {
-      var cct = e.closest(".comments-tree-item");
-      var gp = e.parentNode.parentNode;
-      cct.appendChild(e);
-      gp.remove();
-    });*/
-    dom.querySelectorAll(".comments-tree-item").forEach(item => {
-  const block = item.querySelector(".b-comment, .comment-item, .comment"); // разные варианты
+let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+
+// Удаляем лишнее, но НЕ трогаем .ava
+dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
+
+// Переносим message, ava и info внутрь .comments-tree-item
+dom.querySelectorAll(".comments-tree-item").forEach(item => {
+  const block = item.querySelector(".b-comment, .comment-item, .comment");
   if (!block) return;
 
   const ava = block.querySelector(".ava");
   const info = block.querySelector(".info");
   const message = block.querySelector(".message");
 
-  // Переносим аватарку в message
-  if (ava && message) {
-    message.prepend(ava);
-  }
+  // Оборачиваем name + date в .user-meta
+  if (info) {
+    const name = info.querySelector(".name");
+    const date = info.querySelector(".date");
 
-  // Переносим info → myinfo
-  if (info && message) {
+    if (name && date) {
+      const meta = document.createElement("div");
+      meta.className = "user-meta";
+      meta.appendChild(name);
+      meta.appendChild(date);
+      info.appendChild(meta);
+    }
+
     info.classList.add("myinfo");
-    message.prepend(info);
   }
 
-  // Переносим message в li
+  // Вставляем ava и info внутрь message
   if (message) {
+    if (ava) message.prepend(ava);
+    if (info) message.prepend(info);
     item.prepend(message);
   }
 
-  // Удаляем старый контейнер
   block.remove();
 });
-//
-    dom.querySelectorAll(".info").forEach((e) => {
-      e.childNodes[5].remove();
-      e.addClass("myinfo").removeClass("info");
-    });//
 
-    
-// Переставляем message наверх во всех LI
+// Переставляем message наверх, если replies есть
 dom.querySelectorAll(".comments-tree-item").forEach(item => {
   const message = item.querySelector(":scope > .message");
   const replies = item.querySelector(":scope > ol.comments-tree-list");
-
-  if (message && replies) {
-    item.insertBefore(message, replies);
-  }
+  if (message && replies) item.insertBefore(message, replies);
 });
-console.log("dom000", dom);
-// Берём весь HTML, а не кусок
+
+// Берём весь HTML
 www = dom.body.innerHTML;
 
     let Script = document.createElement("Script");
@@ -166,59 +156,62 @@ www = dom.body.innerHTML;
 const styleEl = document.createElement("style");
 styleEl.innerHTML = `
 .comments-tree-item {
-    list-style: none;
-    background: #1b1b1b;
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin: 12px 0;
-    color: #e0e0e0;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 0 4px rgba(0,0,0,0.35);
+  list-style: none;
+  background: #1b1b1b;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: #e0e0e0;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 0 4px rgba(0,0,0,0.35);
 }
 
 .comments-tree-item .message {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Аватарка + имя + дата */
+/* Аватарка слева, имя и дата справа */
 .comments-tree-item .myinfo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: #9a9a9a;
-    border-bottom: 1px solid #2d2d2d;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #cfc9be;
+  margin-bottom: 8px;
 }
 
-/* Аватарка */
+.comments-tree-item .ava {
+  flex-shrink: 0;
+}
 .comments-tree-item .ava img {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    background-color: #333;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #333;
 }
 
-/* Имя и дата */
+.comments-tree-item .user-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.2em;
+}
 .comments-tree-item .name {
-    font-weight: bold;
-    color: #d0d0d0;
-    margin-right: 8px;
+  font-weight: bold;
+  color: #d0d0d0;
 }
 .comments-tree-item .date {
-    opacity: 0.8;
-    font-size: 11px;
+  opacity: 0.7;
+  font-size: 11px;
 }
 
-/* Текст комментария */
 .comments-tree-item .text {
-    font-size: 14px;
-    line-height: 1.45em;
-    color: #e6e6e6;
-    margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45em;
+  color: #e6e6e6;
+  margin-top: 4px;
 }
 `;
 document.head.appendChild(styleEl);
