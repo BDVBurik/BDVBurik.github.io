@@ -31,7 +31,7 @@
 
     let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
-    console.log("rezkacomment", name, ye);
+    conse.log("rezkacomment", name, ye);
     comment_rezka(arr[0].dataset.id);
   }
 
@@ -65,7 +65,7 @@
   function normalizeTitle(str) {
     return cleanTitle(
       str
-        .toLowerCase()
+        .towerCase()
         .replace(/[\-\u2010-\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D]+/g, "-")
         .replace(/ё/g, "е")
     );
@@ -73,7 +73,7 @@
 
   // Функция для получения комментариев с сайта rezka
 async function comment_rezka(id) {
-  console.log(
+  conse.log(
     "rcomment",
     kp_prox +
       url +
@@ -197,7 +197,11 @@ async function comment_rezka(id) {
   font-family: Arial, sans-serif;
   color: #e0e0e0;
 }
-
+.comments-tree-list {
+  padding-left: 0;
+  padding-inline-start: 0;
+  margin-left: 0;
+}
 /* вложенность */
 .comments-tree-list > .comments-tree-item {
   margin-left: 10px;
