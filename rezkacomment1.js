@@ -182,6 +182,7 @@
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
 .text_spoiler{display:none;background:#1c1c1c;border-left:3px solid #555;padding:6px 10px;margin:6px 0;font-size:14px;border-radius:4px;color:#dcdcdc;}
+.modal__content{padding:1.0em 1.5em;}
 `;
     document.head.appendChild(styleEl);
 
