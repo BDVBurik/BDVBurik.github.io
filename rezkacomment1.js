@@ -101,12 +101,39 @@
     
 console.log("dom", dom);
     
-    dom.querySelectorAll(".message").forEach((e) => {
+  /*  dom.querySelectorAll(".message").forEach((e) => {
       var cct = e.closest(".comments-tree-item");
       var gp = e.parentNode.parentNode;
       cct.appendChild(e);
       gp.remove();
-    });
+    });*/
+    dom.querySelectorAll(".comments-tree-item").forEach(item => {
+  const block = item.querySelector(".b-comment, .comment-item, .comment"); // разные варианты
+  if (!block) return;
+
+  const ava = block.querySelector(".ava");
+  const info = block.querySelector(".info");
+  const message = block.querySelector(".message");
+
+  // Переносим аватарку в message
+  if (ava && message) {
+    message.prepend(ava);
+  }
+
+  // Переносим info → myinfo
+  if (info && message) {
+    info.classList.add("myinfo");
+    message.prepend(info);
+  }
+
+  // Переносим message в li
+  if (message) {
+    item.prepend(message);
+  }
+
+  // Удаляем старый контейнер
+  block.remove();
+});
 //
     dom.querySelectorAll(".info").forEach((e) => {
       e.childNodes[5].remove();
