@@ -72,7 +72,7 @@
   }
 
   // Функция для получения комментариев с сайта rezka
- async function comment_rezka(id) {
+async function comment_rezka(id) {
   console.log(
     "rcomment",
     kp_prox +
@@ -90,49 +90,66 @@
       method: "GET",
       headers: { "Content-Type": "text/plain" },
     }
-  )
-    .then((response) => response.json())
-    .then((qwe) => qwe);
+  ).then((response) => response.json());
 
   let dom = new DOMParser().parseFromString(fc.comments, "text/html");
 
   // Удаляем лишнее, но НЕ трогаем .ava
   dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
 
-  // Преобразуем .info → .myinfo и оборачиваем имя + дату
+  // Преобразуем .info → .myinfo и чистим
   dom.querySelectorAll(".info").forEach((info) => {
-    const name = info.querySelector(".name");
-    const date = info.querySelector(".date");
-
-    if (name && date) {
-      const meta = document.createElement("div");
-      meta.className = "user-meta";
-      meta.appendChild(name);
-      meta.appendChild(date);
-      info.appendChild(meta);
-    }
-
     info.classList.add("myinfo");
+    info.classList.remove("info");
+
+    // Удаляем мусорные текстовые узлы
+    Array.from(info.childNodes).forEach((node) => {
+      if (node.nodeType === 3 && node.textContent.trim()) {
+        node.remove();
+      }
+    });
   });
 
-  // Переносим .ava и .myinfo внутрь .message
+  // Перестраиваем message: ava слева, myinfo сверху, text снизу
   dom.querySelectorAll(".comments-tree-item").forEach((item) => {
-    const message = item.querySelector(".message");
+    const block = item.querySelector(".b-comment, .comment-item, .comment");
+    if (!block) return;
+
+    const ava = block.querySelector(".ava");
+    const info = block.querySelector(".myinfo");
+    const message = block.querySelector(".message");
+    const text = block.querySelector(".text");
+
     if (!message) return;
 
-    const ava = item.querySelector(".ava");
-    const myinfo = item.querySelector(".myinfo");
+    // Очищаем message
+    message.innerHTML = "";
 
-    if (ava && !message.contains(ava)) {
-      message.prepend(ava);
+    // Создаём шапку: имя слева, дата справа
+    const header = document.createElement("div");
+    header.className = "myinfo";
+
+    if (info) {
+      const name = info.querySelector(".name");
+      const date = info.querySelector(".date");
+
+      if (name) name.classList.add("name");
+      if (date) date.classList.add("date");
+
+      if (name) header.appendChild(name);
+      if (date) header.appendChild(date);
     }
 
-    if (myinfo && !message.contains(myinfo)) {
-      message.insertBefore(myinfo, message.querySelector(".text") || null);
-    }
+    // Вставляем всё по порядку
+    if (ava) message.appendChild(ava);
+    message.appendChild(header);
+    if (text) message.appendChild(text);
+
+    item.prepend(message);
+    block.remove();
   });
 
-  // Переставляем message наверх, если replies есть
+  // Переставляем message перед replies
   dom.querySelectorAll(".comments-tree-item").forEach((item) => {
     const message = item.querySelector(":scope > .message");
     const replies = item.querySelector(":scope > ol.comments-tree-list");
@@ -160,30 +177,21 @@
 .comments-tree-item .message {
   display: flex;
   flex-direction: column;
-}
-.comments-tree-item .myinfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: #cfc9be;
-  margin-bottom: 8px;
-}
-.comments-tree-item .ava {
-  flex-shrink: 0;
+  gap: 8px;
 }
 .comments-tree-item .ava img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
   object-fit: cover;
   background-color: #333;
 }
-.comments-tree-item .user-meta {
+.comments-tree-item .myinfo {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  line-height: 1.2em;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #cfc9be;
 }
 .comments-tree-item .name {
   font-weight: bold;
@@ -197,7 +205,6 @@
   font-size: 14px;
   line-height: 1.45em;
   color: #e6e6e6;
-  margin-top: 4px;
 }
 `;
   document.head.appendChild(styleEl);
