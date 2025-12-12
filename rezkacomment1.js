@@ -193,7 +193,7 @@ async function comment_rezka(id) {
   styleEl.innerHTML = `
 .comments-tree-item {
   list-style: none;
-  margin: 10px 0;
+  margin: 14px 0;
   font-family: Arial, sans-serif;
   color: #e0e0e0;
 }
@@ -206,7 +206,7 @@ async function comment_rezka(id) {
 
 /* отступ только для вложенных уровней */
 .comments-tree-item .comments-tree-list > .comments-tree-item {
-  margin-left: 12px;
+  margin-left: 18px;
 }
 
 /* общий wrap: аватар + карточка */
