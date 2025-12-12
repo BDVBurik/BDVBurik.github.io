@@ -95,6 +95,7 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+   console.log("dom", dom);
     //--------------
     dom.querySelectorAll(".comments-tree-item").forEach(item => {
     // Ищем message внутри LI
@@ -116,6 +117,7 @@
         item.insertBefore(message, item.firstChild);
     }
 });
+    console.log("domedit", dom);
     //----------------
 
     dom
