@@ -107,9 +107,24 @@
     });
 
     console.log("dom2", dom);
-    let arr = dom.getElementsByClassName("comments-tree-list");
-    www = arr[0].outerHTML;
+    /------------------------------------
+let arr = dom.getElementsByClassName("comments-tree-list");
 
+// Берём LI, которому принадлежит этот OL
+let li = arr[0].closest(".comments-tree-item");
+
+// Находим message и replies
+let message = li.querySelector(".message");
+let replies = li.querySelector("ol.comments-tree-list");
+
+// Переставляем message наверх
+if (message && replies) {
+    li.insertBefore(message, replies);
+}
+
+// Теперь сохраняем весь LI, а не только OL
+www = li.outerHTML;
+/---------------------------------------
     let Script = document.createElement("Script");
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
 
