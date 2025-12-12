@@ -73,13 +73,13 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-    // console.log(
-    //   "rcomment",
-    //   kp_prox +
-    //     url +
-    //     (id ? id : "1") +
-    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-    // );
+     console.log(
+       "rcomment",
+       kp_prox +
+         url +
+         (id ? id : "1") +
+         "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+     );
 
     let fc = await fetch(
       kp_prox +
@@ -98,18 +98,20 @@
     dom
       .querySelectorAll(" .actions, i, .share-link")
       .forEach((elem) => elem.remove());
-
+    
+console.log("dom", dom);
+    
     dom.querySelectorAll(".message").forEach((e) => {
       var cct = e.closest(".comments-tree-item");
       var gp = e.parentNode.parentNode;
       cct.appendChild(e);
       gp.remove();
     });
-/*
+//
     dom.querySelectorAll(".info").forEach((e) => {
       e.childNodes[5].remove();
       e.addClass("myinfo").removeClass("info");
-    });*/
+    });//
 
     
 // Переставляем message наверх во всех LI
