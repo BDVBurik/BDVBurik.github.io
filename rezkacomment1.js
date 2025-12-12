@@ -93,21 +93,15 @@ async function comment_rezka(id) {
   ).then((response) => response.json());
 
   let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-
-  // Мусор
   dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
-
-  // info → myinfo + чистка текстовых узлов
   dom.querySelectorAll(".info").forEach((info) => {
     info.classList.add("myinfo");
     info.classList.remove("info");
-
     Array.from(info.childNodes).forEach((node) => {
       if (node.nodeType === 3 && node.textContent.trim()) node.remove();
     });
   });
 
-  // Основная переразметка
   dom.querySelectorAll(".comments-tree-item").forEach((li) => {
     const block = li.querySelector(".b-comment, .comment-item, .comment");
     if (!block) return;
@@ -122,11 +116,9 @@ async function comment_rezka(id) {
     const nameNode = info ? info.querySelector(".name") : null;
     const dateNode = info ? info.querySelector(".date") : null;
 
-    // comment-wrap — общий контейнер
     const wrap = dom.createElement("div");
     wrap.className = "comment-wrap";
 
-    // avatar-column — слева, вынесена визуально вне карточки
     const avatarCol = dom.createElement("div");
     avatarCol.className = "avatar-column";
     if (ava) {
@@ -134,7 +126,6 @@ async function comment_rezka(id) {
       avatarCol.appendChild(ava);
     }
 
-    // comment-card — сама карточка комментария справа
     const card = dom.createElement("div");
     card.className = "comment-card";
 
@@ -167,16 +158,13 @@ async function comment_rezka(id) {
     wrap.appendChild(avatarCol);
     wrap.appendChild(card);
 
-    // message заполняем новой структурой
     message.innerHTML = "";
     message.appendChild(wrap);
 
-    // ВСТАВЛЯЕМ message В LI (в начало), ПОТОМ убираем старый block
     li.insertBefore(message, li.firstChild);
     block.remove();
   });
 
-  // Убеждаемся, что message идёт перед replies
   dom.querySelectorAll(".comments-tree-item").forEach((item) => {
     const message = item.querySelector(":scope > .message");
     const replies = item.querySelector(":scope > ol.comments-tree-list");
@@ -187,7 +175,6 @@ async function comment_rezka(id) {
 
   www = dom.body.innerHTML;
 
-  // Стили под lumen‑стиль, Вариант B
   const styleEl = document.createElement("style");
   styleEl.setAttribute("type", "text/css");
   styleEl.innerHTML = `
