@@ -193,7 +193,7 @@ async function comment_rezka(id) {
   styleEl.innerHTML = `
 .comments-tree-item {
   list-style: none;
-  margin: 14px 0;
+  margin: 3px 0;
   font-family: Arial, sans-serif;
   color: #e0e0e0;
 }
