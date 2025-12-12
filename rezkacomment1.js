@@ -94,64 +94,64 @@ async function comment_rezka(id) {
 
   let dom = new DOMParser().parseFromString(fc.comments, "text/html");
 
-  // удаляем лишнее
+  // Удаляем мусор, но НЕ трогаем .ava, .message, .text
   dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
 
-  // нормализуем .info → .myinfo
+  // Преобразуем .info → .myinfo и чистим текстовые узлы
   dom.querySelectorAll(".info").forEach((info) => {
     info.classList.add("myinfo");
     info.classList.remove("info");
 
     Array.from(info.childNodes).forEach((node) => {
-      if (node.nodeType === 3 && node.textContent.trim()) {
-        node.remove();
-      }
+      if (node.nodeType === 3 && node.textContent.trim()) node.remove();
     });
   });
 
-  // перестраиваем каждый комментарий
+  // Перестраиваем каждый комментарий
   dom.querySelectorAll(".comments-tree-item").forEach((li) => {
     const block = li.querySelector(".b-comment, .comment-item, .comment");
     if (!block) return;
 
+    const message = block.querySelector(".message");
     const ava = block.querySelector(".ava img");
     const info = block.querySelector(".myinfo");
     const text = block.querySelector(".text");
 
+    if (!message) return;
+
     const name = info?.querySelector(".name");
     const date = info?.querySelector(".date");
 
-    // создаём comment-wrap
-    const wrap = document.createElement("div");
+    // Создаём новую структуру
+    const wrap = dom.createElement("div");
     wrap.className = "comment-wrap";
 
-    // колонка с аватаркой
-    const avatarCol = document.createElement("div");
+    const avatarCol = dom.createElement("div");
     avatarCol.className = "avatar-column";
+
     if (ava) {
       ava.classList.add("avatar-img");
       avatarCol.appendChild(ava);
     }
 
-    // тело комментария
-    const body = document.createElement("div");
+    const body = dom.createElement("div");
     body.className = "comment-body";
 
-    const header = document.createElement("div");
+    const header = dom.createElement("div");
     header.className = "comment-header";
 
     if (name) {
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "name";
-      nameSpan.textContent = name.textContent.trim();
-      header.appendChild(nameSpan);
+      const n = dom.createElement("span");
+      n.className = "name";
+      n.textContent = name.textContent.trim();
+      header.appendChild(n);
     }
 
     if (date) {
-      const dateSpan = document.createElement("span");
-      dateSpan.className = "date";
-      dateSpan.textContent = date.textContent.trim();
-      header.appendChild(dateSpan);
+      const d = dom.createElement("span");
+      d.className = "date";
+      d.textContent = date.textContent.trim();
+      header.appendChild(d);
     }
 
     body.appendChild(header);
@@ -160,16 +160,17 @@ async function comment_rezka(id) {
     wrap.appendChild(avatarCol);
     wrap.appendChild(body);
 
-    const message = block.querySelector(".message");
-    if (message) {
-      message.innerHTML = "";
-      message.appendChild(wrap);
-    }
+    // ВСТАВЛЯЕМ message В LI ДО УДАЛЕНИЯ block
+    message.innerHTML = "";
+    message.appendChild(wrap);
 
+    li.insertBefore(message, li.firstChild);
+
+    // Теперь можно удалить старый контейнер
     block.remove();
   });
 
-  // переставляем message перед replies
+  // Переставляем message перед replies
   dom.querySelectorAll(".comments-tree-item").forEach((item) => {
     const message = item.querySelector(":scope > .message");
     const replies = item.querySelector(":scope > ol.comments-tree-list");
@@ -180,7 +181,7 @@ async function comment_rezka(id) {
 
   www = dom.body.innerHTML;
 
-  // стили
+  // Стили
   const styleEl = document.createElement("style");
   styleEl.setAttribute("type", "text/css");
   styleEl.innerHTML = `
@@ -238,7 +239,7 @@ async function comment_rezka(id) {
 `;
   document.head.appendChild(styleEl);
 
-  // спойлеры
+  // Спойлеры
   let Script = document.createElement("Script");
   Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
   document.head.appendChild(Script);
@@ -271,6 +272,7 @@ async function comment_rezka(id) {
     `${namemovie}<button class="selector " tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()" data-dismiss="modal">&times;</button>`
   );
 }
+  
   // Функция для начала работы плагина
   function startPlugin() {
     window.comment_plugin = true;
