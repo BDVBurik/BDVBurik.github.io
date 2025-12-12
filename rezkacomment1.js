@@ -214,8 +214,6 @@ async function comment_rezka(id) {
   display: none;
   background-color: #1c1c1c;
   border-left: 3px solid #555;
-  padding: 6px 10px;
-  margin: 6px 0;
   font-size: 14px;
   color: #dcdcdc;
   border-radius: 4px;
