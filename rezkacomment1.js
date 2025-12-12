@@ -204,9 +204,14 @@ async function comment_rezka(id) {
   margin-left: 0;
 }
 
-/* отступ только для вложенных уровней */
+/* корневые комментарии — отступ 16px */
+.modal--large .comments-tree-list > .comments-tree-item {
+  margin-left: 16px;
+}
+
+/* вложенные комментарии — отступ 12px */
 .comments-tree-item .comments-tree-list > .comments-tree-item {
-  margin-left: 18px;
+  margin-left: 16px;
 }
 
 /* общий wrap: аватар + карточка */
