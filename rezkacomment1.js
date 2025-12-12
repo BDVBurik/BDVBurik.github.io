@@ -238,7 +238,7 @@ async function comment_rezka(id) {
 .comment-card {
   background: #1b1b1b;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 3px 6px;
   border: 1px solid #2a2a2a;
   box-shadow: 0 0 4px rgba(0,0,0,0.35);
   width: 100%;
