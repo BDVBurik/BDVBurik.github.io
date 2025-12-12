@@ -111,7 +111,7 @@
       e.addClass("myinfo").removeClass("info");
     });
 
-    //console.log("dom", dom);
+    
 // Переставляем message наверх во всех LI
 dom.querySelectorAll(".comments-tree-item").forEach(item => {
   const message = item.querySelector(":scope > .message");
@@ -121,7 +121,7 @@ dom.querySelectorAll(".comments-tree-item").forEach(item => {
     item.insertBefore(message, replies);
   }
 });
-
+console.log("dom000", dom);
 // Берём весь HTML, а не кусок
 www = dom.body.innerHTML;
 
