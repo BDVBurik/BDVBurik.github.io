@@ -73,13 +73,13 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-    // console.log(
-    //   "rcomment",
-    //   kp_prox +
-    //     url +
-    //     (id ? id : "1") +
-    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-    // );
+     console.log(
+       "rcomment",
+       kp_prox +
+         url +
+         (id ? id : "1") +
+         "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+     );
 
     let fc = await fetch(
       kp_prox +
