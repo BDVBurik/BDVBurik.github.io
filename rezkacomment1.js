@@ -95,6 +95,28 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+    //--------------
+    dom.querySelectorAll(".comments-tree-item").forEach(item => {
+    // Ищем message внутри LI
+    const message = item.querySelector(".message");
+    const replies = item.querySelector("ol.comments-tree-list");
+
+    if (!message) return;
+
+    // Если message не прямой ребёнок — вставляем его внутрь LI
+    if (message.parentElement !== item) {
+        item.insertBefore(message, item.firstChild);
+    }
+
+    // Если есть ответы — message должен быть перед ними
+    if (replies) {
+        item.insertBefore(message, replies);
+    } else {
+        // Если ответов нет — message должен быть первым
+        item.insertBefore(message, item.firstChild);
+    }
+});
+    //----------------
 
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
