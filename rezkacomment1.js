@@ -191,6 +191,37 @@ async function comment_rezka(id) {
   const styleEl = document.createElement("style");
   styleEl.setAttribute("type", "text/css");
   styleEl.innerHTML = `
+  .title_spoiler {
+  display: inline-block;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 4px 0;
+  font-size: 13px;
+  color: #e0e0e0;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 0 2px rgba(0,0,0,0.4);
+}
+.title_spoiler img {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.title_spoiler .attention {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.text_spoiler {
+  display: none;
+  background-color: #1c1c1c;
+  border-left: 3px solid #555;
+  padding: 6px 10px;
+  margin: 6px 0;
+  font-size: 14px;
+  color: #dcdcdc;
+  border-radius: 4px;
+}
 .comments-tree-item {
   list-style: none;
   margin: 3px 0;
