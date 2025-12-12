@@ -1,343 +1,234 @@
 (function () {
-  //BDVBurik 2024
-  //thanks Red Cat
-  ("use strict");
+  // BDVBurik 2024
+  // thanks Red Cat
+  "use strict";
 
-  let www = ``;
+  let www = "";
   let year;
   let namemovie;
+
   const urlEndTMDB = "?language=ru-RU&api_key=4ef0d7355d9ffb5151e987764708ce96";
-
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
-  let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
+  const kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  const urlRezka = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
-  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    let fc = await fetch(
+    const fc = await fetch(
       kp_prox +
         "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
         name +
         (ye ? "+" + ye : ""),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    ).then((response) => response.text());
+      { method: "GET", headers: { "Content-Type": "text/html" } }
+    ).then((r) => r.text());
 
-    let dom = new DOMParser().parseFromString(fc, "text/html");
+    const dom = new DOMParser().parseFromString(fc, "text/html");
+    const arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
+    if (!arr.length) return;
 
-    let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     namemovie = arr[0].childNodes[3].innerText;
     console.log("rezkacomment", name, ye);
     comment_rezka(arr[0].dataset.id);
   }
 
-  // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
-    let url;
-
-    if (type === "movie") {
-      url = kp_prox + tmdbApiUrl + "movie/" + id + urlEndTMDB;
-    } else {
-      url = kp_prox + tmdbApiUrl + "tv/" + id + urlEndTMDB;
-    }
-
+    const url =
+      kp_prox +
+      tmdbApiUrl +
+      (type === "movie" ? "movie/" : "tv/") +
+      id +
+      urlEndTMDB;
+    Lampa.Loading.start();
     ennTitle(url);
   }
-  async function ennTitle(url) {
-    let enTitle;
-    await fetch(url)
-      .then((response) => response.json())
-      .then((e) => (enTitle = e.title || e.name));
 
+  async function ennTitle(url) {
+    let enTitle = "";
+    await fetch(url)
+      .then((r) => r.json())
+      .then((e) => (enTitle = e.title || e.name || ""));
+    if (!enTitle) return;
     searchRezka(normalizeTitle(enTitle), year);
   }
 
-  // Функция для очистки заголовка от лишних символов
   function cleanTitle(str) {
     return str.replace(/[\s.,:;’'`!?]+/g, " ").trim();
   }
 
-  // Функция для нормализации заголовка
   function normalizeTitle(str) {
     return cleanTitle(
-      str
+      String(str || "")
         .toLowerCase()
         .replace(/[\-\u2010-\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D]+/g, "-")
         .replace(/ё/g, "е")
     );
   }
 
-  // Функция для получения комментариев с сайта rezka
-async function comment_rezka(id) {
-  console.log(
-    "rcomment",
-    kp_prox +
-      url +
-      (id ? id : "1") +
-      "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-  );
+  async function comment_rezka(id) {
+    const link =
+      kp_prox +
+      urlRezka +
+      (id || "1") +
+      "&cstart=1&type=0&comment_id=0&skin=hdrezka";
 
-  let fc = await fetch(
-    kp_prox +
-      url +
-      (id ? id : "1") +
-      "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-    {
+    console.log("rcomment", link);
+
+    const fc = await fetch(link, {
       method: "GET",
       headers: { "Content-Type": "text/plain" },
-    }
-  ).then((response) => response.json());
+    }).then((r) => r.json());
 
-  let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+    const dom = new DOMParser().parseFromString(fc.comments, "text/html");
 
-  // Мусор
-  dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
+    dom.querySelectorAll(".actions, i, .share-link").forEach((e) => e.remove());
 
-  // info → myinfo + чистка текстовых узлов
-  dom.querySelectorAll(".info").forEach((info) => {
-    info.classList.add("myinfo");
-    info.classList.remove("info");
-
-    Array.from(info.childNodes).forEach((node) => {
-      if (node.nodeType === 3 && node.textContent.trim()) node.remove();
+    dom.querySelectorAll(".info").forEach((info) => {
+      info.classList.add("myinfo");
+      info.classList.remove("info");
+      Array.from(info.childNodes).forEach((node) => {
+        if (node.nodeType === 3 && node.textContent.trim()) node.remove();
+      });
     });
-  });
 
-  // Основная переразметка
-  dom.querySelectorAll(".comments-tree-item").forEach((li) => {
-    const block = li.querySelector(".b-comment, .comment-item, .comment");
-    if (!block) return;
+    dom.querySelectorAll(".comments-tree-item").forEach((li) => {
+      const block = li.querySelector(".b-comment, .comment-item, .comment");
+      if (!block) return;
 
-    const message = block.querySelector(".message");
-    const ava = block.querySelector(".ava img");
-    const info = block.querySelector(".myinfo");
-    const text = block.querySelector(".text");
+      const message = block.querySelector(".message");
+      if (!message) return;
 
-    if (!message) return;
+      const ava = block.querySelector(".ava img");
+      const info = block.querySelector(".myinfo");
+      const text = block.querySelector(".text");
 
-    const nameNode = info ? info.querySelector(".name") : null;
-    const dateNode = info ? info.querySelector(".date") : null;
+      const wrap = dom.createElement("div");
+      wrap.className = "comment-wrap";
 
-    // comment-wrap — общий контейнер
-    const wrap = dom.createElement("div");
-    wrap.className = "comment-wrap";
+      const avatarCol = dom.createElement("div");
+      avatarCol.className = "avatar-column";
+      if (ava) {
+        ava.classList.add("avatar-img");
+        avatarCol.appendChild(ava);
+      }
 
-    // avatar-column — слева, вынесена визуально вне карточки
-    const avatarCol = dom.createElement("div");
-    avatarCol.className = "avatar-column";
-    if (ava) {
-      ava.classList.add("avatar-img");
-      avatarCol.appendChild(ava);
+      const card = dom.createElement("div");
+      card.className = "comment-card";
+
+      const header = dom.createElement("div");
+      header.className = "comment-header";
+
+      if (info) {
+        const nameNode = info.querySelector(".name");
+        const dateNode = info.querySelector(".date");
+
+        if (nameNode) {
+          const n = dom.createElement("span");
+          n.className = "name";
+          n.textContent = nameNode.textContent.trim();
+          header.appendChild(n);
+        }
+
+        if (dateNode) {
+          const d = dom.createElement("span");
+          d.className = "date";
+          d.textContent = dateNode.textContent.trim();
+          header.appendChild(d);
+        }
+      }
+
+      const textWrap = dom.createElement("div");
+      textWrap.className = "comment-text";
+      if (text) textWrap.appendChild(text);
+
+      card.appendChild(header);
+      card.appendChild(textWrap);
+
+      wrap.appendChild(avatarCol);
+      wrap.appendChild(card);
+
+      message.innerHTML = "";
+      message.appendChild(wrap);
+
+      li.insertBefore(message, li.firstChild);
+      block.remove();
+    });
+
+    dom.querySelectorAll(".comments-tree-item").forEach((item) => {
+      const message = item.querySelector(":scope > .message");
+      const replies = item.querySelector(":scope > ol.comments-tree-list");
+      if (message && replies && message.nextSibling !== replies) {
+        item.insertBefore(message, replies);
+      }
+    });
+
+    www = dom.body.innerHTML;
+
+    const styleEl = document.createElement("style");
+    styleEl.type = "text/css";
+    styleEl.innerHTML = `
+        .scroll--mask{
+      margin-top: 10px;
     }
+.comments-tree-item{list-style:none;margin:10px 0;font-family:Arial,sans-serif;color:#e0e0e0;}
+.comments-tree-list{padding-left:0;padding-inline-start:0;margin-left:0;}
+.comments-tree-list>.comments-tree-item{margin-left:10px;}
+.comment-wrap{display:flex;align-items:flex-start;gap:10px;}
+.avatar-column{flex-shrink:0;margin-top:4px;}
+.avatar-column .avatar-img{width:40px;height:40px;border-radius:8px;object-fit:cover;background-color:#333;}
+.comment-card{background:#1b1b1b;border-radius:8px;padding:10px 12px;border:1px solid #2a2a2a;box-shadow:0 0 4px rgba(0,0,0,.35);width:100%;}
+.comment-card:hover{background-color:#222;}
+.comment-header{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;color:#cfc9be;}
+.comment-header .name{font-weight:700;color:#d0d0d0;}
+.comment-header .date{opacity:.7;font-size:11px;}
+.comment-text{font-size:14px;line-height:1.45em;color:#e6e6e6;}
+.title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
+.title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
+.title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
+.title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
+.text_spoiler{display:none;background:#1c1c1c;border-left:3px solid #555;padding:6px 10px;margin:6px 0;font-size:14px;border-radius:4px;color:#dcdcdc;}
 
-    // comment-card — сама карточка комментария справа
-    const card = dom.createElement("div");
-    card.className = "comment-card";
+.modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
+    font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
+.modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
 
-    const header = dom.createElement("div");
-    header.className = "comment-header";
-
-    if (nameNode) {
-      const n = dom.createElement("span");
-      n.className = "name";
-      n.textContent = nameNode.textContent.trim();
-      header.appendChild(n);
-    }
-
-    if (dateNode) {
-      const d = dom.createElement("span");
-      d.className = "date";
-      d.textContent = dateNode.textContent.trim();
-      header.appendChild(d);
-    }
-
-    const textWrap = dom.createElement("div");
-    textWrap.className = "comment-text";
-    if (text) {
-      textWrap.appendChild(text);
-    }
-
-    card.appendChild(header);
-    card.appendChild(textWrap);
-
-    wrap.appendChild(avatarCol);
-    wrap.appendChild(card);
-
-    // message заполняем новой структурой
-    message.innerHTML = "";
-    message.appendChild(wrap);
-
-    // ВСТАВЛЯЕМ message В LI (в начало), ПОТОМ убираем старый block
-    li.insertBefore(message, li.firstChild);
-    block.remove();
-  });
-
-  // Убеждаемся, что message идёт перед replies
-  dom.querySelectorAll(".comments-tree-item").forEach((item) => {
-    const message = item.querySelector(":scope > .message");
-    const replies = item.querySelector(":scope > ol.comments-tree-list");
-    if (message && replies && message.nextSibling !== replies) {
-      item.insertBefore(message, replies);
-    }
-  });
-
-  www = dom.body.innerHTML;
-
-  // Стили под lumen‑стиль, Вариант B
-  const styleEl = document.createElement("style");
-  styleEl.setAttribute("type", "text/css");
-  styleEl.innerHTML = `
-  .title_spoiler {
-  display: inline-block;
-  background-color: #2a2a2a;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #e0e0e0;
-  cursor: pointer;
-  user-select: none;
-  box-shadow: 0 0 2px rgba(0,0,0,0.4);
-}
-.title_spoiler img {
-  vertical-align: middle;
-  margin-right: 4px;
-}
-.title_spoiler .attention {
-  margin-left: 6px;
-  vertical-align: middle;
-}
-.title_spoiler a {
-  color: #e0e0e0 !important;
-  text-decoration: none !important;
-  font-weight: normal;
-}
-.text_spoiler {
-  display: none;
-  background-color: ##3e3e3e;
-  border-left: 3px solid #555;
-  font-size: 14px;
-  color: #dcdcdc;
-  border-radius: 4px;
-}
-.comments-tree-item {
-  list-style: none;
-  margin: 3px 0;
-  font-family: Arial, sans-serif;
-  color: #e0e0e0;
-}
-/* убираем отступ у всех ol */
-.comments-tree-list {
-  padding-left: 0;
-  padding-inline-start: 0;
-  margin-left: 0;
-}
-
-/* корневые комментарии — отступ 16px */
-.modal--large .comments-tree-list > .comments-tree-item {
-  margin-left: 16px;
-}
-
-/* вложенные комментарии — отступ 12px */
-.comments-tree-item .comments-tree-list > .comments-tree-item {
-  margin-left: 16px;
-}
-
-/* общий wrap: аватар + карточка */
-.comment-wrap {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-/* аватарка слева, визуально "вне" карточки */
-.avatar-column {
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-.avatar-column .avatar-img {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
-  background-color: #333;
-}
-
-/* сама карточка комментария */
-.comment-card {
-  background: #1b1b1b;
-  border-radius: 8px;
-  padding: 3px 6px;
-  border: 1px solid #2a2a2a;
-  box-shadow: 0 0 4px rgba(0,0,0,0.35);
-  width: 100%;
-}
-.comment-card:hover {
-  background-color: #222;
-}
-
-/* шапка: имя слева, дата справа */
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  margin-bottom: 6px;
-  color: #cfc9be;
-}
-.comment-header .name {
-  font-weight: bold;
-  color: #d0d0d0;
-}
-.comment-header .date {
-  opacity: 0.7;
-  font-size: 11px;
-}
-
-/* текст */
-.comment-text {
-  font-size: 14px;
-  line-height: 1.45em;
-  color: #e6e6e6;
-}
 `;
-  document.head.appendChild(styleEl);
+    document.head.appendChild(styleEl);
 
-  // Спойлеры
-  let Script = document.createElement("Script");
-  Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
-  document.head.appendChild(Script);
+    const Script = document.createElement("script");
+    Script.innerHTML =
+      "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
+    document.head.appendChild(Script);
 
-  const modal = $(`
-    <div>
-      <div class="broadcast__text" style="text-align:left;">
-        <div class="comment" style="margin-left: -15px;">${www}</div>
+    const modal = $(`
+      <div>
+        <div class="broadcast__text" style="text-align:left;">
+          <div class="comment selector" style="margin-left:-15px;">${www}</div>
+        </div>
       </div>
-    </div>
-  `);
+    `);
 
-  const enabled = Lampa.Controller.enabled().name;
+    const enabled = Lampa.Controller.enabled().name;
+ Lampa.Modal.open({
+      title: ``,
+      html: modal,
+      size: "large",
+      style: "margin-top:10px;",
+      mask: !0,
+      onBack: function () {
+        Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
+        $(".modal--large").remove();
+        www = "";
+      },
+      onSelect: function () {},
+    });
+Lampa.Loading.stop();
+    $(".modal__head").after(
+      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+    );
+  }
+    
 
-  Lampa.Modal.open({
-    title: ``,
-    html: modal,
-    size: "large",
-    style: "margin-top:10px;",
-    mask: !0,
-    onBack: function () {
-      Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
-      $(".modal--large").remove();
-      www = "";
-    },
-    onSelect: function () {},
-  });
 
-  $(".modal__head").after(
-    `${namemovie}<button class="selector " tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()" data-dismiss="modal">&times;</button>`
-  );
-}
+
   // Функция для начала работы плагина
   function startPlugin() {
     window.comment_plugin = true;
