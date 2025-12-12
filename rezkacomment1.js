@@ -89,6 +89,7 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+     console.log("dom0", dom);
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
@@ -105,7 +106,7 @@
       e.addClass("myinfo").removeClass("info");
     });
 
-    console.log("dom", dom);
+    console.log("dom2", dom);
     let arr = dom.getElementsByClassName("comments-tree-list");
     www = arr[0].outerHTML;
 
