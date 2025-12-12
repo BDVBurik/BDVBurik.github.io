@@ -134,103 +134,52 @@ www = dom.body.innerHTML;
         www +
         "</div></div></div>"
     ); //.style.color = "blue"
-   let styleEl = document.createElement("style");
-styleEl.setAttribute("type", "text/css");
+const styleEl = document.createElement("style");
 styleEl.innerHTML = `
-/* Маска модалки */
-.scroll--mask{
-  margin-top: 10px;
-}
-
-/* Спойлеры */
-.title_spoiler a {
-  border-radius: 8px;
-  background-color: #5d5b5b;
-  color: #fff;
-  padding: 0 6px;
-  text-decoration: none;
-  font-size: 0.8em;
-}
-.text_spoiler {
-  background-color: #353333;
-  padding: 5px;
-  border-radius: 4px;
-}
-
-/* Элемент дерева */
 .comments-tree-item {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-left: 2px solid #444;
-  margin-left: calc(var(--indent, 0) * 20px);
+    list-style: none;
+    background: #1b1b1b;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 12px 0;
+    color: #e0e0e0;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 0 4px rgba(0,0,0,0.35);
 }
 
-/* Вложенность */
-.comments-tree-item[data-indent="1"] { --indent: 1; }
-.comments-tree-item[data-indent="2"] { --indent: 2; }
-.comments-tree-item[data-indent="3"] { --indent: 3; }
-.comments-tree-item[data-indent="4"] { --indent: 4; }
-
-/* Корневой комментарий */
-.comments-tree-item[data-indent="0"] .message {
-  background-color: #2a2a2a;
-  border-left: 3px solid #888;
+.comments-tree-item .message {
+    display: flex;
+    flex-direction: column;
 }
 
-/* Блок сообщения */
-.message {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px;
-  background-color: #1e1e1e;
-  border-radius: 6px;
-  margin-top: 10px;
-  width: 100%;
-  box-sizing: border-box;
+.comments-tree-item .myinfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #9a9a9a;
+    border-bottom: 1px solid #2d2d2d;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
 }
 
-/* Аватарка */
-.message .ava img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  background-color: #333;
-}
-.message .ava {
-  flex-shrink: 0;
+.comments-tree-item .name {
+    font-weight: bold;
+    color: #d0d0d0;
 }
 
-/* Информация о пользователе */
-.myinfo {
-  margin-bottom: 6px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75em;
-  color: #cfc9be;
-  border-bottom: 1px solid #444;
-  padding-bottom: 4px;
+.comments-tree-item .date {
+    opacity: 0.8;
 }
 
-/* Текст комментария */
-.text {
-  flex: 1;
-  font-size: 0.95em;
-  line-height: 1.4em;
-  color: #e0e0e0;
-}
-.text > div {
-  display: block;
-  padding-left: 0.5em;
-}
-
-/* Кнопка комментариев */
-.button--comment svg {
-  margin-right: 5px;
+.comments-tree-item .text {
+    font-size: 14px;
+    line-height: 1.45em;
+    color: #e6e6e6;
+    margin-top: 4px;
 }
 `;
+document.head.appendChild(styleEl);
 document.head.appendChild(styleEl);
     document.head.appendChild(styleEl);
 
