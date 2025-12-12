@@ -3,7 +3,7 @@
   ////франшиза в алмпе
   ("use strict");
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  const kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  const kp_prox = "https://cors.kp556.workers.dev:8443/";
   const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
   var namemovie;
   var www;
