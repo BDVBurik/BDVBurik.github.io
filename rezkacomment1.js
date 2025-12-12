@@ -72,44 +72,35 @@
   }
 
   // Функция для получения комментариев с сайта rezka
-  async function comment_rezka(id) {
-     console.log(
-       "rcomment",
-       kp_prox +
-         url +
-         (id ? id : "1") +
-         "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-     );
+ async function comment_rezka(id) {
+  console.log(
+    "rcomment",
+    kp_prox +
+      url +
+      (id ? id : "1") +
+      "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+  );
 
-    let fc = await fetch(
-      kp_prox +
-        url +
-        (id ? id : "1") +
-        "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-      {
-        method: "GET",
-        headers: { "Content-Type": "text/plain" },
-      }
-    )
-      .then((response) => response.json())
-      .then((qwe) => qwe);
+  let fc = await fetch(
+    kp_prox +
+      url +
+      (id ? id : "1") +
+      "&cstart=1&type=0&comment_id=0&skin=hdrezka",
+    {
+      method: "GET",
+      headers: { "Content-Type": "text/plain" },
+    }
+  )
+    .then((response) => response.json())
+    .then((qwe) => qwe);
 
-let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+  let dom = new DOMParser().parseFromString(fc.comments, "text/html");
 
-// Удаляем лишнее, но НЕ трогаем .ava
-dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
+  // Удаляем лишнее, но НЕ трогаем .ava
+  dom.querySelectorAll(".actions, i, .share-link").forEach((elem) => elem.remove());
 
-// Переносим message, ava и info внутрь .comments-tree-item
-dom.querySelectorAll(".comments-tree-item").forEach(item => {
-  const block = item.querySelector(".b-comment, .comment-item, .comment");
-  if (!block) return;
-
-  const ava = block.querySelector(".ava");
-  const info = block.querySelector(".info");
-  const message = block.querySelector(".message");
-
-  // Оборачиваем name + date в .user-meta
-  if (info) {
+  // Преобразуем .info → .myinfo и оборачиваем имя + дату
+  dom.querySelectorAll(".info").forEach((info) => {
     const name = info.querySelector(".name");
     const date = info.querySelector(".date");
 
@@ -122,39 +113,40 @@ dom.querySelectorAll(".comments-tree-item").forEach(item => {
     }
 
     info.classList.add("myinfo");
-  }
+  });
 
-  // Вставляем ava и info внутрь message
-  if (message) {
-    if (ava) message.prepend(ava);
-    if (info) message.prepend(info);
-    item.prepend(message);
-  }
+  // Переносим .ava и .myinfo внутрь .message
+  dom.querySelectorAll(".comments-tree-item").forEach((item) => {
+    const message = item.querySelector(".message");
+    if (!message) return;
 
-  block.remove();
-});
+    const ava = item.querySelector(".ava");
+    const myinfo = item.querySelector(".myinfo");
 
-// Переставляем message наверх, если replies есть
-dom.querySelectorAll(".comments-tree-item").forEach(item => {
-  const message = item.querySelector(":scope > .message");
-  const replies = item.querySelector(":scope > ol.comments-tree-list");
-  if (message && replies) item.insertBefore(message, replies);
-});
+    if (ava && !message.contains(ava)) {
+      message.prepend(ava);
+    }
 
-// Берём весь HTML
-www = dom.body.innerHTML;
+    if (myinfo && !message.contains(myinfo)) {
+      message.insertBefore(myinfo, message.querySelector(".text") || null);
+    }
+  });
 
-    let Script = document.createElement("Script");
-    Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
+  // Переставляем message наверх, если replies есть
+  dom.querySelectorAll(".comments-tree-item").forEach((item) => {
+    const message = item.querySelector(":scope > .message");
+    const replies = item.querySelector(":scope > ol.comments-tree-list");
+    if (message && replies && message.nextSibling !== replies) {
+      item.insertBefore(message, replies);
+    }
+  });
 
-    document.head.appendChild(Script);
-    var modal = $(
-      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
-        www +
-        "</div></div></div>"
-    ); //.style.color = "blue"
-const styleEl = document.createElement("style");
-styleEl.innerHTML = `
+  www = dom.body.innerHTML;
+
+  // Стили
+  const styleEl = document.createElement("style");
+  styleEl.setAttribute("type", "text/css");
+  styleEl.innerHTML = `
 .comments-tree-item {
   list-style: none;
   background: #1b1b1b;
@@ -165,13 +157,10 @@ styleEl.innerHTML = `
   font-family: Arial, sans-serif;
   box-shadow: 0 0 4px rgba(0,0,0,0.35);
 }
-
 .comments-tree-item .message {
   display: flex;
   flex-direction: column;
 }
-
-/* Аватарка слева, имя и дата справа */
 .comments-tree-item .myinfo {
   display: flex;
   align-items: center;
@@ -180,7 +169,6 @@ styleEl.innerHTML = `
   color: #cfc9be;
   margin-bottom: 8px;
 }
-
 .comments-tree-item .ava {
   flex-shrink: 0;
 }
@@ -191,7 +179,6 @@ styleEl.innerHTML = `
   object-fit: cover;
   background-color: #333;
 }
-
 .comments-tree-item .user-meta {
   display: flex;
   flex-direction: column;
@@ -206,7 +193,6 @@ styleEl.innerHTML = `
   opacity: 0.7;
   font-size: 11px;
 }
-
 .comments-tree-item .text {
   font-size: 14px;
   line-height: 1.45em;
@@ -214,30 +200,41 @@ styleEl.innerHTML = `
   margin-top: 4px;
 }
 `;
-document.head.appendChild(styleEl);
-document.head.appendChild(styleEl);
-document.head.appendChild(styleEl);
-    document.head.appendChild(styleEl);
+  document.head.appendChild(styleEl);
 
-    var enabled = Lampa.Controller.enabled().name;
+  // Модалка
+  let Script = document.createElement("Script");
+  Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
+  document.head.appendChild(Script);
 
-    Lampa.Modal.open({
-      title: ``,
-      html: modal,
-      size: "large",
-      style: "margin-top:10px;",
-      mask: !0,
-      onBack: function () {
-        Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
-        $(".modal--large").remove();
-        www = "";
-      },
-      onSelect: function () {},
-    });
-    $(".modal__head").after(
-      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
-    );
-  }
+  var modal = $(`
+    <div>
+      <div class="broadcast__text" style="text-align:left;">
+        <div class="comment" style="margin-left: -15px;">${www}</div>
+      </div>
+    </div>
+  `);
+
+  var enabled = Lampa.Controller.enabled().name;
+
+  Lampa.Modal.open({
+    title: ``,
+    html: modal,
+    size: "large",
+    style: "margin-top:10px;",
+    mask: !0,
+    onBack: function () {
+      Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
+      $(".modal--large").remove();
+      www = "";
+    },
+    onSelect: function () {},
+  });
+
+  $(".modal__head").after(
+    `${namemovie}<button class="selector " tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()" data-dismiss="modal">&times;</button>`
+  );
+}
 
   // Функция для начала работы плагина
   function startPlugin() {
