@@ -20,11 +20,13 @@
         (ye ? "+" + ye : ""),
       { method: "GET", headers: { "Content-Type": "text/html" } }
     ).then((r) => r.text());
-console.log ("jhjhghj",
+    console.log(
+      "rcomment",
       kp_prox +
-        "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
-        name +
-        (ye ? "+" + ye : "");
+        url +
+        (id ? id : "1") +
+        "&cstart=1&type=0&comment_id=0&skin=hdrezka"
+    );
     const dom = new DOMParser().parseFromString(fc, "text/html");
     const arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
     if (!arr.length) return;
