@@ -110,20 +110,41 @@
     /------------------------------------
 let arr = dom.getElementsByClassName("comments-tree-list");
 
-// Берём LI, которому принадлежит этот OL
-let li = arr[0].closest(".comments-tree-item");
+// если вообще нет ни одного дерева — выходим как раньше, чтобы не падать
+if (!arr || !arr[0]) {
+    www = "";
+} else {
+    // Пытаемся найти li, к которому принадлежит первый ol
+    let li = arr[0].closest(".comments-tree-item");
 
-// Находим message и replies
-let message = li.querySelector(".message");
-let replies = li.querySelector("ol.comments-tree-list");
+    // если по какой-то причине не нашли li — хотя бы вернём ol
+    if (!li) {
+        www = arr[0].outerHTML;
+    } else {
+        // Ищем message и replies внутри этого li
+        let message = li.querySelector(".message");
+        let replies = li.querySelector("ol.comments-tree-list");
 
-// Переставляем message наверх
-if (message && replies) {
-    li.insertBefore(message, replies);
+        // Если есть и message, и список ответов — ставим message перед списком
+        if (message && replies && message !== replies.previousSibling) {
+            // удаляем их из текущих мест, чтобы не дублировать
+            if (message.parentElement !== li) {
+                message.parentElement.removeChild(message);
+            }
+            if (replies.parentElement !== li) {
+                replies.parentElement.removeChild(replies);
+            }
+
+            // сначала вставляем message
+            li.appendChild(message);
+            // потом список ответов
+            li.appendChild(replies);
+        }
+
+        // В любом случае в www кладём ВЕСЬ li
+        www = li.outerHTML;
+    }
 }
-
-// Теперь сохраняем весь LI, а не только OL
-www = li.outerHTML;
 /---------------------------------------
     let Script = document.createElement("Script");
     Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
