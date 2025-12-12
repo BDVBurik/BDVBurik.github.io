@@ -96,7 +96,7 @@
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
     dom
-      .querySelectorAll(".ava, .actions, i, .share-link")
+      .querySelectorAll(" .actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
     dom.querySelectorAll(".message").forEach((e) => {
@@ -137,6 +137,22 @@ www = dom.body.innerHTML;
     let styleEl = document.createElement("style");
     styleEl.setAttribute("type", "text/css");
     styleEl.innerHTML = `
+    .message .ava img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.message .ava {
+  float: left;
+  margin-top: 10px;
+}
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
     .scroll--mask{
       margin-top: 10px;
     }
