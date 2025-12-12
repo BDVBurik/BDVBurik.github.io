@@ -73,13 +73,7 @@
 
   // Функция для получения комментариев с сайта rezka
   async function comment_rezka(id) {
-     console.log(
-       "rcomment",
-       kp_prox +
-         url +
-         (id ? id : "1") +
-         "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-     );
+     console.log(       "rcomment",       kp_prox +         url +         (id ? id : "1") +         "&cstart=1&type=0&comment_id=0&skin=hdrezka"     );
 
     let fc = await fetch(
       kp_prox +
@@ -95,31 +89,6 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-   console.log("dom", dom);
-    //--------------
-    dom.querySelectorAll(".comments-tree-item").forEach(item => {
-    // Ищем message внутри LI
-    const message = item.querySelector(".message");
-    const replies = item.querySelector("ol.comments-tree-list");
-
-    if (!message) return;
-
-    // Если message не прямой ребёнок — вставляем его внутрь LI
-    if (message.parentElement !== item) {
-        item.insertBefore(message, item.firstChild);
-    }
-
-    // Если есть ответы — message должен быть перед ними
-    if (replies) {
-        item.insertBefore(message, replies);
-    } else {
-        // Если ответов нет — message должен быть первым
-        item.insertBefore(message, item.firstChild);
-    }
-});
-    console.log("domedit", dom);
-    //----------------
-
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
@@ -136,7 +105,7 @@
       e.addClass("myinfo").removeClass("info");
     });
 
-    //console.log("dom", dom);
+    console.log("dom", dom);
     let arr = dom.getElementsByClassName("comments-tree-list");
     www = arr[0].outerHTML;
 
@@ -149,52 +118,47 @@
         www +
         "</div></div></div>"
     ); //.style.color = "blue"
- const styleEl = document.createElement("style");
-styleEl.innerHTML = `
+    let styleEl = document.createElement("style");
+    styleEl.setAttribute("type", "text/css");
+    styleEl.innerHTML = `
+    .scroll--mask{
+      margin-top: 10px;
+    }
+    .title_spoiler a {
+  border-radius: 8px;
+  background-color: #5d5b5b;
+  color: #fff;
+  padding: 0 2px 0 5px;
+  position: relative;
+  text-decoration: none;
+}
+.text_spoiler {
+  background-color: #353333;
+}
 .comments-tree-item {
-    list-style: none;
-    background: #1b1b1b;
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin: 12px 0;
-    color: #e0e0e0;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 0 4px rgba(0,0,0,0.35);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-
-.comments-tree-item .message {
-    display: flex;
-    flex-direction: column;
+.b-comment .message {
+  float: right;
+  width: 100%;
+  padding-bottom: 10px;
 }
-
-.comments-tree-item .myinfo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: #9a9a9a;
-    border-bottom: 1px solid #2d2d2d;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
+.myinfo {
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6em;
+  color: #cfc9be;
 }
+div.text > div {
+  display: block;
 
-.comments-tree-item .name {
-    font-weight: bold;
-    color: #d0d0d0;
-}
-
-.comments-tree-item .date {
-    opacity: 0.8;
-}
-
-.comments-tree-item .text {
-    font-size: 14px;
-    line-height: 1.45em;
-    color: #e6e6e6;
-    margin-top: 4px;
+  padding-left: 1.2em;
 }
 `;
-document.head.appendChild(styleEl);
     document.head.appendChild(styleEl);
 
     var enabled = Lampa.Controller.enabled().name;
