@@ -195,8 +195,6 @@ async function comment_rezka(id) {
   display: inline-block;
   background-color: #2a2a2a;
   border-radius: 6px;
-  padding: 4px 8px;
-  margin: 4px 0;
   font-size: 13px;
   color: #e0e0e0;
   cursor: pointer;
