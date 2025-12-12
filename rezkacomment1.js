@@ -197,11 +197,7 @@ async function comment_rezka(id) {
   font-family: Arial, sans-serif;
   color: #e0e0e0;
 }
-.comments-tree-list {
-  padding-left: 0;
-  padding-inline-start: 0;
-  margin-left: 0;
-}
+
 /* вложенность */
 .comments-tree-list > .comments-tree-item {
   margin-left: 10px;
