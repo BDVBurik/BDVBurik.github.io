@@ -134,63 +134,104 @@ www = dom.body.innerHTML;
         www +
         "</div></div></div>"
     ); //.style.color = "blue"
-    let styleEl = document.createElement("style");
-    styleEl.setAttribute("type", "text/css");
-    styleEl.innerHTML = `
-    .message .ava img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 10px;
-  vertical-align: middle;
-}
-.message .ava {
-  float: left;
+   let styleEl = document.createElement("style");
+styleEl.setAttribute("type", "text/css");
+styleEl.innerHTML = `
+/* Маска модалки */
+.scroll--mask{
   margin-top: 10px;
 }
-.message {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-    .scroll--mask{
-      margin-top: 10px;
-    }
-    .title_spoiler a {
+
+/* Спойлеры */
+.title_spoiler a {
   border-radius: 8px;
   background-color: #5d5b5b;
   color: #fff;
-  padding: 0 2px 0 5px;
-  position: relative;
+  padding: 0 6px;
   text-decoration: none;
+  font-size: 0.8em;
 }
 .text_spoiler {
   background-color: #353333;
+  padding: 5px;
+  border-radius: 4px;
 }
+
+/* Элемент дерева */
 .comments-tree-item {
   list-style: none;
   margin: 0;
   padding: 0;
+  border-left: 2px solid #444;
+  margin-left: calc(var(--indent, 0) * 20px);
 }
-.b-comment .message {
-  float: right;
-  width: 100%;
-  padding-bottom: 10px;
+
+/* Вложенность */
+.comments-tree-item[data-indent="1"] { --indent: 1; }
+.comments-tree-item[data-indent="2"] { --indent: 2; }
+.comments-tree-item[data-indent="3"] { --indent: 3; }
+.comments-tree-item[data-indent="4"] { --indent: 4; }
+
+/* Корневой комментарий */
+.comments-tree-item[data-indent="0"] .message {
+  background-color: #2a2a2a;
+  border-left: 3px solid #888;
 }
-.myinfo {
+
+/* Блок сообщения */
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  background-color: #1e1e1e;
+  border-radius: 6px;
   margin-top: 10px;
-  border-top: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Аватарка */
+.message .ava img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #333;
+}
+.message .ava {
+  flex-shrink: 0;
+}
+
+/* Информация о пользователе */
+.myinfo {
+  margin-bottom: 6px;
   display: flex;
   justify-content: space-between;
-  font-size: 0.6em;
+  font-size: 0.75em;
   color: #cfc9be;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
 }
-div.text > div {
-  display: block;
 
-  padding-left: 1.2em;
+/* Текст комментария */
+.text {
+  flex: 1;
+  font-size: 0.95em;
+  line-height: 1.4em;
+  color: #e0e0e0;
+}
+.text > div {
+  display: block;
+  padding-left: 0.5em;
+}
+
+/* Кнопка комментариев */
+.button--comment svg {
+  margin-right: 5px;
 }
 `;
+document.head.appendChild(styleEl);
     document.head.appendChild(styleEl);
 
     var enabled = Lampa.Controller.enabled().name;
