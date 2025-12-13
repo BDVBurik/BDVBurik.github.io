@@ -209,6 +209,15 @@
     // Стили (из rezkacomment1.js)
     let styleEl = document.createElement("style");
     styleEl.innerHTML = `
+    .comments-tree-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.comments-tree-item {
+    list-style: none;
+}
         .rc-comment {
             padding: 12px 14px;
             margin: 8px 0;
