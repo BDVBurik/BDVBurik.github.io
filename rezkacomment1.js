@@ -2,6 +2,9 @@
   //BDVBurik 2024
   //thanks Red Cat
   ("use strict");
+  const STORAGE_KEY = "rezka_comments_cache";
+  const CACHE_TTL = 24 * 60 * 60 * 1000; // сутки
+  let commentsCache = Lampa.Storage.get(STORAGE_KEY) || {};
 
   let year;
   let namemovie;
@@ -133,22 +136,48 @@
 
     return fragment;
   }
+  async function getCachedComments(id) {
+    const now = Date.now();
+    const cached = commentsCache[id];
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      return cached.data; // <- храним только JSON, а не HTML
+    }
+    return null;
+  }
+
+  function setCachedComments(id, data) {
+    commentsCache[id] = {
+      data, // <- сюда сохраняем JSON
+      timestamp: Date.now(),
+    };
+    Lampa.Storage.set(STORAGE_KEY, commentsCache);
+  }
 
   // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
+    let rootList = dom.querySelector(".comments-tree-list");
+    if (!rootList) {
+      Lampa.Loading.stop();
+      return;
+    }
+
     try {
-      let fc = await fetch(
-        kp_prox +
-          url +
-          (id ? id : "1") +
-          "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-        { method: "GET", headers: { "Content-Type": "text/plain" } }
-      )
-        .then((response) => response.json())
-        .then((qwe) => qwe);
+      let fc = await getCachedComments(id);
+
+      if (!fc) {
+        fc = await fetch(
+          kp_prox +
+            url +
+            (id ? id : "1") +
+            "&cstart=1&type=0&comment_id=0&skin=hdrezka",
+          { method: "GET", headers: { "Content-Type": "text/plain" } }
+        ).then((r) => r.json());
+
+        setCachedComments(id, fc); // сохраняем JSON
+      }
 
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-      console.log("rezkacomment dom", dom);
+
       // Удаляем мусор Rezka
       dom
         .querySelectorAll(".actions, i, .share-link")
