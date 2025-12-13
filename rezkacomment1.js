@@ -176,6 +176,40 @@
     styleEl.innerHTML = `
         .scroll--mask{
       margin-top: 10px;
+          }
+    .title_spoiler a {
+  border-radius: 8px;
+  background-color: #5d5b5b;
+  color: #fff;
+  padding: 0 2px 0 5px;
+  position: relative;
+  text-decoration: none;
+}
+.text_spoiler {
+  background-color: #353333;
+}
+.comments-tree-item {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.b-comment .message {
+  float: right;
+  width: 100%;
+  padding-bottom: 10px;
+}
+.myinfo {
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6em;
+  color: #cfc9be;
+}
+div.text > div {
+  display: block;
+
+  padding-left: 1.2em;
     }
 `;
     document.head.appendChild(styleEl);
