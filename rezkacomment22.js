@@ -214,7 +214,10 @@
     margin: 0;
     padding: 0;
 }
-
+.title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
+.title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
+.title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
+.title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
 .comments-tree-item {
     list-style: none;
 }
