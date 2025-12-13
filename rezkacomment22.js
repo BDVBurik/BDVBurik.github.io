@@ -118,7 +118,7 @@
       wrapper.dataset.indent = li.dataset.indent || 0;
 
       wrapper.appendChild(buildCommentNode(li));
-      wrapper.style.marginLeft = (li.dataset.indent || 0) * 20 + "px";
+      wrapper.style.marginLeft = (li.dataset.indent > 0 ? 20 : 0) + "px";
 
       const children = li.querySelector(":scope > ol.comments-tree-list");
       if (children) {
