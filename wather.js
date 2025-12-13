@@ -1,61 +1,73 @@
 (function () {
+  //погода хмельницкий лампатв
   "use strict";
 
-  class WeatherWidget {
-    constructor() {
-      this.html = null;
-      this.isTimeVisible = true;
-      this.API_KEY = "46a5d8546cc340f69d9123207242801";
+  function WeatherInterface() {
+    var html;
+    var network = new Lampa.Reguest();
+
+    this.create = function () {
+      html = $(
+        '<div class="weather-widget">' +
+          '<div class="weather-temp" id="weather-temp"> </div>' +
+          '<div class="weather-condition" id="weather-condition"></div>' +
+          "</div>"
+      );
+    };
+
+    this.getWeatherData = function (position) {
+      var lat = position.coords.latitude;
+      var lon = position.coords.longitude;
+      var API_KEY = "46a5d8546cc340f69d9123207242801";
+      var url =
+        "http://api.weatherapi.com/v1/current.json?key=46a5d8546cc340f69d9123207242801&q=" +
+        lat +
+        "," +
+        lon +
+        "&lang=uk&aqi=no";
+      // console.log("Погода", "Url: " + url);
+      network.clear();
+      network.timeout(5000);
+      network.silent(url, processWeatherData, processError);
+    };
+
+    function processWeatherData(result) {
+      var data1 = result.location;
+      var data2 = result.current;
+      var temp = Math.floor(data2.temp_c); // Температура
+      //console.log("Погода", "Температура: " + temp)
+      var condition = data2.condition.text; // Обстановка
+      //onsole.log("Погода", "Обстановка: " + condition)
+
+      $("#weather-temp").text(temp + "°");
+      $("#weather-condition")
+        .text(condition)
+        .toggleClass("long-text", condition.length > 10);
     }
 
-    create() {
-      this.html = $(`
-        <div class="weather-widget" style="display:none;">
-          <div class="weather-temp" id="weather-temp"></div>
-          <div class="weather-condition" id="weather-condition"></div>
-        </div>
-      `);
+    function processError() {
+      console.log("Error retrieving weather data");
     }
 
-    async getWeatherData(position) {
-      try {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        const url = `https://api.weatherapi.com/v1/current.json?key=${this.API_KEY}&q=${lat},${lon}&lang=uk&aqi=no`;
+    this.getWeatherByIP = function () {
+      $.get(
+        "http://ip-api.com/json",
+        function (locationData) {
+          //console.log("Погода", "місто: Хмальницький");
+          var coords = locationData.lat + "," + locationData.lon;
+          var position = {
+            coords: {
+              latitude: 46.74574, //parseFloat(locationData.lat), 49.420045, 26.991481
+              longitude: 23.49375, // parseFloat(locationData.lon)46.74574 23.49375
+            },
+          };
+          //console.log("Погода", "Долгота: " + position.coords.latitude + ", " + "Широта: " + position.coords.longitude)
+          this.getWeatherData(position);
+        }.bind(this)
+      );
+    };
 
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Weather API error");
-
-        const result = await response.json();
-        const temp = Math.floor(result.current.temp_c);
-        const condition = result.current.condition.text;
-
-        $("#weather-temp").text(temp + "°");
-        $("#weather-condition")
-          .text(condition)
-          .toggleClass("long-text", condition.length > 10);
-      } catch (e) {
-        console.error("Error retrieving weather data", e);
-      }
-    }
-
-    async getWeatherByIP() {
-      try {
-        const response = await fetch("https://ip-api.com/json");
-        const locationData = await response.json();
-        const position = {
-          coords: {
-            latitude: 46.74574, // координаты Хмельницкого
-            longitude: 23.49375,
-          },
-        };
-        this.getWeatherData(position);
-      } catch (e) {
-        console.error("Error retrieving location by IP", e);
-      }
-    }
-
-    getWeather() {
+    this.getWeather = function () {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
           this.getWeatherData.bind(this),
@@ -64,40 +76,54 @@
       } else {
         this.getWeatherByIP();
       }
-    }
+    };
 
-    render() {
-      return this.html;
-    }
+    this.render = function () {
+      return html;
+    };
 
-    destroy() {
-      this.html?.remove();
-      this.html = null;
-    }
-
-    initToggle() {
-      const toggleDisplay = () => {
-        $(".head__time").toggle(this.isTimeVisible);
-        this.html.toggle(!this.isTimeVisible);
-        this.isTimeVisible = !this.isTimeVisible;
-      };
-      setInterval(toggleDisplay, 10000);
-    }
-
-    adjustWidth() {
-      const width = document.querySelector(".head__time")?.offsetWidth || 100;
-      $(".weather-widget, .head__time").css("width", width + "px");
-    }
+    this.destroy = function () {
+      if (html) {
+        html.remove();
+        html = null;
+      }
+    };
   }
 
+  var weatherInterface = new WeatherInterface();
+  var isTimeVisible = true;
+
   $(document).ready(function () {
-    setTimeout(() => {
-      const widget = new WeatherWidget();
-      widget.create();
-      $(".head__time").after(widget.render());
-      widget.adjustWidth();
-      widget.initToggle();
-      widget.getWeather();
-    }, 2000); // можно 5000, если нужна задержка
+    setTimeout(function () {
+      // Создаем интерфейс погоды
+      weatherInterface.create();
+      var weatherWidget = weatherInterface.render();
+      $(".head__time").after(weatherWidget);
+
+      // Функция для переключения между отображением времени и виджета погоды
+      function toggleDisplay() {
+        if (isTimeVisible) {
+          $(".head__time").hide();
+          $(".weather-widget").show();
+        } else {
+          $(".head__time").show();
+          $(".weather-widget").hide();
+        }
+        isTimeVisible = !isTimeVisible;
+      }
+
+      // Устанавливаем интервал для переключения между временем и погодой каждые 10 секунд
+      setInterval(toggleDisplay, 10000);
+
+      // Получаем начальные данные о погоде
+      weatherInterface.getWeather();
+
+      // Скрываем виджет погоды при загрузке страницы
+      $(".weather-widget").hide();
+      var width_element = document.querySelector(".head__time");
+      //console.log(width_element.offsetWidth);
+      $(".weather-widget").css("width", width_element.offsetWidth + "px");
+      $(".head__time").css("width", width_element.offsetWidth + "px");
+    }, 5000);
   });
 })();
