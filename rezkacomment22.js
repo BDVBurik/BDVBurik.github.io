@@ -163,6 +163,45 @@ div.text > div {
   display: block;
 
   padding-left: 1.2em;
+
+
+  .rc-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.rc-close::before,
+.rc-close::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+}
+
+.rc-close::before {
+    transform: rotate(45deg);
+}
+
+.rc-close::after {
+    transform: rotate(-45deg);
+}
+
+.rc-close:hover {
+    background: rgba(0, 0, 0, 0.75);
+}
 }
 `;
     document.head.appendChild(styleEl);
@@ -183,7 +222,7 @@ div.text > div {
       onSelect: function () {},
     });
     $(".modal__head").after(
-      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+      `${namemovie}<button class="rc-close selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
     );
   }
 
