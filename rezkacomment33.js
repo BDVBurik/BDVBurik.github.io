@@ -166,11 +166,21 @@
       let newTree = buildTree(rootList);
 
       // Сохраняем в storage
+      // Сохраняем в storage
       try {
-        localStorage.setItem(storageKey, newTree.outerHTML);
+        const container = document.createElement("div");
+        container.appendChild(newTree.cloneNode(true)); // клонируем фрагмент
+        localStorage.setItem(storageKey, container.innerHTML); // сохраняем HTML
         localStorage.setItem(storageTimeKey, Date.now().toString());
       } catch (e) {
         console.warn("Не удалось сохранить комментарии в storage", e);
+      }
+
+      // Загрузка из storage
+      if (savedHTML && now - savedTime < oneDay) {
+        const container = document.createElement("div");
+        container.innerHTML = savedHTML; // вставляем сохранённый HTML
+        openModal(container);
       }
 
       // Если ранее не было HTML в storage, показываем модалку
