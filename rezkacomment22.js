@@ -181,12 +181,46 @@ div.text > div {
     transition: background 0.2s ease;
 }
 
+.rc-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.rc-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
 .rc-close::before,
 .rc-close::after {
     content: "";
     position: absolute;
-    width: 16px;
-    height: 2px;
+    width: 18px;
+    height: 2.4px;
     background: #fff;
     border-radius: 2px;
 }
@@ -200,8 +234,8 @@ div.text > div {
 }
 
 .rc-close:hover {
-    background: rgba(0, 0, 0, 0.75);
-}
+    background: radial-gradient(circle at 30% 30%, #4a4a4a, #222);
+    transform: scale(1.05);
 }
 `;
     document.head.appendChild(styleEl);
