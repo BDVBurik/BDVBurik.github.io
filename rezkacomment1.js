@@ -2,7 +2,6 @@
   //BDVBurik 2024
   //thanks Red Cat
   ("use strict");
-
   const STORAGE_KEY = "rezka_comments_cache";
   const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 часа
   let commentsCache = Lampa.Storage.get(STORAGE_KEY) || {};
@@ -14,7 +13,6 @@
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
-
   async function getCachedComments(id) {
     const now = Date.now();
     const cached = commentsCache[id];
@@ -98,11 +96,14 @@
     );
   }
 
+  // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
+
   // Создаёт один комментарий
   function buildCommentNode(item) {
     const q = (s) => item.querySelector(s);
 
     const avatar = q(".ava img")?.dataset.src || q(".ava img")?.src || "";
+
     const user = q(".name, .b-comment__user")?.innerText || "Без имени";
     const date = q(".date, .b-comment__time")?.innerText || "";
     const text = q(".message .text, .text")?.innerHTML || "";
@@ -131,7 +132,6 @@
 
     return wrapper;
   }
-
   // Рекурсивно строит дерево
   function buildTree(root) {
     const fragment = document.createDocumentFragment();
@@ -152,7 +152,6 @@
 
     return fragment;
   }
-
   function showModal(modalHtml) {
     var enabled = Lampa.Controller.enabled().name;
 
@@ -182,64 +181,82 @@
     try {
       const cachedHtml = await getCachedComments(id);
       if (cachedHtml) {
-        showModal($(cachedHtml));
+        showModal(cachedHtml);
         return;
       }
-
       let fc = await fetch(
         kp_prox +
           url +
           (id ? id : "1") +
           "&cstart=1&type=0&comment_id=0&skin=hdrezka",
         { method: "GET", headers: { "Content-Type": "text/plain" } }
-      ).then((response) => response.json());
+      )
+        .then((response) => response.json())
+        .then((qwe) => qwe);
 
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+      console.log("rezkacomment dom", dom);
+      // Удаляем мусор Rezka
       dom
         .querySelectorAll(".actions, i, .share-link")
         .forEach((elem) => elem.remove());
       Lampa.Loading.stop();
-
-      let rootList = dom.querySelector(".comments-tree-list");
+      // Берём корневой список
+      // Берём корневой список
+      // Строим новое дерево
       let newTree = buildTree(rootList);
 
-      const modalHtml = `
-        <div>
-            <div class="broadcast__text" style="text-align:left;">
-                <div class="comment">${newTree.outerHTML}</div>
-            </div>
-        </div>
-      `;
+      // Создаём контейнер для модалки
+      const modalContainer = document.createElement("div");
+      const broadcastText = document.createElement("div");
+      broadcastText.className = "broadcast__text";
+      broadcastText.style.textAlign = "left";
 
-      // Кэшируем как строку HTML
-      setCachedComments(id, modalHtml);
+      const commentDiv = document.createElement("div");
+      commentDiv.className = "comment";
 
-      // Открываем модалку
-      showModal($(modalHtml));
+      commentDiv.appendChild(newTree);
+      broadcastText.appendChild(commentDiv);
+      modalContainer.appendChild(broadcastText);
+
+      // Кэшируем HTML
+      setCachedComments(id, modalContainer.outerHTML);
+
+      // Показываем модалку
+      showModal(modalContainer);
 
       // Стили (из rezkacomment1.js)
+
       if (!document.getElementById("rezka-comment-style")) {
         const styleEl = document.createElement("style");
         styleEl.id = "rezka-comment-style";
         styleEl.textContent = `
-          .comments-tree-list{list-style:none;margin:0;padding:0;}
-          .comments-tree-item{list-style:none;margin:0;padding:0;}
-          .comment-wrap{display:flex;margin-bottom:5px;}
-          .avatar-column{margin-right:10px;}
-          .avatar-img{width:48px;height:48px;border-radius:4px;}
-          .comment-card{background:#1b1b1b;padding:10px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
-          .comment-header{display:flex;justify-content:space-between;margin-bottom:6px;}
-          .comment-header .name{font-weight:600;color:#fff;}
-          .comment-header .date{opacity:.7;font-size:11px;}
-          .comment-text .text{color:#ddd;line-height:1.45;}
-          .rc-children{margin-left:30px;border-left:1px solid #333;padding-left:14px;}
-          .title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
-          .title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
-          .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
-          .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
-          .modal-close-btn{background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
-          .modal-close-btn:hover{background:#3a3a3a;color:#fff;}
-        `;
+    .comments-tree-list{list-style:none;margin:0;padding:0;}
+
+.comments-tree-item{list-style:none;margin:0;padding:0;}
+
+
+.comment-wrap{display:flex;margin-bottom:5px;}
+.avatar-column{margin-right:10px;}
+.avatar-img{width:48px;height:48px;border-radius:4px;}
+
+.comment-card{background:#1b1b1b;padding:10px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
+.comment-header{display:flex;justify-content:space-between;margin-bottom:6px;}
+.comment-header .name{font-weight:600;color:#fff;}
+.comment-header .date{opacity:.7;font-size:11px;}
+.comment-text .text{color:#ddd;line-height:1.45;}
+
+.rc-children{margin-left:30px;border-left:1px solid #333;padding-left:14px;}
+
+.title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
+.title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
+.title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
+.title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
+
+.modal-close-btn{background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
+.modal-close-btn:hover{background:#3a3a3a;color:#fff;}
+
+    `;
         document.head.appendChild(styleEl);
       }
 
@@ -250,8 +267,29 @@
           "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
         document.head.appendChild(Script);
       }
+
+      // Открываем модалку
+      var enabled = Lampa.Controller.enabled().name;
+
+      Lampa.Modal.open({
+        title: ``,
+        html: modal,
+        size: "large",
+        style: "margin-top:10px;",
+        mask: !0,
+        onBack: function () {
+          Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
+          $(".modal--large").remove();
+        },
+      });
+
+      document
+        .querySelector(".modal__head")
+        ?.insertAdjacentHTML(
+          "afterend",
+          `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
+        );
     } catch (e) {
-      console.error("Ошибка загрузки комментариев Rezka", e);
       Lampa.Loading.stop();
     }
   }
@@ -269,6 +307,7 @@
         );
 
         $(".button--comment").on("hover:enter", function (card) {
+          //console.log("rcomment", e.data);
           year = 0;
           if (e.data.movie.release_date) {
             year = e.data.movie.release_date.slice(0, 4);
