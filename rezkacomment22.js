@@ -81,21 +81,13 @@
 
     // Имя
     const user =
-      li.querySelector(".name")?.innerText ||
-      li.querySelector(".b-comment__user")?.innerText ||
-      "Без имени";
+      li.querySelector(".b-comment .info .name")?.innerText || "Без имени";
 
     // Дата
-    const date =
-      li.querySelector(".date")?.innerText ||
-      li.querySelector(".b-comment__time")?.innerText ||
-      "";
+    const date = li.querySelector(".b-comment .info .date")?.innerText || "";
 
     // Текст
-    const text =
-      li.querySelector(".message .text")?.innerHTML ||
-      li.querySelector(".text")?.innerHTML ||
-      "";
+    const text = li.querySelector(".b-comment .text")?.innerHTML || "";
 
     // Создаём message-блок
     const message = document.createElement("div");
@@ -122,33 +114,34 @@
 
     return message;
   }
+
   // Рекурсивно строит дерево
   function buildTree(root) {
     const fragment = document.createDocumentFragment();
 
     for (let li of root.children) {
-      const wrapper = document.createElement("li");
-      wrapper.className = "comments-tree-item";
-      wrapper.dataset.id = li.dataset.id;
-      wrapper.dataset.indent = li.dataset.indent;
+      const newLi = document.createElement("li");
+      newLi.className = "comments-tree-item";
+      newLi.dataset.id = li.dataset.id;
+      newLi.dataset.indent = li.dataset.indent;
 
-      // Переносим comment-id наверх
+      // comment-id
       const cid = li.querySelector("[id^='comment-id']");
-      if (cid) wrapper.appendChild(cid.cloneNode(true));
+      if (cid) newLi.appendChild(cid.cloneNode(true));
 
-      // Добавляем message
-      wrapper.appendChild(buildCommentNode(li));
+      // message
+      newLi.appendChild(buildCommentNode(li));
 
-      // Ищем детей
+      // children
       const childList = li.querySelector(":scope > ol.comments-tree-list");
       if (childList) {
         const newChildList = document.createElement("ol");
         newChildList.className = "comments-tree-list";
         newChildList.appendChild(buildTree(childList));
-        wrapper.appendChild(newChildList);
+        newLi.appendChild(newChildList);
       }
 
-      fragment.appendChild(wrapper);
+      fragment.appendChild(newLi);
     }
 
     return fragment;
