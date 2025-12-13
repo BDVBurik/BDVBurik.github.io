@@ -182,11 +182,11 @@
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
 .text_spoiler{display:none;background:#1c1c1c;border-left:3px solid #555;padding:6px 10px;margin:6px 0;font-size:14px;border-radius:4px;color:#dcdcdc;}
-.modal__content{padding:1.0em 1.5em;}
+
 .modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
     font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
 .modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
-.scroll--mask {  overflow-y: auto;  max-height: 80vh;  margin-top: 10px;}
+
 `;
     document.head.appendChild(styleEl);
 
