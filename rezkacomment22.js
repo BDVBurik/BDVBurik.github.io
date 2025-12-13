@@ -163,7 +163,8 @@ div.text > div {
   display: block;
 
   padding-left: 1.2em;
-
+  }
+  
 .rc-close {
     position: absolute;
     top: 10px;
