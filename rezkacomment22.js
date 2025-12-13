@@ -213,6 +213,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    
 }
 .title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
 .title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
@@ -317,7 +318,11 @@
     padding-left: 14px;
 }
     .comments-tree-item {
-    margin-left: 20px);
+    list-style: none;
+    margin: 0; /* убираем стандартный отступ браузера */
+    padding: 0;
+
+    margin-left: calc(var(--indent, 0) * 20px);
 }
 
 .comments-tree-item[data-indent] {
