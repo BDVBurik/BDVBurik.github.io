@@ -39,7 +39,7 @@
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
-    //Lampa.Loading.start();
+    Lampa.Loading.start();
     const url =
       kp_prox +
       tmdbApiUrl +
@@ -160,7 +160,7 @@
       dom
         .querySelectorAll(".actions, i, .share-link")
         .forEach((elem) => elem.remove());
-
+      Lampa.Loading.stop();
       // Берём корневой список
       let rootList = dom.querySelector(".comments-tree-list");
 
@@ -243,7 +243,6 @@
           `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
         );
     } finally {
-      Lampa.Loading.stop();
     }
   }
 
