@@ -213,7 +213,7 @@
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
 
-.modal-close-btn{float:right;background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
+.modal-close-btn{background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
 .modal-close-btn:hover{background:#3a3a3a;color:#fff;}
 
     `;
