@@ -127,13 +127,8 @@
 
       wrapper.appendChild(buildCommentNode(li));
 
-      const children = li.querySelector(":scope > ol.comments-tree-list");
-      if (children) {
-        const ol = document.createElement("ol");
-        ol.className = "comments-tree-list";
-        ol.appendChild(buildTree(children));
-        wrapper.appendChild(ol);
-      }
+      const childrenList = li.querySelector("ol.comments-tree-list");
+      if (childrenList) wrapper.appendChild(buildTree(childrenList));
 
       fragment.appendChild(wrapper);
     }
