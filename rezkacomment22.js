@@ -123,16 +123,11 @@
 
       const wrapper = document.createElement("li");
       wrapper.className = "comments-tree-item";
-
-      // правильный отступ
-      if (indent) {
-        wrapper.style.marginLeft = (li.dataset.indent > 0 ? 20 : 0) + "px";
-      }
+      wrapper.style.marginLeft = `${indent ? indent * 20 : 0}px`;
 
       wrapper.appendChild(buildCommentNode(li));
 
-      // ищем вложенный список без :scope
-      const children = li.querySelector("ol.comments-tree-list");
+      const children = li.querySelector(":scope > ol.comments-tree-list");
       if (children) {
         const ol = document.createElement("ol");
         ol.className = "comments-tree-list";
