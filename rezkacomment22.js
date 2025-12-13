@@ -175,12 +175,12 @@
       .forEach((elem) => elem.remove());
 
     // Переносим message внутрь li
-    // dom.querySelectorAll(".message").forEach((e) => {
-    //   var cct = e.closest(".comments-tree-item");
-    //   var gp = e.parentNode.parentNode;
-    //   cct.appendChild(e);
-    // });
-    dom.querySelectorAll(".message").forEach((e) => e.remove());
+    dom.querySelectorAll(".message").forEach((e) => {
+      var cct = e.closest(".comments-tree-item");
+      var gp = e.parentNode.parentNode;
+      cct.appendChild(e);
+    });
+    console.log("rezkacomment dom after", dom);
 
     // Чистим info
     dom.querySelectorAll(".info").forEach((e) => {
