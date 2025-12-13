@@ -47,7 +47,15 @@
       id +
       urlEndTMDB;
 
-    const data = await fetch(url).then((r) => r.json());
+    let data;
+    try {
+      data = await fetch(url).then((r) => r.json());
+    } catch (e) {
+      console.error("TMDB error", e);
+      Lampa.Loading.stop();
+      return;
+    }
+
     const enTitle = data.title || data.name;
 
     if (enTitle) {
@@ -136,46 +144,32 @@
 
   // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
-    let fc = await fetch(
-      kp_prox +
-        url +
-        (id ? id : "1") +
-        "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-      { method: "GET", headers: { "Content-Type": "text/plain" } }
-    )
-      .then((response) => response.json())
-      .then((qwe) => qwe);
+    try {
+      let fc = await fetch(
+        kp_prox +
+          url +
+          (id ? id : "1") +
+          "&cstart=1&type=0&comment_id=0&skin=hdrezka",
+        { method: "GET", headers: { "Content-Type": "text/plain" } }
+      )
+        .then((response) => response.json())
+        .then((qwe) => qwe);
 
-    let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-    console.log("rezkacomment dom", dom);
-    // Удаляем мусор Rezka
-    dom
-      .querySelectorAll(".actions, i, .share-link")
-      .forEach((elem) => elem.remove());
+      let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+      console.log("rezkacomment dom", dom);
+      // Удаляем мусор Rezka
+      dom
+        .querySelectorAll(".actions, i, .share-link")
+        .forEach((elem) => elem.remove());
 
-    // Переносим message внутрь li
-    dom.querySelectorAll(".message").forEach((e) => {
-      var cct = e.closest(".comments-tree-item");
-      var gp = e.parentNode.parentNode;
-      cct.appendChild(e);
-    });
-    console.log("rezkacomment dom after", dom);
+      // Берём корневой список
+      let rootList = dom.querySelector(".comments-tree-list");
 
-    // Чистим info
-    dom.querySelectorAll(".info").forEach((e) => {
-      e.childNodes[5]?.remove();
-      e.classList.add("myinfo");
-      e.classList.remove("info");
-    });
+      // Строим новое дерево
+      let newTree = buildTree(rootList);
 
-    // Берём корневой список
-    let rootList = dom.querySelector(".comments-tree-list");
-
-    // Строим новое дерево
-    let newTree = buildTree(rootList);
-
-    // Вставляем в модалку
-    let modal = $(`
+      // Вставляем в модалку
+      let modal = $(`
         <div>
             <div class="broadcast__text" style="text-align:left;">
                 <div class="comment" ></div>
@@ -183,14 +177,14 @@
         </div>
     `);
 
-    modal.find(".comment").append(newTree);
+      modal.find(".comment").append(newTree);
 
-    // Стили (из rezkacomment1.js)
+      // Стили (из rezkacomment1.js)
 
-    if (!document.getElementById("rezka-comment-style")) {
-      const styleEl = document.createElement("style");
-      styleEl.id = "rezka-comment-style";
-      styleEl.textContent = `
+      if (!document.getElementById("rezka-comment-style")) {
+        const styleEl = document.createElement("style");
+        styleEl.id = "rezka-comment-style";
+        styleEl.textContent = `
     .comments-tree-list{list-style:none;margin:0;padding:0;}
 
 .comments-tree-item{list-style:none;margin:0;padding:0;}
@@ -217,31 +211,41 @@
 .modal-close-btn:hover{background:#3a3a3a;color:#fff;}
 
     `;
-      document.head.appendChild(styleEl);
+        document.head.appendChild(styleEl);
+      }
+      Lampa.Loading.stop();
+      if (!window.rezkaSpoilerInit) {
+        window.rezkaSpoilerInit = true;
+        const Script = document.createElement("script");
+        Script.textContent =
+          "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
+        document.head.appendChild(Script);
+      }
+
+      // Открываем модалку
+      var enabled = Lampa.Controller.enabled().name;
+
+      Lampa.Modal.open({
+        title: ``,
+        html: modal,
+        size: "large",
+        style: "margin-top:10px;",
+        mask: !0,
+        onBack: function () {
+          Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
+          $(".modal--large").remove();
+        },
+      });
+
+      document
+        .querySelector(".modal__head")
+        ?.insertAdjacentHTML(
+          "afterend",
+          `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
+        );
+    } finally {
+      Lampa.Loading.stop();
     }
-    Lampa.Loading.stop();
-    const Script = document.createElement("script");
-    Script.innerHTML =
-      "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
-    document.head.appendChild(Script);
-    // Открываем модалку
-    var enabled = Lampa.Controller.enabled().name;
-
-    Lampa.Modal.open({
-      title: ``,
-      html: modal,
-      size: "large",
-      style: "margin-top:10px;",
-      mask: !0,
-      onBack: function () {
-        Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
-        $(".modal--large").remove();
-      },
-    });
-
-    $(".modal__head").after(
-      `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
-    );
   }
 
   // Функция для начала работы плагина
