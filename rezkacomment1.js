@@ -219,7 +219,10 @@
       },
       onSelect: function () {},
     });
-$(".modal__content").addClass("scroll--mask");
+setTimeout(() => {
+  $(".modal__content").addClass("scroll--mask");
+  $(".modal__content")[0]?.focus();
+}, 50);
     
 Lampa.Loading.stop();
 
