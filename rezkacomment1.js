@@ -3,7 +3,6 @@
   //2025
   ("use strict");
 
-  let www = ``;
   let year;
   let namemovie;
   const urlEndTMDB = "?language=ru-RU&api_key=4ef0d7355d9ffb5151e987764708ce96";
@@ -202,27 +201,20 @@
         styleEl.id = "rezka-comment-style";
         styleEl.textContent = `
     .comments-tree-list{list-style:none;margin:0;padding:0;}
-
 .comments-tree-item{list-style:none;margin:0;padding:0;}
-
-
 .comment-wrap{display:flex;margin-bottom:5px;}
 .avatar-column{margin-right:10px;}
 .avatar-img{width:48px;height:48px;border-radius:4px;}
-
 .comment-card{background:#1b1b1b;padding:10px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
 .comment-header{display:flex;justify-content:space-between;margin-bottom:6px;}
 .comment-header .name{font-weight:600;color:#fff;}
 .comment-header .date{opacity:.7;font-size:11px;}
 .comment-text .text{color:#ddd;line-height:1.45;}
-
 .rc-children{margin-left:30px;border-left:1px solid #333;padding-left:14px;}
-
 .title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
 .title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
-
 .modal-close-btn{background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
 .modal-close-btn:hover{background:#3a3a3a;color:#fff;}
                 `;
