@@ -236,7 +236,8 @@
           "afterend",
           `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
         );
-    } finally {
+    } catch (e) {
+      Lampa.Loading.stop();
     }
   }
 
