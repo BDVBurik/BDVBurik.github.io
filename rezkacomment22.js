@@ -39,7 +39,7 @@
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
-    Lampa.Loading.start();
+    //Lampa.Loading.start();
     const url =
       kp_prox +
       tmdbApiUrl +
@@ -110,8 +110,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="rc-children"></div>
     `;
 
     return wrapper;
@@ -120,15 +118,21 @@
   function buildTree(root) {
     const fragment = document.createDocumentFragment();
 
-    [...root.children].forEach((li) => {
+    for (let li of root.children) {
+      const indent = parseInt(li.dataset.indent || 0, 10);
+
       const wrapper = document.createElement("li");
       wrapper.className = "comments-tree-item";
-      wrapper.dataset.indent = li.dataset.indent || 0;
+
+      // правильный отступ
+      if (indent) {
+        wrapper.style.marginLeft = indent * 20 + "px";
+      }
 
       wrapper.appendChild(buildCommentNode(li));
-      wrapper.style.marginLeft = (li.dataset.indent > 0 ? 20 : 0) + "px";
 
-      const children = li.querySelector(":scope > ol.comments-tree-list");
+      // ищем вложенный список без :scope
+      const children = li.querySelector("ol.comments-tree-list");
       if (children) {
         const ol = document.createElement("ol");
         ol.className = "comments-tree-list";
@@ -137,7 +141,7 @@
       }
 
       fragment.appendChild(wrapper);
-    });
+    }
 
     return fragment;
   }
@@ -164,7 +168,7 @@
 
       // Берём корневой список
       let rootList = dom.querySelector(".comments-tree-list");
-      Lampa.Loading.stop();
+
       // Строим новое дерево
       let newTree = buildTree(rootList);
 
