@@ -143,6 +143,7 @@
       // Рендерим сразу из storage
       let container = document.createElement("div");
       container.innerHTML = savedHTML;
+      Lampa.Loading.stop();
       openModal(container);
     }
 
@@ -182,6 +183,7 @@
     }
 
     function openModal(treeContent) {
+      Lampa.Loading.stop();
       let modal = $(`
                 <div>
                     <div class="broadcast__text" style="text-align:left;">
