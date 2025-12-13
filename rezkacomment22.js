@@ -199,7 +199,7 @@
     let modal = $(`
         <div>
             <div class="broadcast__text" style="text-align:left;">
-                <div class="comment" style="margin-left: -15px;"></div>
+                <div class="comment" ></div>
             </div>
         </div>
     `);
