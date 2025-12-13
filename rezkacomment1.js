@@ -169,7 +169,7 @@
       }
     });
 
-    www = dom.body.innerHTML;
+    www = arr[0].outerHTML;
 
     document.head.appendChild(Script);
     var modal = $(
@@ -178,8 +178,8 @@
         "</div></div></div>"
     ); //.style.color = "blue"
 
-    const styleEl = document.createElement("style");
-    styleEl.type = "text/css";
+    let styleEl = document.createElement("style");
+    styleEl.setAttribute("type", "text/css");
     styleEl.innerHTML = `
         .scroll--mask{
       margin-top: 10px;
