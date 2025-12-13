@@ -74,80 +74,83 @@
   // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
 
   // Создаёт один комментарий
-  function buildCommentNode(li) {
-    const img = li.querySelector(".b-comment .ava img");
+  function buildCommentNode(item) {
+    // Аватар
+    const img = item.querySelector(".b-comment .ava img");
     const avatar = img?.getAttribute("data-src") || img?.src || "";
 
+    // Имя
     const user =
-      li.querySelector(".name")?.innerText ||
-      li.querySelector(".b-comment__user")?.innerText ||
+      item.querySelector(".name")?.innerText ||
+      item.querySelector(".b-comment__user")?.innerText ||
       "Без имени";
 
+    // Дата
     const date =
-      li.querySelector(".date")?.innerText ||
-      li.querySelector(".b-comment__time")?.innerText ||
+      item.querySelector(".date")?.innerText ||
+      item.querySelector(".b-comment__time")?.innerText ||
       "";
 
+    // Текст
     const text =
-      li.querySelector(".b-comment .text")?.innerHTML ||
-      li.querySelector(".text")?.innerHTML ||
+      item.querySelector(".message .text")?.innerHTML ||
+      item.querySelector(".text")?.innerHTML ||
       "";
 
-    const message = document.createElement("div");
-    message.className = "message";
+    // Создаём контейнер
+    const wrapper = document.createElement("div");
+    wrapper.className = "message";
 
-    message.innerHTML = `
-    <div class="comment-wrap">
-      <div class="avatar-column">
-        <img src="${avatar}" class="avatar-img" alt="${user}">
-      </div>
+    wrapper.innerHTML = `
+        <div class="comment-wrap">
+            <div class="avatar-column">
+                <img src="${avatar}" class="avatar-img" alt="${user}">
+            </div>
 
-      <div class="comment-card">
-        <div class="comment-header">
-          <span class="name">${user}</span>
-          <span class="date">${date}</span>
+            <div class="comment-card">
+                <div class="comment-header">
+                    <span class="name">${user}</span>
+                    <span class="date">${date}</span>
+                </div>
+
+                <div class="comment-text">
+                    <div class="text">${text}</div>
+                </div>
+            </div>
         </div>
 
-        <div class="comment-text">
-          <div class="text">${text}</div>
-        </div>
-      </div>
-    </div>
+        <div class="rc-children"></div>
+    `;
 
-    <div class="rc-children"></div>
-  `;
-
-    return message;
+    return wrapper;
   }
   // Рекурсивно строит дерево
   function buildTree(root) {
     const fragment = document.createDocumentFragment();
 
     for (let li of root.children) {
-      // используем исходный li, не создаём новый
-      const newLi = document.createElement("li");
-      newLi.className = "comments-tree-item";
-      newLi.dataset.id = li.dataset.id;
-      newLi.dataset.indent = li.dataset.indent;
+      const wrapper = document.createElement("li");
+      wrapper.className = "comments-tree-item";
+      wrapper.dataset.id = li.dataset.id;
+      wrapper.dataset.indent = li.dataset.indent;
 
-      // 1. УДАЛЯЕМ старый comment-id + b-comment
-      const oldCommentId = li.querySelector("[id^='comment-id']");
-      if (oldCommentId) oldCommentId.remove();
+      // Переносим comment-id наверх
+      const cid = li.querySelector("[id^='comment-id']");
+      if (cid) wrapper.appendChild(cid.cloneNode(true));
 
-      // 2. Добавляем НОВЫЙ .message
-      const message = buildCommentNode(li);
-      newLi.appendChild(message);
+      // Добавляем message
+      wrapper.appendChild(buildCommentNode(li));
 
-      // 3. Ищем детей
+      // Ищем детей
       const childList = li.querySelector(":scope > ol.comments-tree-list");
       if (childList) {
         const newChildList = document.createElement("ol");
         newChildList.className = "comments-tree-list";
         newChildList.appendChild(buildTree(childList));
-        newLi.appendChild(newChildList);
+        wrapper.appendChild(newChildList);
       }
 
-      fragment.appendChild(newLi);
+      fragment.appendChild(wrapper);
     }
 
     return fragment;
