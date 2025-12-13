@@ -165,6 +165,9 @@
     const styleEl = document.createElement("style");
     styleEl.type = "text/css";
     styleEl.innerHTML = `
+        .scroll--mask{
+      margin-top: 10px;
+    }
 .comments-tree-item{list-style:none;margin:10px 0;font-family:Arial,sans-serif;color:#e0e0e0;}
 .comments-tree-list{padding-left:0;padding-inline-start:0;margin-left:0;}
 .comments-tree-list>.comments-tree-item{margin-left:10px;}
