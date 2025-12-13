@@ -11,31 +11,44 @@
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
+  const rezkaCache = {};
 
-  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    let fc = await fetch(
-      kp_prox +
-        "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
-        name +
-        (ye ? "+" + ye : ""),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    ).then((response) => response.text());
+    if (!name) return;
 
-    let dom = new DOMParser().parseFromString(fc, "text/html");
+    const key = name + "_" + ye;
+    if (rezkaCache[key]) {
+      comment_rezka(rezkaCache[key]);
+      return;
+    }
 
+    let fc;
+    try {
+      fc = await fetch(
+        kp_prox +
+          "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
+          name +
+          (ye ? "+" + ye : ""),
+        { method: "GET", headers: { "Content-Type": "text/html" } }
+      ).then((r) => r.text());
+    } catch (e) {
+      console.error("Rezka search error", e);
+      return;
+    }
+
+    const dom = new DOMParser().parseFromString(fc, "text/html");
     const item = dom.querySelector(".b-content__inline_item");
     if (!item) return;
 
+    rezkaCache[key] = item.dataset.id; // ← сначала кэш
     namemovie =
       item.querySelector(".b-content__inline_item-link")?.innerText || "";
+
     comment_rezka(item.dataset.id);
   }
+
+  // Функция для поиска на сайте hdrezka
+  async function searchRezka(name, ye) {}
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
@@ -64,7 +77,7 @@
   }
 
   // Функция для очистки заголовка от лишних символов
-  function cleanTitle(str) {
+  function cleanTitle(str = "") {
     return str.replace(/[\s.,:;’'`!?]+/g, " ").trim();
   }
 
@@ -117,8 +130,10 @@
     return wrapper;
   }
   // Рекурсивно строит дерево
+
   function buildTree(root) {
-    const fragment = document.createDocumentFragment();
+    if (!root || !root.children?.length)
+      return document.createDocumentFragment();
 
     [...root.children].forEach((li) => {
       const wrapper = document.createElement("li");
@@ -151,12 +166,10 @@
           (id ? id : "1") +
           "&cstart=1&type=0&comment_id=0&skin=hdrezka",
         { method: "GET", headers: { "Content-Type": "text/plain" } }
-      )
-        .then((response) => response.json())
-        .then((qwe) => qwe);
+      ).then((response) => response.json());
 
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-      console.log("rezkacomment dom", dom);
+      //console.log("rezkacomment dom", dom);
       // Удаляем мусор Rezka
       dom
         .querySelectorAll(".actions, i, .share-link")
