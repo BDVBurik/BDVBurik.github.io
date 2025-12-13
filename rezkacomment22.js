@@ -123,8 +123,7 @@
 
       const wrapper = document.createElement("li");
       wrapper.className = "comments-tree-item";
-      wrapper.style.marginLeft = `${(indent ? 1 : 0) * 20} px`;
-
+      wrapper.style.marginLeft = indent > 0 ? "20px" : "0";
       wrapper.appendChild(buildCommentNode(li));
 
       const childrenList = li.querySelector("ol.comments-tree-list");
