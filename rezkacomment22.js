@@ -317,7 +317,7 @@
     padding-left: 14px;
 }
     .comments-tree-item {
-    margin-left: calc(var(--indent, 0) * 20px);
+    margin-left: 20px);
 }
 
 .comments-tree-item[data-indent] {
