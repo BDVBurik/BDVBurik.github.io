@@ -74,34 +74,34 @@
   // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
 
   // Создаёт один комментарий
-  function buildCommentNode(item) {
+  function buildCommentNode(li) {
     // Аватар
-    const img = item.querySelector(".b-comment .ava img");
+    const img = li.querySelector(".b-comment .ava img");
     const avatar = img?.getAttribute("data-src") || img?.src || "";
 
     // Имя
     const user =
-      item.querySelector(".name")?.innerText ||
-      item.querySelector(".b-comment__user")?.innerText ||
+      li.querySelector(".name")?.innerText ||
+      li.querySelector(".b-comment__user")?.innerText ||
       "Без имени";
 
     // Дата
     const date =
-      item.querySelector(".date")?.innerText ||
-      item.querySelector(".b-comment__time")?.innerText ||
+      li.querySelector(".date")?.innerText ||
+      li.querySelector(".b-comment__time")?.innerText ||
       "";
 
     // Текст
     const text =
-      item.querySelector(".message .text")?.innerHTML ||
-      item.querySelector(".text")?.innerHTML ||
+      li.querySelector(".message .text")?.innerHTML ||
+      li.querySelector(".text")?.innerHTML ||
       "";
 
-    // Создаём контейнер
-    const wrapper = document.createElement("div");
-    wrapper.className = "message";
+    // Создаём message-блок
+    const message = document.createElement("div");
+    message.className = "message";
 
-    wrapper.innerHTML = `
+    message.innerHTML = `
         <div class="comment-wrap">
             <div class="avatar-column">
                 <img src="${avatar}" class="avatar-img" alt="${user}">
@@ -118,32 +118,41 @@
                 </div>
             </div>
         </div>
-
-        <div class="rc-children"></div>
     `;
 
-    return wrapper;
+    return message;
   }
   // Рекурсивно строит дерево
   function buildTree(root) {
-    const items = root.children;
     const fragment = document.createDocumentFragment();
 
-    for (let li of items) {
-      const comment = buildCommentNode(li);
+    for (let li of root.children) {
+      const wrapper = document.createElement("li");
+      wrapper.className = "comments-tree-item";
+      wrapper.dataset.id = li.dataset.id;
+      wrapper.dataset.indent = li.dataset.indent;
 
-      const childList = li.querySelector(":scope > ul.comments-tree-list");
+      // Переносим comment-id наверх
+      const cid = li.querySelector("[id^='comment-id']");
+      if (cid) wrapper.appendChild(cid.cloneNode(true));
+
+      // Добавляем message
+      wrapper.appendChild(buildCommentNode(li));
+
+      // Ищем детей
+      const childList = li.querySelector(":scope > ol.comments-tree-list");
       if (childList) {
-        const childrenContainer = comment.querySelector(".rc-children");
-        childrenContainer.appendChild(buildTree(childList));
+        const newChildList = document.createElement("ol");
+        newChildList.className = "comments-tree-list";
+        newChildList.appendChild(buildTree(childList));
+        wrapper.appendChild(newChildList);
       }
 
-      fragment.appendChild(comment);
+      fragment.appendChild(wrapper);
     }
 
     return fragment;
   }
-
   // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
     let fc = await fetch(
@@ -292,6 +301,13 @@
     margin-left: 30px;
     border-left: 1px solid #333;
     padding-left: 14px;
+}
+    .comments-tree-item {
+    margin-left: calc(var(--indent, 0) * 20px);
+}
+
+.comments-tree-item[data-indent] {
+    --indent: attr(data-indent number);
 }
     `;
     document.head.appendChild(styleEl);
