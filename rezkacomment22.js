@@ -136,7 +136,7 @@
 
       // Переносим comment-id наверх
       const cid = li.querySelector("[id^='comment-id']");
-      if (cid) wrapper.appendChild(cid.cloneNode(true));
+      if (cid) wrapper.appendChild(cid.cloneNode(false));
 
       // Добавляем message
       wrapper.appendChild(buildCommentNode(li));
