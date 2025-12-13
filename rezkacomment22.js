@@ -75,7 +75,7 @@
 
   // Создаёт один комментарий
   function buildCommentNode(item) {
-    const avatar = item.querySelector(".avatar img")?.src || "";
+    const avatar = item.querySelector(".ava img")?.src || "";
     const user = item.querySelector(".name")?.innerText || "Без имени";
     const date = item.querySelector(".date")?.innerText || "";
     const text = item.querySelector(".message")?.innerHTML || "";
