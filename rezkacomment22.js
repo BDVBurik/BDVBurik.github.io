@@ -353,7 +353,7 @@
     });
 
     $(".modal__head").after(
-      `${namemovie}<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>`
+      `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button> &#9; ${namemovie}`
     );
   }
 
