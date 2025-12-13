@@ -2,9 +2,6 @@
   //BDVBurik 2024
   //thanks Red Cat
   ("use strict");
-  const STORAGE_KEY = "rezka_comments_cache";
-  const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 часа
-  let commentsCache = Lampa.Storage.get(STORAGE_KEY) || {};
 
   let year;
   let namemovie;
@@ -13,22 +10,6 @@
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
-  async function getCachedComments(id) {
-    const now = Date.now();
-    const cached = commentsCache[id];
-    if (cached && now - cached.timestamp < CACHE_TTL) {
-      return cached.html;
-    }
-    return null;
-  }
-
-  function setCachedComments(id, html) {
-    commentsCache[id] = {
-      html,
-      timestamp: Date.now(),
-    };
-    Lampa.Storage.set(STORAGE_KEY, commentsCache);
-  }
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
@@ -152,38 +133,10 @@
 
     return fragment;
   }
-  function showModal(modalHtml) {
-    var enabled = Lampa.Controller.enabled().name;
-
-    Lampa.Modal.open({
-      title: ``,
-      html: modalHtml,
-      size: "large",
-      style: "margin-top:10px;",
-      mask: true,
-      onBack: function () {
-        Lampa.Modal.close();
-        Lampa.Controller.toggle(enabled);
-        $(".modal--large").remove();
-      },
-    });
-
-    document
-      .querySelector(".modal__head")
-      ?.insertAdjacentHTML(
-        "afterend",
-        `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
-      );
-  }
 
   // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
     try {
-      const cachedHtml = await getCachedComments(id);
-      if (cachedHtml) {
-        showModal(cachedHtml);
-        return;
-      }
       let fc = await fetch(
         kp_prox +
           url +
@@ -202,28 +155,21 @@
         .forEach((elem) => elem.remove());
       Lampa.Loading.stop();
       // Берём корневой список
-      // Берём корневой список
+      let rootList = dom.querySelector(".comments-tree-list");
+
       // Строим новое дерево
       let newTree = buildTree(rootList);
 
-      // Создаём контейнер для модалки
-      const modalContainer = document.createElement("div");
-      const broadcastText = document.createElement("div");
-      broadcastText.className = "broadcast__text";
-      broadcastText.style.textAlign = "left";
+      // Вставляем в модалку
+      let modal = $(`
+        <div>
+            <div class="broadcast__text" style="text-align:left;">
+                <div class="comment" ></div>
+            </div>
+        </div>
+    `);
 
-      const commentDiv = document.createElement("div");
-      commentDiv.className = "comment";
-
-      commentDiv.appendChild(newTree);
-      broadcastText.appendChild(commentDiv);
-      modalContainer.appendChild(broadcastText);
-
-      // Кэшируем HTML
-      setCachedComments(id, modalContainer.outerHTML);
-
-      // Показываем модалку
-      showModal(modalContainer);
+      modal.find(".comment").append(newTree);
 
       // Стили (из rezkacomment1.js)
 
