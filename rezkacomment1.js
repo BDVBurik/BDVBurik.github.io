@@ -1,217 +1,231 @@
 (function () {
-  // BDVBurik 2024
-  // thanks Red Cat
-  "use strict";
+  //BDVBurik 2024
+  //thanks Red Cat
+  ("use strict");
 
-  let www = "";
+  let www = ``;
   let year;
   let namemovie;
-
   const urlEndTMDB = "?language=ru-RU&api_key=4ef0d7355d9ffb5151e987764708ce96";
-  const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  const kp_prox =
-    "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
-  const urlRezka =
-    "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
+  const tmdbApiUrl = "https://api.themoviedb.org/3/";
+  let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
+
+  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const fc = await fetch(
+    let fc = await fetch(
       kp_prox +
         "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
         name +
         (ye ? "+" + ye : ""),
-      { method: "GET", headers: { "Content-Type": "text/html" } }
-    ).then((r) => r.text());
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "text/html",
+        },
+      }
+    ).then((response) => response.text());
 
-    const dom = new DOMParser().parseFromString(fc, "text/html");
-    const arr = Array.from(
-      dom.getElementsByClassName("b-content__inline_item")
-    );
-    if (!arr.length) return;
+    let dom = new DOMParser().parseFromString(fc, "text/html");
 
-    namemovie = arr[0].childNodes[3].innerText;
-    console.log("rezkacomment", name, ye);
-    comment_rezka(arr[0].dataset.id);
+    const item = dom.querySelector(".b-content__inline_item");
+    if (!item) return;
+
+    namemovie =
+      item.querySelector(".b-content__inline_item-link")?.innerText || "";
+    comment_rezka(item.dataset.id);
   }
 
+  // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
+    Lampa.Loading.start();
     const url =
       kp_prox +
       tmdbApiUrl +
       (type === "movie" ? "movie/" : "tv/") +
       id +
       urlEndTMDB;
-    Lampa.Loading.start();
-    ennTitle(url);
+
+    const data = await fetch(url).then((r) => r.json());
+    const enTitle = data.title || data.name;
+
+    if (enTitle) {
+      searchRezka(normalizeTitle(enTitle), year);
+    }
   }
 
-  async function ennTitle(url) {
-    let enTitle = "";
-    await fetch(url)
-      .then((r) => r.json())
-      .then((e) => (enTitle = e.title || e.name || ""));
-    if (!enTitle) return;
-    searchRezka(normalizeTitle(enTitle), year);
-  }
-
+  // Функция для очистки заголовка от лишних символов
   function cleanTitle(str) {
     return str.replace(/[\s.,:;’'`!?]+/g, " ").trim();
   }
 
+  // Функция для нормализации заголовка
   function normalizeTitle(str) {
     return cleanTitle(
-      String(str || "")
+      str
         .toLowerCase()
         .replace(/[\-\u2010-\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D]+/g, "-")
         .replace(/ё/g, "е")
     );
   }
 
+  // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
+
+  // Создаёт один комментарий
+  function buildCommentNode(item) {
+    const q = (s) => item.querySelector(s);
+
+    const avatar = q(".ava img")?.dataset.src || q(".ava img")?.src || "";
+
+    const user = q(".name, .b-comment__user")?.innerText || "Без имени";
+    const date = q(".date, .b-comment__time")?.innerText || "";
+    const text = q(".message .text, .text")?.innerHTML || "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "message";
+
+    wrapper.innerHTML = `
+        <div class="comment-wrap">
+            <div class="avatar-column">
+                <img src="${avatar}" class="avatar-img" alt="${user}">
+            </div>
+
+            <div class="comment-card">
+                <div class="comment-header">
+                    <span class="name">${user}</span>
+                    <span class="date">${date}</span>
+                </div>
+
+                <div class="comment-text">
+                    <div class="text">${text}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rc-children"></div>
+    `;
+
+    return wrapper;
+  }
+  // Рекурсивно строит дерево
+  function buildTree(root) {
+    const fragment = document.createDocumentFragment();
+
+    [...root.children].forEach((li) => {
+      const wrapper = document.createElement("li");
+      wrapper.className = "comments-tree-item";
+      wrapper.dataset.indent = li.dataset.indent || 0;
+
+      wrapper.appendChild(buildCommentNode(li));
+      wrapper.style.marginLeft = (li.dataset.indent > 0 ? 20 : 0) + "px";
+
+      const children = li.querySelector(":scope > ol.comments-tree-list");
+      if (children) {
+        const ol = document.createElement("ol");
+        ol.className = "comments-tree-list";
+        ol.appendChild(buildTree(children));
+        wrapper.appendChild(ol);
+      }
+
+      fragment.appendChild(wrapper);
+    });
+
+    return fragment;
+  }
+
+  // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
-    const link =
+    let fc = await fetch(
       kp_prox +
-      urlRezka +
-      (id || "1") +
-      "&cstart=1&type=0&comment_id=0&skin=hdrezka";
+        url +
+        (id ? id : "1") +
+        "&cstart=1&type=0&comment_id=0&skin=hdrezka",
+      { method: "GET", headers: { "Content-Type": "text/plain" } }
+    )
+      .then((response) => response.json())
+      .then((qwe) => qwe);
 
-    console.log("rcomment", link);
+    let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+    console.log("rezkacomment dom", dom);
+    // Удаляем мусор Rezka
+    dom
+      .querySelectorAll(".actions, i, .share-link")
+      .forEach((elem) => elem.remove());
 
-    const fc = await fetch(link, {
-      method: "GET",
-      headers: { "Content-Type": "text/plain" },
-    }).then((r) => r.json());
+    // Переносим message внутрь li
+    dom.querySelectorAll(".message").forEach((e) => {
+      var cct = e.closest(".comments-tree-item");
+      var gp = e.parentNode.parentNode;
+      cct.appendChild(e);
+    });
+    console.log("rezkacomment dom after", dom);
 
-    const dom = new DOMParser().parseFromString(fc.comments, "text/html");
-
-    dom.querySelectorAll(".actions, i, .share-link").forEach((e) => e.remove());
-
-    dom.querySelectorAll(".info").forEach((info) => {
-      info.classList.add("myinfo");
-      info.classList.remove("info");
-      Array.from(info.childNodes).forEach((node) => {
-        if (node.nodeType === 3 && node.textContent.trim()) node.remove();
-      });
+    // Чистим info
+    dom.querySelectorAll(".info").forEach((e) => {
+      e.childNodes[5]?.remove();
+      e.classList.add("myinfo");
+      e.classList.remove("info");
     });
 
-    dom.querySelectorAll(".comments-tree-item").forEach((li) => {
-      const block = li.querySelector(".b-comment, .comment-item, .comment");
-      if (!block) return;
+    // Берём корневой список
+    let rootList = dom.querySelector(".comments-tree-list");
 
-      const message = block.querySelector(".message");
-      if (!message) return;
+    // Строим новое дерево
+    let newTree = buildTree(rootList);
 
-      const ava = block.querySelector(".ava img");
-      const info = block.querySelector(".myinfo");
-      const text = block.querySelector(".text");
+    // Вставляем в модалку
+    let modal = $(`
+        <div>
+            <div class="broadcast__text" style="text-align:left;">
+                <div class="comment" ></div>
+            </div>
+        </div>
+    `);
 
-      const wrap = dom.createElement("div");
-      wrap.className = "comment-wrap";
+    modal.find(".comment").append(newTree);
 
-      const avatarCol = dom.createElement("div");
-      avatarCol.className = "avatar-column";
-      if (ava) {
-        ava.classList.add("avatar-img");
-        avatarCol.appendChild(ava);
-      }
+    // Стили (из rezkacomment1.js)
 
-      const card = dom.createElement("div");
-      card.className = "comment-card";
+    if (!document.getElementById("rezka-comment-style")) {
+      const styleEl = document.createElement("style");
+      styleEl.id = "rezka-comment-style";
+      styleEl.textContent = `
+    .comments-tree-list{list-style:none;margin:0;padding:0;}
 
-      const header = dom.createElement("div");
-      header.className = "comment-header";
+.comments-tree-item{list-style:none;margin:0;padding:0;}
 
-      if (info) {
-        const nameNode = info.querySelector(".name");
-        const dateNode = info.querySelector(".date");
 
-        if (nameNode) {
-          const n = dom.createElement("span");
-          n.className = "name";
-          n.textContent = nameNode.textContent.trim();
-          header.appendChild(n);
-        }
+.comment-wrap{display:flex;margin-bottom:10px;}
+.avatar-column{margin-right:10px;}
+.avatar-img{width:48px;height:48px;border-radius:4px;}
 
-        if (dateNode) {
-          const d = dom.createElement("span");
-          d.className = "date";
-          d.textContent = dateNode.textContent.trim();
-          header.appendChild(d);
-        }
-      }
-
-      const textWrap = dom.createElement("div");
-      textWrap.className = "comment-text";
-      if (text) textWrap.appendChild(text);
-
-      card.appendChild(header);
-      card.appendChild(textWrap);
-
-      wrap.appendChild(avatarCol);
-      wrap.appendChild(card);
-
-      message.innerHTML = "";
-      message.appendChild(wrap);
-
-      li.insertBefore(message, li.firstChild);
-      block.remove();
-    });
-
-    dom.querySelectorAll(".comments-tree-item").forEach((item) => {
-      const message = item.querySelector(":scope > .message");
-      const replies = item.querySelector(":scope > ol.comments-tree-list");
-      if (message && replies && message.nextSibling !== replies) {
-        item.insertBefore(message, replies);
-      }
-    });
-
-    www = dom.body.innerHTML;
-
-    const styleEl = document.createElement("style");
-    styleEl.type = "text/css";
-    styleEl.innerHTML = `
-        .scroll--mask{
-      margin-top: 10px;
-    }
-.comments-tree-item{list-style:none;margin:10px 0;font-family:Arial,sans-serif;color:#e0e0e0;}
-.comments-tree-list{padding-left:0;padding-inline-start:0;margin-left:0;}
-.comments-tree-list>.comments-tree-item{margin-left:10px;}
-.comment-wrap{display:flex;align-items:flex-start;gap:10px;}
-.avatar-column{flex-shrink:0;margin-top:4px;}
-.avatar-column .avatar-img{width:40px;height:40px;border-radius:8px;object-fit:cover;background-color:#333;}
-.comment-card{background:#1b1b1b;border-radius:8px;padding:10px 12px;border:1px solid #2a2a2a;box-shadow:0 0 4px rgba(0,0,0,.35);width:100%;}
-.comment-card:hover{background-color:#222;}
-.comment-header{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;color:#cfc9be;}
-.comment-header .name{font-weight:700;color:#d0d0d0;}
+.comment-card{background:#1b1b1b;padding:10px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
+.comment-header{display:flex;justify-content:space-between;margin-bottom:6px;}
+.comment-header .name{font-weight:600;color:#fff;}
 .comment-header .date{opacity:.7;font-size:11px;}
-.comment-text{font-size:14px;line-height:1.45em;color:#e6e6e6;}
+.comment-text .text{color:#ddd;line-height:1.45;}
+
+.rc-children{margin-left:30px;border-left:1px solid #333;padding-left:14px;}
+
 .title_spoiler{display:inline-flex;align-items:center;background:#2a2a2a;border-radius:6px;padding:1px 4px;margin:0 2px;font-size:13px;color:#e0e0e0;cursor:pointer;box-shadow:0 0 2px rgba(0,0,0,.4);}
 .title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
-.text_spoiler{display:none;background:#1c1c1c;border-left:3px solid #555;padding:6px 10px;margin:6px 0;font-size:14px;border-radius:4px;color:#dcdcdc;}
 
-.modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
-    font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
-.modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
+.modal-close-btn{background:#2a2a2a;border:1px solid #444;color:#ddd;border-radius:6px;font-size:18px;line-height:18px;cursor:pointer;transition:.15s;}
+.modal-close-btn:hover{background:#3a3a3a;color:#fff;}
 
-`;
+    `;
+      document.head.appendChild(styleEl);
+    }
     Lampa.Loading.stop();
-    document.head.appendChild(styleEl);
-
     const Script = document.createElement("script");
     Script.innerHTML =
       "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
     document.head.appendChild(Script);
-
-    const modal = $(`
-      <div>
-        <div class="broadcast__text" style="text-align:left;">
-          <div class="comment selector" style="margin-left:-15px;">${www}</div>
-        </div>
-      </div>
-    `);
-
-    const enabled = Lampa.Controller.enabled().name;
+    // Открываем модалку
+    var enabled = Lampa.Controller.enabled().name;
 
     Lampa.Modal.open({
       title: ``,
@@ -222,13 +236,11 @@
       onBack: function () {
         Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
         $(".modal--large").remove();
-        www = "";
       },
-      onSelect: function () {},
     });
 
     $(".modal__head").after(
-      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+      `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
     );
   }
 
