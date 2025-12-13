@@ -324,6 +324,9 @@
 
     margin-left: calc(var(--indent, 0) * 20px);
 }
+    .modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
+    font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
+.modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
 
 .comments-tree-item[data-indent] {
     --indent: attr(data-indent number);
@@ -350,7 +353,7 @@
     });
 
     $(".modal__head").after(
-      `${namemovie}<button class="rc-close selector" tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()">&times;</button>`
+      `${namemovie}<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>`
     );
   }
 
