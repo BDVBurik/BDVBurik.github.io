@@ -144,14 +144,6 @@
       openModal(container); // показываем сразу
     }
 
-    let showContent = null;
-
-    if (savedHTML && now - savedTime < oneDay) {
-      const container = document.createElement("div");
-      container.innerHTML = savedHTML;
-      showContent = container;
-    }
-
     // 2. Обновляем в фоне
     (async () => {
       try {
@@ -181,12 +173,15 @@
 
         // Если уже показали старое, обновляем содержимое
         if (savedHTML && now - savedTime < oneDay) {
-          document.querySelector(".broadcast__text .comment").innerHTML = "";
-          document
-            .querySelector(".broadcast__text .comment")
-            .appendChild(newTree);
+          const commentWrapper = document.querySelector(
+            ".broadcast__text .comment"
+          );
+          if (commentWrapper) {
+            commentWrapper.innerHTML = "";
+            commentWrapper.appendChild(newTree);
+          }
         } else {
-          openModal(newTree); // если не было старого — показываем новые
+          openModal(newTree);
         }
       } catch (e) {
         console.error(e);
