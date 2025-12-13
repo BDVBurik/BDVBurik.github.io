@@ -37,6 +37,7 @@
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
+    Lampa.Loading.start();
     let url;
 
     if (type === "movie") {
@@ -219,9 +220,7 @@
 .title_spoiler a{color:#e0e0e0!important;text-decoration:none!important;}
 .title_spoiler img{height:14px;width:auto;vertical-align:middle;margin:0 2px;}
 .title_spoiler .attention{height:14px;width:14px;margin-left:4px;vertical-align:middle;}
-.comments-tree-item {
-    list-style: none;
-}
+
         .rc-comment {
             padding: 12px 14px;
             margin: 8px 0;
@@ -349,6 +348,7 @@
     $(".modal__head").after(
       `${namemovie}<button class="rc-close selector" tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()">&times;</button>`
     );
+    Lampa.Loading.stop();
   }
 
   // Функция для начала работы плагина
