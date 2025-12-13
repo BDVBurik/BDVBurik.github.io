@@ -183,7 +183,7 @@
 .comments-tree-item{list-style:none;margin:0;padding:0;}
 
 
-.comment-wrap{display:flex;margin-bottom:10px;}
+.comment-wrap{display:flex;margin-bottom:5px;}
 .avatar-column{margin-right:10px;}
 .avatar-img{width:48px;height:48px;border-radius:4px;}
 
