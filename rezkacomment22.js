@@ -29,31 +29,29 @@
 
     let dom = new DOMParser().parseFromString(fc, "text/html");
 
-    let arr = Array.from(dom.getElementsByClassName("b-content__inline_item"));
-    namemovie = arr[0].childNodes[3].innerText;
-    console.log("rezkacomment", name, ye);
-    comment_rezka(arr[0].dataset.id);
+    const item = dom.querySelector(".b-content__inline_item");
+    if (!item) return;
+
+    namemovie =
+      item.querySelector(".b-content__inline_item-link")?.innerText || "";
+    comment_rezka(item.dataset.id);
   }
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
-    let url;
+    const url =
+      kp_prox +
+      tmdbApiUrl +
+      (type === "movie" ? "movie/" : "tv/") +
+      id +
+      urlEndTMDB;
 
-    if (type === "movie") {
-      url = kp_prox + tmdbApiUrl + "movie/" + id + urlEndTMDB;
-    } else {
-      url = kp_prox + tmdbApiUrl + "tv/" + id + urlEndTMDB;
+    const data = await fetch(url).then((r) => r.json());
+    const enTitle = data.title || data.name;
+
+    if (enTitle) {
+      searchRezka(normalizeTitle(enTitle), year);
     }
-
-    ennTitle(url);
-  }
-  async function ennTitle(url) {
-    let enTitle;
-    await fetch(url)
-      .then((response) => response.json())
-      .then((e) => (enTitle = e.title || e.name));
-
-    searchRezka(normalizeTitle(enTitle), year);
   }
 
   // Функция для очистки заголовка от лишних символов
@@ -75,29 +73,14 @@
 
   // Создаёт один комментарий
   function buildCommentNode(item) {
-    // Аватар
-    const img = item.querySelector(".b-comment .ava img");
-    const avatar = img?.getAttribute("data-src") || img?.src || "";
+    const q = (s) => item.querySelector(s);
 
-    // Имя
-    const user =
-      item.querySelector(".name")?.innerText ||
-      item.querySelector(".b-comment__user")?.innerText ||
-      "Без имени";
+    const avatar = q(".ava img")?.dataset.src || q(".ava img")?.src || "";
 
-    // Дата
-    const date =
-      item.querySelector(".date")?.innerText ||
-      item.querySelector(".b-comment__time")?.innerText ||
-      "";
+    const user = q(".name, .b-comment__user")?.innerText || "Без имени";
+    const date = q(".date, .b-comment__time")?.innerText || "";
+    const text = q(".message .text, .text")?.innerHTML || "";
 
-    // Текст
-    const text =
-      item.querySelector(".message .text")?.innerHTML ||
-      item.querySelector(".text")?.innerHTML ||
-      "";
-
-    // Создаём контейнер
     const wrapper = document.createElement("div");
     wrapper.className = "message";
 
@@ -128,33 +111,27 @@
   function buildTree(root) {
     const fragment = document.createDocumentFragment();
 
-    for (let li of root.children) {
+    [...root.children].forEach((li) => {
       const wrapper = document.createElement("li");
       wrapper.className = "comments-tree-item";
-      wrapper.dataset.id = li.dataset.id;
-      wrapper.dataset.indent = li.dataset.indent;
+      wrapper.dataset.indent = li.dataset.indent || 0;
 
-      // Переносим comment-id наверх
-      const cid = li.querySelector("[id^='comment-id']");
-      if (cid) wrapper.appendChild(cid.cloneNode(false));
-
-      // Добавляем message
       wrapper.appendChild(buildCommentNode(li));
 
-      // Ищем детей
-      const childList = li.querySelector(":scope > ol.comments-tree-list");
-      if (childList) {
-        const newChildList = document.createElement("ol");
-        newChildList.className = "comments-tree-list";
-        newChildList.appendChild(buildTree(childList));
-        wrapper.appendChild(newChildList);
+      const children = li.querySelector(":scope > ol.comments-tree-list");
+      if (children) {
+        const ol = document.createElement("ol");
+        ol.className = "comments-tree-list";
+        ol.appendChild(buildTree(children));
+        wrapper.appendChild(ol);
       }
 
       fragment.appendChild(wrapper);
-    }
+    });
 
     return fragment;
   }
+
   // === Основная обработка комментариев Rezka ===
   async function comment_rezka(id) {
     let fc = await fetch(
