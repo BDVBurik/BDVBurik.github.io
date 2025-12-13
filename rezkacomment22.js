@@ -75,32 +75,55 @@
 
   // Создаёт один комментарий
   function buildCommentNode(item) {
-    //console.log("item", item);
-    const avatar = item.querySelector(".ava img")?.src || "";
-    const user = item.querySelector(".name")?.innerText || "Без имени";
-    const date = item.querySelector(".date")?.innerText || "";
-    const text = item.querySelector(".message")?.innerHTML || "";
+    // Аватар
+    const img = item.querySelector(".b-comment .ava img");
+    const avatar = img?.getAttribute("data-src") || img?.src || "";
 
+    // Имя
+    const user =
+      item.querySelector(".name")?.innerText ||
+      item.querySelector(".b-comment__user")?.innerText ||
+      "Без имени";
+
+    // Дата
+    const date =
+      item.querySelector(".date")?.innerText ||
+      item.querySelector(".b-comment__time")?.innerText ||
+      "";
+
+    // Текст
+    const text =
+      item.querySelector(".message .text")?.innerHTML ||
+      item.querySelector(".text")?.innerHTML ||
+      "";
+
+    // Создаём контейнер
     const wrapper = document.createElement("div");
-    wrapper.className = "rc-comment";
+    wrapper.className = "message";
 
     wrapper.innerHTML = `
-        <div class="rc-header">
-            <div class="rc-avatar" style="background-image:url('${avatar}')"></div>
-            <div class="rc-meta">
-                <div class="rc-user">${user}</div>
-                <div class="rc-date">${date}</div>
+        <div class="comment-wrap">
+            <div class="avatar-column">
+                <img src="${avatar}" class="avatar-img" alt="${user}">
+            </div>
+
+            <div class="comment-card">
+                <div class="comment-header">
+                    <span class="name">${user}</span>
+                    <span class="date">${date}</span>
+                </div>
+
+                <div class="comment-text">
+                    <div class="text">${text}</div>
+                </div>
             </div>
         </div>
-
-        <div class="rc-text">${text}</div>
 
         <div class="rc-children"></div>
     `;
 
     return wrapper;
   }
-
   // Рекурсивно строит дерево
   function buildTree(root) {
     const items = root.children;
@@ -221,6 +244,55 @@
             border-left: 1px solid #333;
             padding-left: 14px;
         }
+            .comment-wrap {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.avatar-column {
+    margin-right: 10px;
+}
+
+.avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+}
+
+.comment-card {
+    background: #1b1b1b;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    width: 100%;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.comment-header .name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.comment-header .date {
+    font-size: 12px;
+    color: #888;
+}
+
+.comment-text .text {
+    color: #ddd;
+    line-height: 1.45;
+}
+
+.rc-children {
+    margin-left: 30px;
+    border-left: 1px solid #333;
+    padding-left: 14px;
+}
     `;
     document.head.appendChild(styleEl);
 
