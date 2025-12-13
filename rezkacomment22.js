@@ -118,6 +118,7 @@
       wrapper.dataset.indent = li.dataset.indent || 0;
 
       wrapper.appendChild(buildCommentNode(li));
+      wrapper.style.marginLeft = (li.dataset.indent || 0) * 20 + "px";
 
       const children = li.querySelector(":scope > ol.comments-tree-list");
       if (children) {
@@ -191,8 +192,9 @@
       styleEl.id = "rezka-comment-style";
       styleEl.textContent = `
     .comments-tree-list{list-style:none;margin:0;padding:0;}
-.comments-tree-item{list-style:none;margin:0;padding:0;margin-left:calc(var(--indent,0)*20px);}
-.comments-tree-item[data-indent]{--indent:attr(data-indent number);}
+
+.comments-tree-item{list-style:none;margin:0;padding:0;}
+
 
 .comment-wrap{display:flex;margin-bottom:10px;}
 .avatar-column{margin-right:10px;}
