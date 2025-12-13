@@ -186,7 +186,6 @@
 .modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
     font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
 .modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
-.modal__content {  padding: 1.0em 1.5em;}
 .scroll--mask {  overflow-y: auto;  max-height: 80vh;  margin-top: 10px;}
 `;
     document.head.appendChild(styleEl);
@@ -205,8 +204,7 @@
     `);
 
     const enabled = Lampa.Controller.enabled().name;
-
-    Lampa.Modal.open({
+ Lampa.Modal.open({
       title: ``,
       html: modal,
       size: "large",
@@ -219,17 +217,14 @@
       },
       onSelect: function () {},
     });
-setTimeout(() => {
-  $(".modal__content").addClass("scroll--mask");
-  $(".modal__content")[0]?.focus();
-}, 50);
-    
 Lampa.Loading.stop();
-
-$(".modal__head").after(
-  `${namemovie}<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>`
-);
+    $(".modal__head").after(
+      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+    );
   }
+    
+
+
 
   // Функция для начала работы плагина
   function startPlugin() {
