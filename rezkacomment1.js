@@ -195,6 +195,7 @@
 .modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
 
 `;
+    Lampa.Loading.stop();
     document.head.appendChild(styleEl);
 
     const Script = document.createElement("script");
@@ -211,7 +212,7 @@
     `);
 
     const enabled = Lampa.Controller.enabled().name;
-    Lampa.Loading.stop();
+
     Lampa.Modal.open({
       title: ``,
       html: modal,
