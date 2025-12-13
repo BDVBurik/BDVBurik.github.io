@@ -164,15 +164,14 @@ div.text > div {
 
   padding-left: 1.2em;
   }
-  
+
 .rc-close {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 32px;
-    height: 32px;
+    top: 8px;
+    right: 8px;
+
     background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
-    border-radius: 50%;
+    border-radius: 30%;
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 2px 6px rgba(0,0,0,0.45);
     cursor: pointer;
