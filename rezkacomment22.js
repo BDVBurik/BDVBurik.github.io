@@ -329,10 +329,7 @@
 }
     `;
     document.head.appendChild(styleEl);
-    const Script = document.createElement("script");
-    Script.innerHTML =
-      "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
-    document.head.appendChild(Script);
+
     // Открываем модалку
     var enabled = Lampa.Controller.enabled().name;
 
