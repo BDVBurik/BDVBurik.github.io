@@ -75,6 +75,7 @@
 
   // Создаёт один комментарий
   function buildCommentNode(item) {
+    console.log("item", item);
     const avatar = item.querySelector(".ava img")?.src || "";
     const user = item.querySelector(".name")?.innerText || "Без имени";
     const date = item.querySelector(".date")?.innerText || "";
