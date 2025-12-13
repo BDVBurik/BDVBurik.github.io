@@ -198,7 +198,7 @@
     const modal = $(`
       <div>
         <div class="broadcast__text" style="text-align:left;">
-          <div class="comment" style="margin-left:-15px;">${www}</div>
+          <div class="comment selector" style="margin-left:-15px;">${www}</div>
         </div>
       </div>
     `);
