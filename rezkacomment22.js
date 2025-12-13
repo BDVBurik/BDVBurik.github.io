@@ -228,7 +228,7 @@
     var enabled = Lampa.Controller.enabled().name;
 
     Lampa.Modal.open({
-      title: `${namemovie}<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>`,
+      title: ``,
       html: modal,
       size: "large",
       style: "margin-top:10px;",
@@ -239,9 +239,9 @@
       },
     });
 
-    // $(".modal__head").after(
-    //   `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button> &#9; ${namemovie}`
-    // );
+    $(".modal__head").after(
+      `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
+    );
   }
 
   // Функция для начала работы плагина
