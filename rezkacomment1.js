@@ -171,6 +171,13 @@
 
     www = dom.body.innerHTML;
 
+    document.head.appendChild(Script);
+    var modal = $(
+      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
+        www +
+        "</div></div></div>"
+    ); //.style.color = "blue"
+
     const styleEl = document.createElement("style");
     styleEl.type = "text/css";
     styleEl.innerHTML = `
@@ -217,15 +224,6 @@ div.text > div {
     const Script = document.createElement("script");
     Script.innerHTML =
       "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
-    document.head.appendChild(Script);
-
-    const modal = $(`
-      <div>
-        <div class="broadcast__text" style="text-align:left;">
-          <div class="comment" style="margin-left:-15px;">${www}</div>
-        </div>
-      </div>
-    `);
 
     var enabled = Lampa.Controller.enabled().name;
     Lampa.Modal.open({
