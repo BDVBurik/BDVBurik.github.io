@@ -71,34 +71,75 @@
     );
   }
 
-  // Функция для получения комментариев с сайта rezka
-  async function comment_rezka(id) {
-    // console.log(
-    //   "rcomment",
-    //   kp_prox +
-    //     url +
-    //     (id ? id : "1") +
-    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-    // );
+  // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
 
+  // Создаёт один комментарий
+  function buildCommentNode(item) {
+    const avatar = item.querySelector(".avatar img")?.src || "";
+    const user = item.querySelector(".name")?.innerText || "Без имени";
+    const date = item.querySelector(".date")?.innerText || "";
+    const text = item.querySelector(".message")?.innerHTML || "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "rc-comment";
+
+    wrapper.innerHTML = `
+        <div class="rc-header">
+            <div class="rc-avatar" style="background-image:url('${avatar}')"></div>
+            <div class="rc-meta">
+                <div class="rc-user">${user}</div>
+                <div class="rc-date">${date}</div>
+            </div>
+        </div>
+
+        <div class="rc-text">${text}</div>
+
+        <div class="rc-children"></div>
+    `;
+
+    return wrapper;
+  }
+
+  // Рекурсивно строит дерево
+  function buildTree(root) {
+    const items = root.children;
+    const fragment = document.createDocumentFragment();
+
+    for (let li of items) {
+      const comment = buildCommentNode(li);
+
+      const childList = li.querySelector(":scope > ul.comments-tree-list");
+      if (childList) {
+        const childrenContainer = comment.querySelector(".rc-children");
+        childrenContainer.appendChild(buildTree(childList));
+      }
+
+      fragment.appendChild(comment);
+    }
+
+    return fragment;
+  }
+
+  // === Основная обработка комментариев Rezka ===
+  async function comment_rezka(id) {
     let fc = await fetch(
       kp_prox +
         url +
         (id ? id : "1") +
         "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-      {
-        method: "GET",
-        headers: { "Content-Type": "text/plain" },
-      }
+      { method: "GET", headers: { "Content-Type": "text/plain" } }
     )
       .then((response) => response.json())
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+
+    // Удаляем мусор Rezka
     dom
       .querySelectorAll(".ava, .actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
+    // Переносим message внутрь li
     dom.querySelectorAll(".message").forEach((e) => {
       var cct = e.closest(".comments-tree-item");
       var gp = e.parentNode.parentNode;
@@ -106,120 +147,83 @@
       gp.remove();
     });
 
+    // Чистим info
     dom.querySelectorAll(".info").forEach((e) => {
-      e.childNodes[5].remove();
-      e.addClass("myinfo").removeClass("info");
+      e.childNodes[5]?.remove();
+      e.classList.add("myinfo");
+      e.classList.remove("info");
     });
 
-    //console.log("dom", dom);
-    let arr = dom.getElementsByClassName("comments-tree-list");
-    www = arr[0].outerHTML;
+    // Берём корневой список
+    let rootList = dom.querySelector(".comments-tree-list");
 
-    let Script = document.createElement("Script");
-    Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
+    // Строим новое дерево
+    let newTree = buildTree(rootList);
 
-    document.head.appendChild(Script);
-    var modal = $(
-      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
-        www +
-        "</div></div></div>"
-    ); //.style.color = "blue"
+    // Вставляем в модалку
+    let modal = $(`
+        <div>
+            <div class="broadcast__text" style="text-align:left;">
+                <div class="comment" style="margin-left: -15px;"></div>
+            </div>
+        </div>
+    `);
+
+    modal.find(".comment").append(newTree);
+
+    // Стили (из rezkacomment1.js)
     let styleEl = document.createElement("style");
-    styleEl.setAttribute("type", "text/css");
     styleEl.innerHTML = `
-    .scroll--mask{
-      margin-top: 10px;
-    }
-    .title_spoiler a {
-  border-radius: 8px;
-  background-color: #5d5b5b;
-  color: #fff;
-  padding: 0 2px 0 5px;
-  position: relative;
-  text-decoration: none;
-}
-.text_spoiler {
-  background-color: #353333;
-}
-.comments-tree-item {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.b-comment .message {
-  float: right;
-  width: 100%;
-  padding-bottom: 10px;
-}
-.myinfo {
-  margin-top: 10px;
-  border-top: 1px solid #ccc;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.6em;
-  color: #cfc9be;
-}
-div.text > div {
-  display: block;
-
-  padding-left: 1.2em;
-  }
-.rc-comment {
-    padding: 12px 14px;
-    margin: 8px 0;
-    background: #1b1b1b;
-    border-radius: 8px;
-    border: 1px solid #2a2a2a;
-}
-
-.rc-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.rc-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-    margin-right: 10px;
-    flex-shrink: 0;
-}
-
-.rc-meta {
-    display: flex;
-    flex-direction: column;
-}
-
-.rc-user {
-    font-weight: 600;
-    font-size: 15px;
-    color: #fff;
-}
-
-.rc-date {
-    font-size: 12px;
-    color: #888;
-    margin-top: 2px;
-}
-
-.rc-text {
-    font-size: 15px;
-    line-height: 1.45;
-    color: #ddd;
-    margin-bottom: 8px;
-}
-
-.rc-children {
-    margin-left: 22px;
-    border-left: 1px solid #333;
-    padding-left: 14px;
-}
-`;
+        .rc-comment {
+            padding: 12px 14px;
+            margin: 8px 0;
+            background: #1b1b1b;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+        .rc-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .rc-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .rc-meta {
+            display: flex;
+            flex-direction: column;
+        }
+        .rc-user {
+            font-weight: 600;
+            font-size: 15px;
+            color: #fff;
+        }
+        .rc-date {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .rc-text {
+            font-size: 15px;
+            line-height: 1.45;
+            color: #ddd;
+            margin-bottom: 8px;
+        }
+        .rc-children {
+            margin-left: 22px;
+            border-left: 1px solid #333;
+            padding-left: 14px;
+        }
+    `;
     document.head.appendChild(styleEl);
 
+    // Открываем модалку
     var enabled = Lampa.Controller.enabled().name;
 
     Lampa.Modal.open({
@@ -231,12 +235,11 @@ div.text > div {
       onBack: function () {
         Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
         $(".modal--large").remove();
-        www = "";
       },
-      onSelect: function () {},
     });
+
     $(".modal__head").after(
-      `${namemovie}<button class="rc-close selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+      `${namemovie}<button class="rc-close selector" tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()">&times;</button>`
     );
   }
 
