@@ -134,7 +134,7 @@
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-
+    console.log("rezkacomment dom", dom);
     // Удаляем мусор Rezka
     dom
       .querySelectorAll(" .actions, i, .share-link")
