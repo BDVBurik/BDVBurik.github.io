@@ -136,7 +136,7 @@
 
     // Удаляем мусор Rezka
     dom
-      .querySelectorAll(".ava, .actions, i, .share-link")
+      .querySelectorAll(" .actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
     // Переносим message внутрь li
