@@ -137,7 +137,7 @@
     console.log("rezkacomment dom", dom);
     // Удаляем мусор Rezka
     dom
-      .querySelectorAll(" .actions, i, .share-link")
+      .querySelectorAll(".actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
     // Переносим message внутрь li
@@ -145,7 +145,7 @@
       var cct = e.closest(".comments-tree-item");
       var gp = e.parentNode.parentNode;
       cct.appendChild(e);
-      gp.remove();
+      // gp.remove();
     });
 
     // Чистим info
