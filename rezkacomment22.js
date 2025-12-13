@@ -123,7 +123,7 @@
 
       const wrapper = document.createElement("li");
       wrapper.className = "comments-tree-item";
-      wrapper.style.marginLeft = `${indent ? indent * 20 : 0}px`;
+      wrapper.style.marginLeft = `${(indent ? 1 : 0) * 20} px`;
 
       wrapper.appendChild(buildCommentNode(li));
 
