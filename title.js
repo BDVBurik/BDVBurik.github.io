@@ -1,93 +1,83 @@
 (function () {
-  //BDVBurik 2024
+  // BDVBurik 2024
   "use strict";
 
   async function titleOrigin(card) {
-    var orig = card.original_title || card.original_name;
-    var params = {
+    const params = {
       id: card.id,
-      url: "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/movie/",
+      url: card.first_air_date
+        ? "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/tv/"
+        : "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/movie/",
       urlEnd: "&api_key=4ef0d7355d9ffb5151e987764708ce96",
     };
 
-    if (card.first_air_date) {
-      params.url = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/tv/";
-      params.urlEnd = "&api_key=4ef0d7355d9ffb5151e987764708ce96";
-    }
-
-    var getOptions = {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-      },
+    const getTitle = async (lang) => {
+      try {
+        const res = await fetch(
+          `${params.url}${params.id}?language=${lang}${params.urlEnd}`,
+          { method: "GET", headers: { accept: "application/json" } }
+        );
+        const data = await res.json();
+        return data.title || data.name || "";
+      } catch (e) {
+        console.error("Error fetching title:", e);
+        return "";
+      }
     };
 
-    async function getEnTitle() {
-      var title;
-      var ftc = await fetch(
-        params.url + params.id + "?language=en-US" + params.urlEnd,
-        getOptions
-      )
-        .then((response) => response.json())
-        .then((e) => (title = e.title || e.name));
+    const [etEnTitle, etRuTitle] = await Promise.all([
+      getTitle("en-US"),
+      getTitle("ru-RU"),
+    ]);
 
-      return title;
-    }
-    async function getRuTitle() {
-      var title;
-      var ftc = await fetch(
-        params.url + params.id + "?language=ru-RU" + params.urlEnd,
-        getOptions
-      )
-        .then((response) => response.json())
-        .then((e) => (title = e.title || e.name));
-      return title;
-    }
+    _showEnTitle(etEnTitle, etRuTitle);
 
-    var etEnTitle = await getEnTitle();
-    var etRuTitle = await getRuTitle();
-    _showEnTitle(etEnTitle);
+    function _showEnTitle(enTitle, ruTitle) {
+      if (!enTitle) return;
+      const render = Lampa.Activity.active().activity.render();
+      const ruHtml =
+        Lampa.Storage.get("language") !== "ru"
+          ? `<div style='font-size:1.3em'>Ru: ${ruTitle}</div>`
+          : "";
 
-    function _showEnTitle(data) {
-      let ru = "";
-      if (data) {
-        var render = Lampa.Activity.active().activity.render();
-
-        if (Lampa.Storage.get("language") != "ru") {
-          ru =
-            "<div style='font-size: 1.3em; height: auto;'>Ru:" +
-            etRuTitle +
-            "</div >";
-        } else ru = "";
-      }
       $(".original_title", render)
         .find("> div")
         .eq(0)
         .after(
-          `<div id='titleen'><div><div style='font-size: 1.3em; height: auto; '>En: 
-              ${data} </div>${ru}
-              <div style='font-size: 1.3em; height: auto; '> Orig: 
-                ${card.original_title || card.original_name} 
-              </div></div></div>`
+          `<div id='titleen'>
+              <div>
+                <div style='font-size:1.3em'>En: ${enTitle}</div>
+                ${ruHtml}
+                <div style='font-size:1.3em'>Orig: ${
+                  card.original_title || card.original_name
+                }</div>
+              </div>
+           </div>`
         );
     }
   }
 
   function startPlugin() {
+    if (window.title_plugin) return;
     window.title_plugin = true;
-    Lampa.Listener.follow("full", function (e) {
-      if (e.type == "complite") {
-        var render = e.object.activity.render();
-        $(".original_title", render).remove();
-        $(".full-start-new__title", render).after(
-          '<div class="original_title" style="  margin-top:-0.8em ; text-align: right;"><div>'
-        );
-        titleOrigin(e.data.movie);
-        $(".full-start-new__rate-line").css("margin-bottom", "0.8em");
-        $(".full-start-new__details").css("margin-bottom", "0.8em");
-        $(".full-start-new__tagline").css("margin-bottom", "0.4em");
-      }
+
+    Lampa.Listener.follow("full", (e) => {
+      if (e.type !== "complite") return;
+
+      const render = e.object.activity.render();
+      $(".original_title", render).remove();
+      $(".full-start-new__title", render).after(
+        '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div>'
+      );
+
+      titleOrigin(e.data.movie);
+
+      // Минимальные отступы
+      $(".full-start-new__rate-line").css("margin-bottom", "0.8em");
+      $(".full-start-new__details").css("margin-bottom", "0.8em");
+      $(".full-start-new__tagline").css("margin-bottom", "0.4em");
     });
   }
-  if (!window.title_plugin) startPlugin();
+
+  startPlugin();
 })();
