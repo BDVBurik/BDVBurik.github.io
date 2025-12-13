@@ -164,115 +164,58 @@ div.text > div {
 
   padding-left: 1.2em;
   }
-
-.rc-close {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-
-    background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
-    border-radius: 30%;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.rc-close::before,
-.rc-close::after {
-    content: "";
-    position: absolute;
-    width: 18px;
-    height: 2.4px;
-    background: #fff;
-    border-radius: 2px;
-}
-
-.rc-close::before {
-    transform: rotate(45deg);
-}
-
-.rc-close::after {
-    transform: rotate(-45deg);
-}
-
-.rc-close:hover {
-    background: radial-gradient(circle at 30% 30%, #4a4a4a, #222);
-    transform: scale(1.05);
-}
-
-.rc-spoiler {
-    background: #242424;
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 10px;
+.rc-comment {
+    padding: 12px 14px;
+    margin: 8px 0;
+    background: #1b1b1b;
     border-radius: 8px;
-    margin-top: 8px;
-    cursor: pointer;
+    border: 1px solid #2a2a2a;
 }
 
-.rc-spoiler-title {
-    color: #bbb;
-    font-size: 13px;
-}
-
-.rc-spoiler-content {
-    margin-top: 8px;
-    color: #ddd;
-    display: none;
-}
-    .rc-children {
-    margin-left: 22px;
-    border-left: 1px solid rgba(255,255,255,0.08);
-    padding-left: 14px;
-    margin-top: 10px;
-}
-    .rc-text {
-    margin-top: 6px;
-    color: #d0d0d0;
-    font-size: 14px;
-    white-space: pre-line;
-}
-    .rc-header {
+.rc-header {
     display: flex;
     align-items: center;
     margin-bottom: 8px;
 }
 
 .rc-avatar {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background-size: cover;
     background-position: center;
     margin-right: 10px;
     flex-shrink: 0;
-    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.rc-meta {
+    display: flex;
+    flex-direction: column;
 }
 
 .rc-user {
     font-weight: 600;
+    font-size: 15px;
     color: #fff;
-    font-size: 14px;
 }
 
 .rc-date {
     font-size: 12px;
     color: #888;
-    margin-left: 6px;
+    margin-top: 2px;
 }
-    .rc-comment {
-    background: #1b1b1b;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-    color: #e0e0e0;
-    font-size: 14px;
+
+.rc-text {
+    font-size: 15px;
     line-height: 1.45;
+    color: #ddd;
+    margin-bottom: 8px;
+}
+
+.rc-children {
+    margin-left: 22px;
+    border-left: 1px solid #333;
+    padding-left: 14px;
 }
 `;
     document.head.appendChild(styleEl);
