@@ -133,7 +133,7 @@
       .then((response) => response.json())
       .then((qwe) => qwe);
 
-    let dom = new DOMParser().parseFromString(fc, "text/html");
+    let dom = new DOMParser().parseFromString(fc.comments, "text/html");
     console.log("rezkacomment dom", dom);
     // Удаляем мусор Rezka
     dom
