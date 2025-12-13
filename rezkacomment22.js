@@ -39,6 +39,7 @@
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
+    Lampa.Loading.start();
     const url =
       kp_prox +
       tmdbApiUrl +
@@ -216,7 +217,7 @@
     `;
       document.head.appendChild(styleEl);
     }
-
+    Lampa.Loading.stop();
     const Script = document.createElement("script");
     Script.innerHTML =
       "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
