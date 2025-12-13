@@ -126,7 +126,7 @@
 
       // правильный отступ
       if (indent) {
-        wrapper.style.marginLeft = indent * 20 + "px";
+        wrapper.style.marginLeft = (li.dataset.indent > 0 ? 20 : 0) + "px";
       }
 
       wrapper.appendChild(buildCommentNode(li));
