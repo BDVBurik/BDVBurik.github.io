@@ -203,6 +203,77 @@ div.text > div {
     background: radial-gradient(circle at 30% 30%, #4a4a4a, #222);
     transform: scale(1.05);
 }
+
+.rc-spoiler {
+    background: #242424;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.rc-spoiler-title {
+    color: #bbb;
+    font-size: 13px;
+}
+
+.rc-spoiler-content {
+    margin-top: 8px;
+    color: #ddd;
+    display: none;
+}
+    .rc-children {
+    margin-left: 22px;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    padding-left: 14px;
+    margin-top: 10px;
+}
+    .rc-text {
+    margin-top: 6px;
+    color: #d0d0d0;
+    font-size: 14px;
+    white-space: pre-line;
+}
+    .rc-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.rc-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.rc-user {
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+}
+
+.rc-date {
+    font-size: 12px;
+    color: #888;
+    margin-left: 6px;
+}
+    .rc-comment {
+    background: #1b1b1b;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    color: #e0e0e0;
+    font-size: 14px;
+    line-height: 1.45;
+}
 `;
     document.head.appendChild(styleEl);
 
