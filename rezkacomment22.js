@@ -64,7 +64,7 @@
   }
 
   // Функция для очистки заголовка от лишних символов
-  function cleanTitle(str = "") {
+  function cleanTitle(str) {
     return str.replace(/[\s.,:;’'`!?]+/g, " ").trim();
   }
 
@@ -117,10 +117,8 @@
     return wrapper;
   }
   // Рекурсивно строит дерево
-
   function buildTree(root) {
-    if (!root || !root.children?.length)
-      return document.createDocumentFragment();
+    const fragment = document.createDocumentFragment();
 
     [...root.children].forEach((li) => {
       const wrapper = document.createElement("li");
@@ -153,10 +151,12 @@
           (id ? id : "1") +
           "&cstart=1&type=0&comment_id=0&skin=hdrezka",
         { method: "GET", headers: { "Content-Type": "text/plain" } }
-      ).then((response) => response.json());
+      )
+        .then((response) => response.json())
+        .then((qwe) => qwe);
 
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-      //console.log("rezkacomment dom", dom);
+      console.log("rezkacomment dom", dom);
       // Удаляем мусор Rezka
       dom
         .querySelectorAll(".actions, i, .share-link")
