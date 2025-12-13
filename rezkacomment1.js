@@ -211,6 +211,7 @@
     `);
 
     const enabled = Lampa.Controller.enabled().name;
+    Lampa.Loading.stop();
     Lampa.Modal.open({
       title: ``,
       html: modal,
@@ -224,7 +225,7 @@
       },
       onSelect: function () {},
     });
-    Lampa.Loading.stop();
+
     $(".modal__head").after(
       `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
     );
