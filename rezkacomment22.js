@@ -302,11 +302,7 @@
     color: #fff;
 }
 
-.comment-header .date {
-    font-size: 12px;
-    color: #888;
-}
-
+.comment-header .date {opacity:.7;font-size:11px;}
 .comment-text .text {
     color: #ddd;
     line-height: 1.45;
