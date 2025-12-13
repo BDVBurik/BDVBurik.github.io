@@ -11,44 +11,31 @@
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
-  const rezkaCache = {};
 
+  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    if (!name) return;
+    let fc = await fetch(
+      kp_prox +
+        "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
+        name +
+        (ye ? "+" + ye : ""),
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "text/html",
+        },
+      }
+    ).then((response) => response.text());
 
-    const key = name + "_" + ye;
-    if (rezkaCache[key]) {
-      comment_rezka(rezkaCache[key]);
-      return;
-    }
+    let dom = new DOMParser().parseFromString(fc, "text/html");
 
-    let fc;
-    try {
-      fc = await fetch(
-        kp_prox +
-          "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
-          name +
-          (ye ? "+" + ye : ""),
-        { method: "GET", headers: { "Content-Type": "text/html" } }
-      ).then((r) => r.text());
-    } catch (e) {
-      console.error("Rezka search error", e);
-      return;
-    }
-
-    const dom = new DOMParser().parseFromString(fc, "text/html");
     const item = dom.querySelector(".b-content__inline_item");
     if (!item) return;
 
-    rezkaCache[key] = item.dataset.id; // ← сначала кэш
     namemovie =
       item.querySelector(".b-content__inline_item-link")?.innerText || "";
-
     comment_rezka(item.dataset.id);
   }
-
-  // Функция для поиска на сайте hdrezka
-  async function searchRezka(name, ye) {}
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
