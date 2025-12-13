@@ -138,13 +138,21 @@
     // Проверяем storage
     let savedHTML = localStorage.getItem(storageKey);
     let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
+    let showFromStorage = false;
 
     if (savedHTML && now - savedTime < oneDay) {
-      // Рендерим сразу из storage
-      let container = document.createElement("div");
+      // Сохраняем HTML, но пока не открываем
+      const container = document.createElement("div");
       container.innerHTML = savedHTML;
-      Lampa.Loading.stop();
-      openModal(container);
+      showFromStorage = container; // отложенное открытие
+    }
+
+    let showContent = null;
+
+    if (savedHTML && now - savedTime < oneDay) {
+      const container = document.createElement("div");
+      container.innerHTML = savedHTML;
+      showContent = container;
     }
 
     // Обновляем в фоне
@@ -154,7 +162,10 @@
           url +
           (id ? id : "1") +
           "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-        { method: "GET", headers: { "Content-Type": "text/plain" } }
+        {
+          method: "GET",
+          headers: { "Content-Type": "text/plain" },
+        }
       ).then((r) => r.json());
 
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
@@ -166,27 +177,18 @@
       let newTree = buildTree(rootList);
 
       // Сохраняем в storage
-      // Сохраняем в storage
       try {
         const container = document.createElement("div");
-        container.appendChild(newTree.cloneNode(true)); // клонируем фрагмент
-        localStorage.setItem(storageKey, container.innerHTML); // сохраняем HTML
+        container.appendChild(newTree.cloneNode(true));
+        localStorage.setItem(storageKey, container.innerHTML);
         localStorage.setItem(storageTimeKey, Date.now().toString());
       } catch (e) {
         console.warn("Не удалось сохранить комментарии в storage", e);
       }
 
-      // Загрузка из storage
-      if (savedHTML && now - savedTime < oneDay) {
-        const container = document.createElement("div");
-        container.innerHTML = savedHTML; // вставляем сохранённый HTML
-        openModal(container);
-      }
-
-      // Если ранее не было HTML в storage, показываем модалку
-      if (!savedHTML || now - savedTime >= oneDay) {
-        openModal(newTree);
-      }
+      // Показываем модалку один раз
+      if (!showContent) showContent = newTree;
+      openModal(showContent);
     } catch (e) {
       console.error(e);
       Lampa.Loading.stop();
