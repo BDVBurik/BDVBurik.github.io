@@ -138,7 +138,7 @@
 
       fragment.appendChild(wrapper);
     });
-
+    Lampa.Loading.stop();
     return fragment;
   }
 
@@ -154,7 +154,7 @@
       )
         .then((response) => response.json())
         .then((qwe) => qwe);
-      Lampa.Loading.stop();
+
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
       console.log("rezkacomment dom", dom);
       // Удаляем мусор Rezka
