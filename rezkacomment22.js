@@ -180,7 +180,7 @@
       modal.find(".comment").append(newTree);
 
       // Стили (из rezkacomment1.js)
-
+      Lampa.Loading.stop();
       if (!document.getElementById("rezka-comment-style")) {
         const styleEl = document.createElement("style");
         styleEl.id = "rezka-comment-style";
@@ -213,7 +213,7 @@
     `;
         document.head.appendChild(styleEl);
       }
-      Lampa.Loading.stop();
+
       if (!window.rezkaSpoilerInit) {
         window.rezkaSpoilerInit = true;
         const Script = document.createElement("script");
