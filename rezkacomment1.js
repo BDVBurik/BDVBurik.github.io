@@ -186,6 +186,8 @@
 .modal-close-btn {  float: right;  background: #2a2a2a;  border: 1px solid #444;  color: #ddd;  border-radius: 6px;
     font-size: 18px;  line-height: 18px;  cursor: pointer;  transition: 0.15s;}
 .modal-close-btn:hover {  background: #3a3a3a;  color: #fff;}
+.modal__content {  padding: 1.0em 1.5em;}
+.scroll--mask {  overflow-y: auto;  max-height: 80vh;  margin-top: 10px;}
 `;
     document.head.appendChild(styleEl);
 
@@ -217,6 +219,7 @@
       },
       onSelect: function () {},
     });
+$(".modal__content").addClass("scroll--mask");
     
 Lampa.Loading.stop();
 
