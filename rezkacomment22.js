@@ -164,40 +164,6 @@ div.text > div {
 
   padding-left: 1.2em;
 
-
-  .rc-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    background: rgba(0, 0, 0, 0.55);
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s ease;
-}
-
-.rc-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 32px;
-    height: 32px;
-    background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s ease, transform 0.15s ease;
-}
-
 .rc-close {
     position: absolute;
     top: 10px;
