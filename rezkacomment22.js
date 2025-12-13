@@ -154,7 +154,7 @@
       )
         .then((response) => response.json())
         .then((qwe) => qwe);
-
+      Lampa.Loading.stop();
       let dom = new DOMParser().parseFromString(fc.comments, "text/html");
       console.log("rezkacomment dom", dom);
       // Удаляем мусор Rezka
@@ -180,7 +180,7 @@
       modal.find(".comment").append(newTree);
 
       // Стили (из rezkacomment1.js)
-      Lampa.Loading.stop();
+
       if (!document.getElementById("rezka-comment-style")) {
         const styleEl = document.createElement("style");
         styleEl.id = "rezka-comment-style";
