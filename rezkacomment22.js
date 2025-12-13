@@ -71,102 +71,250 @@
     );
   }
 
-  // Функция для получения комментариев с сайта rezka
-  async function comment_rezka(id) {
-    // console.log(
-    //   "rcomment",
-    //   kp_prox +
-    //     url +
-    //     (id ? id : "1") +
-    //     "&cstart=1&type=0&comment_id=0&skin=hdrezka"
-    // );
+  // Функция для получения комментариев с сайта rezka// === Построение нового дерева комментариев ===
 
+  // Создаёт один комментарий
+  function buildCommentNode(item) {
+    // Аватар
+    const img = item.querySelector(".b-comment .ava img");
+    const avatar = img?.getAttribute("data-src") || img?.src || "";
+
+    // Имя
+    const user =
+      item.querySelector(".name")?.innerText ||
+      item.querySelector(".b-comment__user")?.innerText ||
+      "Без имени";
+
+    // Дата
+    const date =
+      item.querySelector(".date")?.innerText ||
+      item.querySelector(".b-comment__time")?.innerText ||
+      "";
+
+    // Текст
+    const text =
+      item.querySelector(".message .text")?.innerHTML ||
+      item.querySelector(".text")?.innerHTML ||
+      "";
+
+    // Создаём контейнер
+    const wrapper = document.createElement("div");
+    wrapper.className = "message";
+
+    wrapper.innerHTML = `
+        <div class="comment-wrap">
+            <div class="avatar-column">
+                <img src="${avatar}" class="avatar-img" alt="${user}">
+            </div>
+
+            <div class="comment-card">
+                <div class="comment-header">
+                    <span class="name">${user}</span>
+                    <span class="date">${date}</span>
+                </div>
+
+                <div class="comment-text">
+                    <div class="text">${text}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rc-children"></div>
+    `;
+
+    return wrapper;
+  }
+  // Рекурсивно строит дерево
+  function buildTree(root) {
+    const fragment = document.createDocumentFragment();
+
+    for (let li of root.children) {
+      const wrapper = document.createElement("li");
+      wrapper.className = "comments-tree-item";
+      wrapper.dataset.id = li.dataset.id;
+      wrapper.dataset.indent = li.dataset.indent;
+
+      // Переносим comment-id наверх
+      const cid = li.querySelector("[id^='comment-id']");
+      if (cid) wrapper.appendChild(cid.cloneNode(false));
+
+      // Добавляем message
+      wrapper.appendChild(buildCommentNode(li));
+
+      // Ищем детей
+      const childList = li.querySelector(":scope > ol.comments-tree-list");
+      if (childList) {
+        const newChildList = document.createElement("ol");
+        newChildList.className = "comments-tree-list";
+        newChildList.appendChild(buildTree(childList));
+        wrapper.appendChild(newChildList);
+      }
+
+      fragment.appendChild(wrapper);
+    }
+
+    return fragment;
+  }
+  // === Основная обработка комментариев Rezka ===
+  async function comment_rezka(id) {
     let fc = await fetch(
       kp_prox +
         url +
         (id ? id : "1") +
         "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-      {
-        method: "GET",
-        headers: { "Content-Type": "text/plain" },
-      }
+      { method: "GET", headers: { "Content-Type": "text/plain" } }
     )
       .then((response) => response.json())
       .then((qwe) => qwe);
 
     let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+    console.log("rezkacomment dom", dom);
+    // Удаляем мусор Rezka
     dom
-      .querySelectorAll(".ava, .actions, i, .share-link")
+      .querySelectorAll(".actions, i, .share-link")
       .forEach((elem) => elem.remove());
 
+    // Переносим message внутрь li
     dom.querySelectorAll(".message").forEach((e) => {
       var cct = e.closest(".comments-tree-item");
       var gp = e.parentNode.parentNode;
       cct.appendChild(e);
-      gp.remove();
     });
+    console.log("rezkacomment dom after", dom);
 
+    // Чистим info
     dom.querySelectorAll(".info").forEach((e) => {
-      e.childNodes[5].remove();
-      e.addClass("myinfo").removeClass("info");
+      e.childNodes[5]?.remove();
+      e.classList.add("myinfo");
+      e.classList.remove("info");
     });
 
-    //console.log("dom", dom);
-    let arr = dom.getElementsByClassName("comments-tree-list");
-    www = arr[0].outerHTML;
+    // Берём корневой список
+    let rootList = dom.querySelector(".comments-tree-list");
 
-    let Script = document.createElement("Script");
-    Script.innerHTML = `function ShowOrHide(id) {var text = $("#" + id);text.prev(".title_spoiler").remove();text.css("display", "inline");}`;
+    // Строим новое дерево
+    let newTree = buildTree(rootList);
 
-    document.head.appendChild(Script);
-    var modal = $(
-      `<div> <div class="broadcast__text" style="text-align:left;"><div class="comment" style="margin-left: -15px;">` +
-        www +
-        "</div></div></div>"
-    ); //.style.color = "blue"
+    // Вставляем в модалку
+    let modal = $(`
+        <div>
+            <div class="broadcast__text" style="text-align:left;">
+                <div class="comment" style="margin-left: -15px;"></div>
+            </div>
+        </div>
+    `);
+
+    modal.find(".comment").append(newTree);
+
+    // Стили (из rezkacomment1.js)
     let styleEl = document.createElement("style");
-    styleEl.setAttribute("type", "text/css");
     styleEl.innerHTML = `
-    .scroll--mask{
-      margin-top: 10px;
-    }
-    .title_spoiler a {
-  border-radius: 8px;
-  background-color: #5d5b5b;
-  color: #fff;
-  padding: 0 2px 0 5px;
-  position: relative;
-  text-decoration: none;
+        .rc-comment {
+            padding: 12px 14px;
+            margin: 8px 0;
+            background: #1b1b1b;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+        .rc-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .rc-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .rc-meta {
+            display: flex;
+            flex-direction: column;
+        }
+        .rc-user {
+            font-weight: 600;
+            font-size: 15px;
+            color: #fff;
+        }
+        .rc-date {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .rc-text {
+            font-size: 15px;
+            line-height: 1.45;
+            color: #ddd;
+            margin-bottom: 8px;
+        }
+        .rc-children {
+            margin-left: 22px;
+            border-left: 1px solid #333;
+            padding-left: 14px;
+        }
+            .comment-wrap {
+    display: flex;
+    margin-bottom: 10px;
 }
-.text_spoiler {
-  background-color: #353333;
-}
-.comments-tree-item {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.b-comment .message {
-  float: right;
-  width: 100%;
-  padding-bottom: 10px;
-}
-.myinfo {
-  margin-top: 10px;
-  border-top: 1px solid #ccc;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.6em;
-  color: #cfc9be;
-}
-div.text > div {
-  display: block;
 
-  padding-left: 1.2em;
+.avatar-column {
+    margin-right: 10px;
 }
-`;
+
+.avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+}
+
+.comment-card {
+    background: #1b1b1b;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    width: 100%;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.comment-header .name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.comment-header .date {
+    font-size: 12px;
+    color: #888;
+}
+
+.comment-text .text {
+    color: #ddd;
+    line-height: 1.45;
+}
+
+.rc-children {
+    margin-left: 30px;
+    border-left: 1px solid #333;
+    padding-left: 14px;
+}
+    .comments-tree-item {
+    margin-left: calc(var(--indent, 0) * 20px);
+}
+
+.comments-tree-item[data-indent] {
+    --indent: attr(data-indent number);
+}
+    `;
     document.head.appendChild(styleEl);
 
+    // Открываем модалку
     var enabled = Lampa.Controller.enabled().name;
 
     Lampa.Modal.open({
@@ -178,12 +326,11 @@ div.text > div {
       onBack: function () {
         Lampa.Modal.close(), Lampa.Controller.toggle(enabled);
         $(".modal--large").remove();
-        www = "";
       },
-      onSelect: function () {},
     });
+
     $(".modal__head").after(
-      `${namemovie}<button class="selector "  tabindex="0" style = "float: right;" type="button"  onclick="$('.modal--large').remove()"  data-dismiss="modal">&times;</button>`
+      `${namemovie}<button class="rc-close selector" tabindex="0" style="float: right;" type="button" onclick="$('.modal--large').remove()">&times;</button>`
     );
   }
 
