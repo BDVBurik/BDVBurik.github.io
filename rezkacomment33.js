@@ -135,16 +135,13 @@
     const oneDay = 24 * 60 * 60 * 1000;
     const now = Date.now();
 
-    // Проверяем storage
+    // 1. Показываем из storage сразу
     let savedHTML = localStorage.getItem(storageKey);
     let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
-    let showFromStorage = false;
-
     if (savedHTML && now - savedTime < oneDay) {
-      // Сохраняем HTML, но пока не открываем
       const container = document.createElement("div");
       container.innerHTML = savedHTML;
-      showFromStorage = container; // отложенное открытие
+      openModal(container); // показываем сразу
     }
 
     let showContent = null;
@@ -155,55 +152,53 @@
       showContent = container;
     }
 
-    // Обновляем в фоне
-    try {
-      let fc = await fetch(
-        kp_prox +
-          url +
-          (id ? id : "1") +
-          "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-        {
-          method: "GET",
-          headers: { "Content-Type": "text/plain" },
-        }
-      ).then((r) => r.json());
-
-      let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-      dom
-        .querySelectorAll(".actions, i, .share-link")
-        .forEach((elem) => elem.remove());
-
-      let rootList = dom.querySelector(".comments-tree-list");
-      let newTree = buildTree(rootList);
-
-      // Сохраняем в storage
+    // 2. Обновляем в фоне
+    (async () => {
       try {
+        let fc = await fetch(
+          kp_prox +
+            url +
+            (id ? id : "1") +
+            "&cstart=1&type=0&comment_id=0&skin=hdrezka",
+          {
+            method: "GET",
+            headers: { "Content-Type": "text/plain" },
+          }
+        ).then((r) => r.json());
+
+        let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+        dom
+          .querySelectorAll(".actions, i, .share-link")
+          .forEach((elem) => elem.remove());
+        let rootList = dom.querySelector(".comments-tree-list");
+        let newTree = buildTree(rootList);
+
+        // Сохраняем в storage
         const container = document.createElement("div");
         container.appendChild(newTree.cloneNode(true));
         localStorage.setItem(storageKey, container.innerHTML);
         localStorage.setItem(storageTimeKey, Date.now().toString());
-      } catch (e) {
-        console.warn("Не удалось сохранить комментарии в storage", e);
-      }
 
-      // Показываем модалку один раз
-      if (!showContent) showContent = newTree;
-      openModal(showContent);
-    } catch (e) {
-      console.error(e);
-      Lampa.Loading.stop();
-    }
+        // Если уже показали старое, обновляем содержимое
+        if (savedHTML && now - savedTime < oneDay) {
+          document.querySelector(".broadcast__text .comment").innerHTML = "";
+          document
+            .querySelector(".broadcast__text .comment")
+            .appendChild(newTree);
+        } else {
+          openModal(newTree); // если не было старого — показываем новые
+        }
+      } catch (e) {
+        console.error(e);
+        Lampa.Loading.stop();
+      }
+    })();
 
     function openModal(treeContent) {
       Lampa.Loading.stop();
-      let modal = $(`
-                <div>
-                    <div class="broadcast__text" style="text-align:left;">
-                        <div class="comment"></div>
-                    </div>
-                </div>
-            `);
-
+      let modal = $(
+        `<div><div class="broadcast__text" style="text-align:left;"><div class="comment"></div></div></div>`
+      );
       modal.find(".comment").append(treeContent);
 
       // Стили модалки (если ещё не добавлены)
