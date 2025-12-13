@@ -238,6 +238,13 @@
                 `;
         document.head.appendChild(styleEl);
       }
+      if (!window.rezkaSpoilerInit) {
+        window.rezkaSpoilerInit = true;
+        const Script = document.createElement("script");
+        Script.textContent =
+          "function ShowOrHide(id){var t=$('#'+id);t.prev('.title_spoiler').remove();t.css('display','inline');}";
+        document.head.appendChild(Script);
+      }
 
       Lampa.Modal.open({
         title: ``,
