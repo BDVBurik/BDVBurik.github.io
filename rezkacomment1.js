@@ -11,7 +11,7 @@
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const q = name + (ye ? " " + ye : "");
+    const sr = name + (ye ? " " + ye : "");
     const html = await fetch(
       kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
       {
@@ -20,7 +20,7 @@
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body: new URLSearchParams({ q }),
+        body: { q: sr },
       }
     ).then((r) => r.text());
 
