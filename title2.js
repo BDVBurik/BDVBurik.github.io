@@ -18,7 +18,7 @@
 
     // Альтернативные переводы
     let ruAlt = alt.find((t) => t.iso_3166_1 === "RU")?.title;
-    let ukAlt = alt.find((t) => ["UA", "UK"].includes(t.iso_3166_1))?.title;
+
     let enAlt = alt.find((t) => t.iso_3166_1 === "US")?.title;
 
     // Проверяем кэш TMDB
@@ -26,7 +26,7 @@
     const cacheItem = titleCache[card.id];
     if (cacheItem && now - cacheItem.timestamp < CACHE_TTL) {
       if (!ruAlt) ruAlt = cacheItem.ru;
-      if (!ukAlt) ukAlt = cacheItem.uk;
+
       if (!enAlt) enAlt = cacheItem.en;
     }
 
@@ -47,9 +47,7 @@
         ruAlt ||= translations.find(
           (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
         )?.data.title;
-        ukAlt ||= translations.find(
-          (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
-        )?.data.title;
+
         enAlt ||= translations.find(
           (t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en"
         )?.data.title;
@@ -57,7 +55,7 @@
         // Обновляем кэш
         titleCache[card.id] = {
           ru: ruAlt,
-          uk: ukAlt,
+
           en: enAlt,
           timestamp: now,
         };
@@ -72,7 +70,7 @@
       ORIG: orig,
       TRANS: translit,
       RU: ruAlt,
-      UK: ukAlt,
+
       EN: enAlt,
     });
   }
@@ -87,10 +85,7 @@
       data.RU && Lampa.Storage.get("language") !== "ru"
         ? `<div style='font-size:1.3em;'>${data.RU}: RU</div>`
         : "";
-    let ukHtml =
-      data.UK && Lampa.Storage.get("language") !== "uk"
-        ? `<div style='font-size:1.3em;'>${data.UK}: UK</div>`
-        : "";
+
     let enHtml =
       data.EN && Lampa.Storage.get("language") !== "en" && data.EN !== data.ORIG
         ? `<div style='font-size:1.3em;'>${data.EN}: EN</div>`
