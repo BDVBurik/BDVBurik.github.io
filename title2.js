@@ -29,7 +29,7 @@
       en ||= cache.en;
     }
 
-    if (!ru || !en) {
+    if (!ru || !en || !translit) {
       try {
         const type = card.first_air_date ? "tv" : "movie",
           data = await new Promise((res, rej) =>
