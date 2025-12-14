@@ -17,12 +17,10 @@
       alt.find((t) => t.type === "Transliteration")?.title || orig;
 
     // Альтернативные переводы
-    let ruAlt = alt.find((t) => t.iso_639_1?.toLowerCase() === "ru")?.title;
-    let ukAlt = alt.find((t) =>
-      ["uk", "ua"].includes(t.iso_639_1?.toLowerCase())
-    )?.title;
+    let ruAlt = alt.find((t) => t.iso_639_1 === "RU")?.title;
+    let ukAlt = alt.find((t) => ["UK", "UA"].includes(t.iso_639_1))?.title;
     let enAlt = alt.find(
-      (t) => t.iso_639_1?.toLowerCase() === "en" || t.iso_3166_1 === "US"
+      (t) => t.iso_639_1 === "EN" || t.iso_3166_1 === "US"
     )?.title;
 
     // Проверяем кэш TMDB
