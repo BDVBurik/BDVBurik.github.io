@@ -38,7 +38,7 @@
 
     try {
       const data = await Lampa.Api.sources.tmdb.get({
-        type: type + "/", // "movie" или "tv"
+        type: type === "movie" ? "movie/" : "tv/", // "movie" или "tv"
         id: id,
         lang: "en", // получаем английское название
       });
