@@ -93,26 +93,31 @@
 
     $(".original_title", render).remove();
 
-    let ruHtml =
-      data.RU && Lampa.Storage.get("language") !== "ru"
-        ? `<div style='font-size:1.3em;'>RU: ${data.RU}</div>`
-        : "";
-    let ukHtml =
-      data.UK && Lampa.Storage.get("language") !== "uk"
-        ? `<div style='font-size:1.3em;'>UK: ${data.UK}</div>`
-        : "";
+    const lines = [];
+
+    // En
+    if (data.EN) lines.push(`En: ${data.EN}`);
+    // RU
+    if (data.RU && Lampa.Storage.get("language") !== "ru")
+      lines.push(`RU: ${data.RU}`);
+    // UK
+    if (data.UK && Lampa.Storage.get("language") !== "uk")
+      lines.push(`UK: ${data.UK}`);
+    // Orig
+    if (data.ORIG) lines.push(`Orig: ${data.ORIG}`);
+    // Trans
+    if (data.TRANS) lines.push(`Trans: ${data.TRANS}`);
+
+    // Формируем HTML
+    const html = lines
+      .map((line) => `<div style='font-size:1.3em;'>${line}</div>`)
+      .join("");
 
     $(".full-start-new__title", render).after(`
-      <div class="original_title" style="margin-top:-0.8em;text-align:right;">
-        <div>
-          <div style='font-size:1.3em;'>En: ${data.EN || ""}</div>
-          ${ruHtml}
-          ${ukHtml}
-          <div style='font-size:1.3em;'>Orig: ${data.ORIG || ""}</div>
-          <div style='font-size:1.3em;'>Trans: ${data.TRANS || ""}</div>
-        </div>
-      </div>
-    `);
+    <div class="original_title" style="margin-top:-0.8em;text-align:right;">
+      <div>${html}</div>
+    </div>
+  `);
   }
 
   function startPlugin() {
