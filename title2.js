@@ -95,15 +95,19 @@
       data.EN && Lampa.Storage.get("language") !== "en"
         ? `<div style='font-size:1.3em;'>${data.EN}: EN</div>`
         : "";
+    let tlHtml =
+      data.TRANS !== data.EN
+        ? `<div style='font-size:1.3em;'>${data.TRANS}: TL</div>`
+        : "";
 
     $(".full-start-new__title", render).after(`
       <div class="original_title" style="margin-top:-0.8em;text-align:right;">
         <div>
           <div style='font-size:1.3em;'> ${data.ORIG || ""} :Orig</div>
-          <div style='font-size:1.3em;'> ${data.TRANS || ""} :Trans</div>
+          ${tlHtml}
           ${enHtml}
           ${ruHtml}
-          ${ukHtml}
+          /*${ukHtml}*/
         </div>
       </div>
     `);
