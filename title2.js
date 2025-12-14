@@ -92,7 +92,7 @@
         ? `<div style='font-size:1.3em;'>${data.UK}: UK</div>`
         : "";
     let enHtml =
-      data.EN && Lampa.Storage.get("language") !== "en"
+      data.EN && Lampa.Storage.get("language") !== "en" && data.EN !== data.ORIG
         ? `<div style='font-size:1.3em;'>${data.EN}: EN</div>`
         : "";
     let tlHtml =
