@@ -37,17 +37,28 @@
     Lampa.Loading.start();
 
     try {
-      const data = await Lampa.Api.sources.tmdb.get({
-        type: type, // "movie" или "tv"
-        id: id,
-        lang: "en", // получаем английское название
-      });
+      const data = await new Promise((res, rej) =>
+        Lampa.Api.sources.tmdb.get(
+          `${type}/${id}?append_to_response=translations`,
+          {},
+          res,
+          rej
+        )
+      );
 
-      const enTitle = data.title || data.name;
-      if (enTitle) searchRezka(normalizeTitle(enTitle), year);
+      const tr = data.translations?.translations || [];
+
+      const en =
+        tr.find((t) => t.iso_639_1 === "en")?.data?.title ||
+        tr.find((t) => t.iso_639_1 === "en")?.data?.name ||
+        data.title ||
+        data.name;
+
+      if (en) {
+        searchRezka(normalizeTitle(en), year);
+      }
     } catch (e) {
-      console.error("TMDB error", e);
-    } finally {
+      console.error("[TMDB error]", e);
       Lampa.Loading.stop();
     }
   }
