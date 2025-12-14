@@ -21,7 +21,8 @@
         body: new URLSearchParams({ q: name + (ye ? " " + ye : "") }),
       }
     ).then((r) => r.text());
-
+    console.log(name + (ye ? " " + ye : ""));
+    console.log("rezka search html", html); //debug
     const a = new DOMParser()
       .parseFromString(html, "text/html")
       .querySelector(".b-search__live_section a");
