@@ -17,11 +17,9 @@
       alt.find((t) => t.type === "Transliteration")?.title || orig;
 
     // Альтернативные переводы
-    let ruAlt = alt.find((t) => t.iso_639_1 === "RU")?.title;
-    let ukAlt = alt.find((t) => ["UK", "UA"].includes(t.iso_639_1))?.title;
-    let enAlt = alt.find(
-      (t) => t.iso_639_1 === "EN" || t.iso_3166_1 === "US"
-    )?.title;
+    let ruAlt = alt.find((t) => t.iso_3166_1 === "RU")?.title;
+    let ukAlt = alt.find((t) => ["UA", "UK"].includes(t.iso_3166_1))?.title;
+    let enAlt = alt.find((t) => t.iso_3166_1 === "US")?.title;
 
     // Проверяем кэш TMDB
     const now = Date.now();
@@ -46,18 +44,15 @@
         });
         const translations = data.translations?.translations || [];
 
-        if (!ruAlt)
-          ruAlt = translations.find((t) => t.iso_3166_1 === "ru")?.data.title;
-        if (!ukAlt)
-          ukAlt = translations.find(
-            (t) => t.iso_3166_1 === "ua" || t.iso_639_1 === "uk"
-          )?.data.title;
-        if (!enAlt)
-          enAlt =
-            translations.find(
-              (t) => t.iso_3166_1 === "us" || t.iso_639_1 == "en"
-            )?.data.title ||
-            translations.find((t) => t.iso_3166_1 === "en")?.data.title;
+        ruAlt ||= translations.find(
+          (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
+        )?.data.title;
+        ukAlt ||= translations.find(
+          (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
+        )?.data.title;
+        enAlt ||= translations.find(
+          (t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en"
+        )?.data.title;
 
         // Обновляем кэш
         titleCache[card.id] = {
