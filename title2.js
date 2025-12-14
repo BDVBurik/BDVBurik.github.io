@@ -93,31 +93,30 @@
 
     $(".original_title", render).remove();
 
-    const lines = [];
-
-    // En
-    if (data.EN) lines.push(`En: ${data.EN}`);
-    // RU
-    if (data.RU && Lampa.Storage.get("language") !== "ru")
-      lines.push(`RU: ${data.RU}`);
-    // UK
-    if (data.UK && Lampa.Storage.get("language") !== "uk")
-      lines.push(`UK: ${data.UK}`);
-    // Orig
-    if (data.ORIG) lines.push(`Orig: ${data.ORIG}`);
-    // Trans
-    if (data.TRANS) lines.push(`Trans: ${data.TRANS}`);
-
-    // Формируем HTML
-    const html = lines
-      .map((line) => `<div style='font-size:1.3em;'>${line}</div>`)
-      .join("");
+    let ruHtml =
+      data.RU && Lampa.Storage.get("language") !== "ru"
+        ? `<div style='font-size:1.3em;'>${data.RU}: RU</div>`
+        : "";
+    let ukHtml =
+      data.UK && Lampa.Storage.get("language") !== "uk"
+        ? `<div style='font-size:1.3em;'>${data.UK}: UK</div>`
+        : "";
+    let enHtml =
+      data.EN && Lampa.Storage.get("language") !== "en"
+        ? `<div style='font-size:1.3em;'>${data.EN}: EN</div>`
+        : "";
 
     $(".full-start-new__title", render).after(`
-    <div class="original_title" style="margin-top:-0.8em;text-align:right;">
-      <div>${html}</div>
-    </div>
-  `);
+      <div class="original_title" style="margin-top:-0.8em;text-align:right;">
+        <div>
+          <div style='font-size:1.3em;'> ${data.ORIG || ""} :Orig</div>
+          <div style='font-size:1.3em;'> ${data.TRANS || ""} :Trans</div>
+          ${enHtml}
+          ${ruHtml}
+          ${ukHtml}
+        </div>
+      </div>
+    `);
   }
 
   function startPlugin() {
