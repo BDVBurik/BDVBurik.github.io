@@ -3,7 +3,7 @@
   ////франшиза в алмпе
   ("use strict");
   const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  const kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  const kp_prox = "http://192.168.1.133:9118/corseu/token1/";
   const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
   var namemovie;
   var www;
@@ -12,8 +12,7 @@
   var url;
   reazkaParseHtmlDom = async function (url, name, year) {
     let fc = await fetch(
-      kp_prox + 
-      url + (name ? name : "") + (year ? "+" + year : ""),
+      kp_prox + url + (name ? name : "") + (year ? "+" + year : ""),
       {
         method: "GET",
         headers: {
@@ -57,9 +56,8 @@
 
   collectRender = async function (data) {
     www = "";
-    
 
-  // console.log("data", data);  //debug
+    // console.log("data", data);  //debug
 
     let wid;
     data.filter((el, index) => {
@@ -95,7 +93,6 @@
       }</i> </span>
 </div>`;
 
-
       // if (el.className.includes("current")) {
       //   wid = index;
       // }
@@ -112,8 +109,6 @@
     $(".full-descr__text").after(collect);
 
     $("#collect").ready(function () {
-
-
       // let hide = 1;
       $(".collectionfocus").one("hover:enter", function () {
         // console.log("asdasdasd");
