@@ -31,7 +31,7 @@
     }
 
     // Если чего-то нет — делаем запрос к TMDB
-    if (!ruAlt || !ukAlt || !enAlt) {
+    if (!ruAlt || !enAlt) {
       try {
         const type = card.first_air_date ? "tv" : "movie";
         const data = await new Promise((resolve, reject) => {
