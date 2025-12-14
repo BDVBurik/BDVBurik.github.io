@@ -35,26 +35,20 @@
 
   async function getEnTitle(id, type) {
     Lampa.Loading.start();
-    const url =
-      kp_prox +
-      tmdbApiUrl +
-      (type === "movie" ? "movie/" : "tv/") +
-      id +
-      urlEndTMDB;
 
-    let data;
     try {
-      data = await fetch(url).then((r) => r.json());
+      const data = await Lampa.Api.sources.tmdb.get({
+        type: type + "/", // "movie" или "tv"
+        id: id,
+        lang: "en", // получаем английское название
+      });
+
+      const enTitle = data.title || data.name;
+      if (enTitle) searchRezka(normalizeTitle(enTitle), year);
     } catch (e) {
       console.error("TMDB error", e);
+    } finally {
       Lampa.Loading.stop();
-      return;
-    }
-
-    const enTitle = data.title || data.name;
-
-    if (enTitle) {
-      searchRezka(normalizeTitle(enTitle), year);
     }
   }
 
