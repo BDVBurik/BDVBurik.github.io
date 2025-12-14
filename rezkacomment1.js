@@ -11,12 +11,8 @@
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const query = name + (ye ? " " + ye : "");
-
-    const body = new URLSearchParams();
-    body.append("q", query);
-
-    const response = await fetch(
+    const q = name + (ye ? " " + ye : "");
+    const html = await fetch(
       kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
       {
         method: "POST",
@@ -24,30 +20,20 @@
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body,
+        body: new URLSearchParams({ q }),
       }
-    );
+    ).then((r) => r.text());
 
-    const html = await response.text();
+    const a = new DOMParser()
+      .parseFromString(html, "text/html")
+      .querySelector(".b-search__live_section a");
 
-    const dom = new DOMParser().parseFromString(html, "text/html");
+    if (!a) return;
 
-    // первый найденный результат
-    const item = dom.querySelector(".b-search__live_section li a");
-    if (!item) return;
-
-    const url = item.getAttribute("href");
-    const title = item.querySelector(".enty")?.innerText || item.innerText;
-
-    // Rezka ID вытаскиваем из URL
-    // /films/fiction/647-avatar-2009-latest.html
-    const match = url.match(/\/(\d+)-/);
-    const rezkaId = match ? match[1] : null;
-
-    if (!rezkaId) return;
-
-    namemovie = title;
-    comment_rezka(rezkaId);
+    namemovie = a.querySelector(".enty")?.innerText || a.innerText;
+    comment_rezka(a.href.match(/\/(\d+)-/)?.[1]);
+    console.log("Rezka comments for:", namemovie);
+    console.log("Rezka comments URL:", a.href.match(/\/(\d+)-/)?.[1], a.href);
   }
 
   // Функция для получения английского названия фильма или сериала
