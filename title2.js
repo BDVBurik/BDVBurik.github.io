@@ -17,14 +17,13 @@
       alt.find((t) => t.type === "Transliteration")?.title || orig;
 
     // Альтернативные переводы
-    let ruAlt = alt.find((t) => t.iso_639_1?.toLowerCase() === "ru")?.title;
-    let ukAlt = alt.find((t) => t.iso_639_1?.toLowerCase() === "uk")?.title;
+    let ruAlt = alt.find((t) => t.iso_639_1 === "RU")?.title;
+    let ukAlt = alt.find(
+      (t) => t.iso_639_1 === "UK" || t.iso_639_1 === "UA"
+    )?.title;
     let enAlt =
-      alt.find(
-        (t) =>
-          t.iso_3166_1?.toLowerCase() === "us" ||
-          t.iso_639_1?.toLowerCase() === "en"
-      )?.title || alt.find((t) => t.iso_3166_1?.toLowerCase() === "en")?.title;
+      alt.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.title ||
+      alt.find((t) => t.iso_3166_1 === "EN")?.title;
 
     // Проверяем кэш TMDB
     const now = Date.now();
@@ -50,19 +49,16 @@
         const translations = data.translations?.translations || [];
 
         if (!ruAlt)
-          ruAlt = translations.find(
-            (t) => (t) => t.iso_3166_1?.toLowerCase() === "ru"
-          )?.data.title;
+          ruAlt = translations.find((t) => (t) => t.iso_3166_1 === "RU")?.data
+            .title;
         if (!ukAlt)
           ukAlt = translations.find(
-            (t) => (t) => t.iso_3166_1?.toLowerCase() === "ua"
+            (t) => (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "UK"
           )?.data.title;
         if (!enAlt)
           enAlt =
             translations.find(
-              (t) => (t) =>
-                t.iso_3166_1?.toLowerCase() === "us" ||
-                t.iso_639_1?.toLowerCase() == "en"
+              (t) => (t) => t.iso_3166_1 === "US" || t.iso_639_1 == "en"
             )?.data.title ||
             translations.find((t) => t.iso_3166_1 === "EN")?.data.title;
 
