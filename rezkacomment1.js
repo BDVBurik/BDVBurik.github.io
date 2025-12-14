@@ -9,8 +9,14 @@
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
+  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const html = await fetch(
+    const query = name + (ye ? " " + ye : "");
+
+    const body = new URLSearchParams();
+    body.append("q", query);
+
+    const response = await fetch(
       kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
       {
         method: "POST",
@@ -18,25 +24,35 @@
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body: new URLSearchParams({ q: name + (ye ? " " + ye : "") }),
+        body,
       }
-    ).then((r) => r.text());
-    console.log(name + (ye ? " " + ye : ""));
-    console.log("rezka search html", html); //debug
-    const a = new DOMParser()
-      .parseFromString(html, "text/html")
-      .querySelector(".b-search__live_section a");
+    );
 
-    if (!a) return;
+    const html = await response.text();
 
-    namemovie = a.querySelector(".enty")?.innerText || a.innerText;
-    const id = a.href.match(/\/(\d+)-/)?.[1];
-    comment_rezka(id);
+    const dom = new DOMParser().parseFromString(html, "text/html");
+
+    // первый найденный результат
+    const item = dom.querySelector(".b-search__live_section li a");
+    if (!item) return;
+
+    const url = item.getAttribute("href");
+    const title = item.querySelector(".enty")?.innerText || item.innerText;
+
+    // Rezka ID вытаскиваем из URL
+    // /films/fiction/647-avatar-2009-latest.html
+    const match = url.match(/\/(\d+)-/);
+    const rezkaId = match ? match[1] : null;
+
+    if (!rezkaId) return;
+
+    namemovie = title;
+    comment_rezka(rezkaId);
   }
 
   // Функция для получения английского названия фильма или сериала
 
-  async function getEnTitle(id, type, year) {
+  async function getEnTitle(id, type) {
     Lampa.Loading.start();
 
     try {
@@ -49,22 +65,19 @@
         )
       );
 
-      // массив переводов
-      const translations = data.translations?.translations || [];
+      const tr = data.translations?.translations || [];
 
-      // ищем английский вариант
       const en =
-        translations.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")
-          ?.data?.title ||
-        translations.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")
-          ?.data?.name ||
+        tr.find((t) => t.iso_639_1 === "en")?.data?.title ||
+        tr.find((t) => t.iso_639_1 === "en")?.data?.name ||
         data.title ||
         data.name;
 
-      if (en) searchRezka(normalizeTitle(en), year);
+      if (en) {
+        searchRezka(normalizeTitle(en), year);
+      }
     } catch (e) {
       console.error("[TMDB error]", e);
-    } finally {
       Lampa.Loading.stop();
     }
   }
