@@ -8,8 +8,16 @@
       alt =
         card.alternative_titles?.titles ||
         card.alternative_titles?.results ||
-        [],
-      translit = alt.find((t) => t.type === "Transliteration")?.title || orig;
+        [];
+
+    const translitObj = alt.find(
+      (t) => t.type === "Transliteration" || t.type === "romaji"
+    );
+    const translit =
+      translitObj?.title ||
+      translitObj?.data?.title ||
+      translitObj?.data?.name ||
+      "";
 
     let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title,
       en = alt.find((t) => t.iso_3166_1 === "US")?.title;
@@ -33,6 +41,11 @@
             )
           ),
           tr = data.translations?.translations || [];
+        translitData = tr.find(
+          (t) => t.type === "Transliteration" || t.type === "romaji"
+        )?.data;
+        translit = translitData?.title || translitData?.name || "";
+
         ru ||=
           tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
             ?.title ||
@@ -65,7 +78,7 @@
           ? `<div style='font-size:1.3em;'>${en}: EN</div>`
           : "",
       tlHtml =
-        translit !== orig && translit !== en
+        translit && translit !== orig && translit !== en
           ? `<div style='font-size:1.3em;'>${translit}: TL</div>`
           : "";
 
