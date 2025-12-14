@@ -237,7 +237,7 @@
         onBack: function () {
           Lampa.Modal.close();
           $(".modal--large").remove();
-          Lampa.Loading.stop();
+          Lampa.Controller.toggle("content");
         },
       });
 
