@@ -57,9 +57,10 @@
           ? `<div style='font-size:1.3em;'>${en}: EN</div>`
           : "",
       tlHtml =
-        translit !== en
+        translit !== orig && translit !== en
           ? `<div style='font-size:1.3em;'>${translit}: TL</div>`
           : "";
+
     $(".full-start-new__title", render).after(
       `<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div><div style='font-size:1.3em;'>${orig}: Orig</div>${tlHtml}${enHtml}${ruHtml}</div></div>`
     );
