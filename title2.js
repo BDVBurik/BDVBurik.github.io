@@ -93,30 +93,47 @@
 
     $(".original_title", render).remove();
 
-    let ruHtml =
-      data.RU && Lampa.Storage.get("language") !== "ru"
-        ? `<div style='font-size:1.3em;'>${data.RU} :RU</div>`
-        : "";
-    let ukHtml =
-      data.UK && Lampa.Storage.get("language") !== "uk"
-        ? `<div style='font-size:1.3em;'>${data.UK} :UK</div>`
-        : "";
-    let enHtml =
-      data.EN && Lampa.Storage.get("language") !== "en"
-        ? `<div style='font-size:1.3em;'>${data.EN} :EN</div>`
-        : "";
+    // Формируем строки
+    let lines = [];
 
+    // Orig
+    if (data.ORIG)
+      lines.push(`<div style='font-size:1.3em;'>${data.ORIG} :OR</div>`);
+
+    // Trans, показываем только если отличается от Orig
+    if (data.TRANS && data.TRANS !== data.ORIG)
+      lines.push(`<div style='font-size:1.3em;'>${data.TRANS} :TL</div>`);
+
+    // EN
+    if (
+      data.EN &&
+      data.EN !== data.ORIG &&
+      Lampa.Storage.get("language") !== "en"
+    )
+      lines.push(`<div style='font-size:1.3em;'>${data.EN} :EN</div>`);
+
+    // RU
+    if (
+      data.RU &&
+      data.RU !== data.ORIG &&
+      Lampa.Storage.get("language") !== "ru"
+    )
+      lines.push(`<div style='font-size:1.3em;'>${data.RU} :RU</div>`);
+
+    // UK
+    if (
+      data.UK &&
+      data.UK !== data.ORIG &&
+      Lampa.Storage.get("language") !== "uk"
+    )
+      lines.push(`<div style='font-size:1.3em;'>${data.UK} :UK</div>`);
+
+    // Вставляем в DOM
     $(".full-start-new__title", render).after(`
-      <div class="original_title" style="margin-top:-0.8em;text-align:right;">
-        <div>
-          <div style='font-size:1.3em;'> ${data.ORIG || ""} :OR</div>
-          <div style='font-size:1.3em;'> ${data.TRANS || ""} :TL</div>
-          ${enHtml}
-          ${ruHtml}
-          ${ukHtml}
-        </div>
-      </div>
-    `);
+    <div class="original_title" style="margin-top:-0.8em;text-align:right;">
+      <div>${lines.join("")}</div>
+    </div>
+  `);
   }
 
   function startPlugin() {
