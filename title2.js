@@ -10,6 +10,7 @@
         card.alternative_titles?.results ||
         [];
 
+<<<<<<< HEAD
     const translitObj = alt.find(
       (t) => t.type === "Transliteration" || t.type === "romaji"
     );
@@ -18,6 +19,11 @@
       translitObj?.data?.title ||
       translitObj?.data?.name ||
       "";
+=======
+    translit =
+      alt.find((t) => t.type === "Transliteration" || t.type === "romaji")
+        ?.title || "";
+>>>>>>> a88db04ee9842a50e41601e0ead83d6f840a17fc
 
     let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title,
       en = alt.find((t) => t.iso_3166_1 === "US")?.title;
