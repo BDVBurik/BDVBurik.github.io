@@ -1,126 +1,114 @@
-(function () {
-  "use strict";
-  // BDVBurik.github.io Title Plugin
-  // 2025
+(() => {
+  const storageKey = "title_cache",
+    CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
+  let titleCache = Lampa.Storage.get(storageKey) || {};
 
   async function showTitles(card) {
     const orig = card.original_title || card.original_name;
-    const alt = card.alternative_titles?.titles || [];
+    const alt =
+      card.alternative_titles?.titles || card.alternative_titles?.results || [];
 
-    // Транслитерация
-    const translit =
-      alt.find((t) => t.type === "Transliteration")?.title || orig;
+    // транслитерация — первый romaji или Transliteration
+    let translitObj = alt.find(
+      (t) => t.type === "Transliteration" || t.type === "romaji"
+    );
+    let translit =
+      translitObj?.title ||
+      translitObj?.data?.title ||
+      translitObj?.data?.name ||
+      "";
 
-    // Альтернативные переводы
-    let ruAlt = alt.find(
-      (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
-    )?.title;
-    let ukAlt = alt.find(
-      (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
-    )?.title;
-    let enAlt =
-      alt.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.title ||
-      alt.find((t) => t.iso_3166_1 === "EN")?.title;
+    let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
+    let en = alt.find((t) => t.iso_3166_1 === "US")?.title;
 
-    // Если чего-то нет — делаем запрос к TMDB
-    if (!ruAlt || !ukAlt || !enAlt) {
+    const now = Date.now();
+    const cache = titleCache[card.id];
+    if (cache && now - cache.timestamp < CACHE_TTL) {
+      ru ||= cache.ru;
+      en ||= cache.en;
+    }
+
+    // Запрос к TMDB если чего-то нет
+    if (!ru || !en || !translit) {
       try {
         const type = card.first_air_date ? "tv" : "movie";
-        const data = await new Promise((resolve, reject) => {
+        const data = await new Promise((res, rej) =>
           Lampa.Api.sources.tmdb.get(
-            type + "/" + card.id + "?append_to_response=translations",
+            `${type}/${card.id}?append_to_response=translations`,
             {},
-            resolve,
-            reject
-          );
-        });
-        const translations = data.translations?.translations || [];
+            res,
+            rej
+          )
+        );
+        const tr = data.translations?.translations || [];
 
-        if (!ruAlt)
-          ruAlt = translations.find(
-            (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
-          )?.data.title;
-        if (!ukAlt)
-          ukAlt = translations.find(
-            (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
-          )?.data.title;
-        if (!enAlt)
-          enAlt =
-            translations.find(
-              (t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en"
-            )?.data.title ||
-            translations.find((t) => t.iso_3166_1 === "EN")?.data.title;
+        // TL: ищем romaji/Transliteration
+        const translitData = tr.find(
+          (t) => t.type === "Transliteration" || t.type === "romaji"
+        );
+        translit =
+          translitData?.title ||
+          translitData?.data?.title ||
+          translitData?.data?.name ||
+          translit;
+
+        // RU/EN
+        ru ||=
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.name;
+        en ||=
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.name;
+
+        // обновляем кэш
+        titleCache[card.id] = { ru, en, timestamp: now };
+        Lampa.Storage.set(storageKey, titleCache);
       } catch (e) {
-        console.error("TMDB get failed:", e);
+        console.error(e);
       }
     }
 
-    renderTitles(card, {
-      ORIG: orig,
-      TRANS: translit,
-      RU: ruAlt,
-      UK: ukAlt,
-      EN: enAlt,
-    });
-  }
-
-  function renderTitles(card, data) {
     const render = Lampa.Activity.active().activity.render();
     if (!render) return;
-
     $(".original_title", render).remove();
 
-    let lines = [];
+    const lang = Lampa.Storage.get("language"),
+      ruHtml =
+        ru && lang !== "ru"
+          ? `<div style='font-size:1.3em;'>${ru}: RU</div>`
+          : "",
+      enHtml =
+        en && lang !== "en" && en !== orig
+          ? `<div style='font-size:1.3em;'>${en}: EN</div>`
+          : "",
+      tlHtml =
+        translit && translit !== orig && translit !== en
+          ? `<div style='font-size:1.3em;'>${translit}: TL</div>`
+          : "";
 
-    if (data.ORIG)
-      lines.push(`<div style='font-size:1.3em;'>${data.ORIG} :OR</div>`);
-    if (data.TRANS && data.TRANS !== data.ORIG)
-      lines.push(`<div style='font-size:1.3em;'>${data.TRANS} :TL</div>`);
-    if (
-      data.EN &&
-      data.EN !== data.ORIG &&
-      Lampa.Storage.get("language") !== "en"
-    )
-      lines.push(`<div style='font-size:1.3em;'>${data.EN} :EN</div>`);
-    if (
-      data.RU &&
-      data.RU !== data.ORIG &&
-      Lampa.Storage.get("language") !== "ru"
-    )
-      lines.push(`<div style='font-size:1.3em;'>${data.RU} :RU</div>`);
-    if (
-      data.UK &&
-      data.UK !== data.ORIG &&
-      Lampa.Storage.get("language") !== "uk"
-    )
-      lines.push(`<div style='font-size:1.3em;'>${data.UK} :UK</div>`);
-
-    $(".full-start-new__title", render).after(`
-      <div class="original_title" style="margin-top:-0.8em;text-align:right;">
-        <div>${lines.join("")}</div>
-      </div>
-    `);
+    $(".full-start-new__title", render).after(
+      `<div class="original_title" style="margin-top:-0.8em;text-align:right;">
+         <div>
+           <div style='font-size:1.3em;'>${orig}: Orig</div>
+           ${tlHtml}${enHtml}${ruHtml}
+         </div>
+       </div>`
+    );
   }
 
-  function startPlugin() {
-    if (window.title_plugin) return;
+  if (!window.title_plugin) {
     window.title_plugin = true;
-
-    Lampa.Listener.follow("full", function (e) {
-      if (e.type !== "complite") return;
-
-      const card = e.data.movie;
-      if (!card) return;
-
-      const render = e.object.activity.render();
-      $(".original_title", render).remove();
-      $(".full-start-new__title", render).after(
+    Lampa.Listener.follow("full", (e) => {
+      if (e.type !== "complite" || !e.data.movie) return;
+      $(".original_title", e.object.activity.render()).remove();
+      $(".full-start-new__title", e.object.activity.render()).after(
         '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div></div></div>'
       );
-
-      showTitles(card);
+      showTitles(e.data.movie);
     });
   }
-
-  startPlugin();
 })();
