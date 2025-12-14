@@ -11,7 +11,7 @@
     const orig = card.original_title || card.original_name;
     const alt =
       card.alternative_titles?.titles || card.alternative_titles?.results || [];
-
+    console.log(alt);
     // Транслитерация
     const translit =
       alt.find((t) => t.type === "Transliteration")?.title || orig;
