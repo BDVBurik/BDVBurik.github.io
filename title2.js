@@ -49,16 +49,15 @@
         const translations = data.translations?.translations || [];
 
         if (!ruAlt)
-          ruAlt = translations.find((t) => (t) => t.iso_3166_1 === "RU")?.data
-            .title;
+          ruAlt = translations.find((t) => t.iso_3166_1 === "RU")?.data.title;
         if (!ukAlt)
           ukAlt = translations.find(
-            (t) => (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "UK"
+            (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "UK"
           )?.data.title;
         if (!enAlt)
           enAlt =
             translations.find(
-              (t) => (t) => t.iso_3166_1 === "US" || t.iso_639_1 == "en"
+              (t) => t.iso_3166_1 === "US" || t.iso_639_1 == "en"
             )?.data.title ||
             translations.find((t) => t.iso_3166_1 === "EN")?.data.title;
 
