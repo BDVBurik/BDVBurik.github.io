@@ -1,98 +1,142 @@
 (function () {
   "use strict";
+  // BDVBurik.github.io Title Plugin
+  // 2025
 
-  // Проверка наличия иероглифов (CJK: китайские, японские, корейские)
-  function hasCJK(text) {
-    return /[\u4E00-\u9FFF\uAC00-\uD7AF\u3040-\u30FF]/.test(text);
-  }
+  const storageKey = "title_cache";
+  const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 дней
+  let titleCache = Lampa.Storage.get(storageKey) || {};
 
-  function showTitles(card) {
-    var orig = card.original_title || card.original_name;
-    var alt = card.alternative_titles?.titles || [];
+  async function showTitles(card) {
+    const orig = card.original_title || card.original_name;
+    const alt = card.alternative_titles?.titles || [];
 
-    // Транслитерация — только если в оригинале есть иероглифы
-    var translit = hasCJK(orig)
-      ? alt.find((t) => t.type === "Transliteration")?.title
-      : "";
+    // Транслитерация
+    const translit =
+      alt.find((t) => t.type === "Transliteration")?.title || orig;
 
     // Альтернативные переводы
-    var ruAlt = alt.find(
+    let ruAlt = alt.find(
       (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
     )?.title;
-    var ukAlt = alt.find(
+    let ukAlt = alt.find(
       (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
     )?.title;
-    var enAlt =
+    let enAlt =
       alt.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.title ||
       alt.find((t) => t.iso_3166_1 === "EN")?.title;
 
+    // Проверяем кэш TMDB
+    const now = Date.now();
+    const cacheItem = titleCache[card.id];
+    if (cacheItem && now - cacheItem.timestamp < CACHE_TTL) {
+      if (!ruAlt) ruAlt = cacheItem.ru;
+      if (!ukAlt) ukAlt = cacheItem.uk;
+      if (!enAlt) enAlt = cacheItem.en;
+    }
+
     // Если чего-то нет — делаем запрос к TMDB
     if (!ruAlt || !ukAlt || !enAlt) {
-      Lampa.Api.sources.tmdb.get(
-        (card.first_air_date ? "tv" : "movie") +
-          "/" +
-          card.id +
-          "?append_to_response=translations",
-        {},
-        function (data) {
-          var translations = data.translations?.translations || [];
+      try {
+        const type = card.first_air_date ? "tv" : "movie";
+        const data = await new Promise((resolve, reject) => {
+          Lampa.Api.sources.tmdb.get(
+            type + "/" + card.id + "?append_to_response=translations",
+            {},
+            resolve,
+            reject
+          );
+        });
+        const translations = data.translations?.translations || [];
 
-          if (!ruAlt)
-            ruAlt = translations.find(
-              (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
-            )?.data.title;
-          if (!ukAlt)
-            ukAlt = translations.find(
-              (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
-            )?.data.title;
-          if (!enAlt)
-            enAlt =
-              translations.find(
-                (t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en"
-              )?.data.title ||
-              translations.find((t) => t.iso_3166_1 === "EN")?.data.title;
+        if (!ruAlt)
+          ruAlt = translations.find(
+            (t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru"
+          )?.data.title;
+        if (!ukAlt)
+          ukAlt = translations.find(
+            (t) => t.iso_3166_1 === "UA" || t.iso_639_1 === "uk"
+          )?.data.title;
+        if (!enAlt)
+          enAlt =
+            translations.find(
+              (t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en"
+            )?.data.title ||
+            translations.find((t) => t.iso_3166_1 === "EN")?.data.title;
 
-          renderTitles(orig, translit, ruAlt, ukAlt, enAlt);
-        }
-      );
-    } else {
-      renderTitles(orig, translit, ruAlt, ukAlt, enAlt);
+        // Обновляем кэш
+        titleCache[card.id] = {
+          ru: ruAlt,
+          uk: ukAlt,
+          en: enAlt,
+          timestamp: now,
+        };
+        Lampa.Storage.set(storageKey, titleCache);
+      } catch (e) {
+        console.error("TMDB get failed:", e);
+      }
     }
-  }
 
-  function renderTitles(orig, translit, ru, uk, en) {
-    console.table({
+    // Рендерим карточку
+    renderTitles(card, {
       ORIG: orig,
       TRANS: translit,
-      RU: ru || "",
-      UK: uk || "",
-      EN: en || "",
+      RU: ruAlt,
+      UK: ukAlt,
+      EN: enAlt,
     });
+  }
 
+  function renderTitles(card, data) {
     const render = Lampa.Activity.active().activity.render();
+    if (!render) return;
+
     $(".original_title", render).remove();
+
+    let ruHtml =
+      data.RU && Lampa.Storage.get("language") !== "ru"
+        ? `<div style='font-size:1.3em;'>RU: ${data.RU}</div>`
+        : "";
+    let ukHtml =
+      data.UK && Lampa.Storage.get("language") !== "uk"
+        ? `<div style='font-size:1.3em;'>UK: ${data.UK}</div>`
+        : "";
+
     $(".full-start-new__title", render).after(`
       <div class="original_title" style="margin-top:-0.8em;text-align:right;">
         <div>
-          ${
-            translit
-              ? `<div style="font-size:1.3em;">Trans: ${translit}</div>`
-              : ""
-          }
-          ${en ? `<div style="font-size:1.3em;">En: ${en}</div>` : ""}
-          ${ru ? `<div style="font-size:1.3em;">RU: ${ru}</div>` : ""}
-          ${uk ? `<div style="font-size:1.3em;">UK: ${uk}</div>` : ""}
-          <div style="font-size:1.3em;">Orig: ${orig}</div>
+          <div style='font-size:1.3em;'>En: ${data.EN || ""}</div>
+          ${ruHtml}
+          ${ukHtml}
+          <div style='font-size:1.3em;'>Orig: ${data.ORIG || ""}</div>
+          <div style='font-size:1.3em;'>Trans: ${data.TRANS || ""}</div>
         </div>
       </div>
     `);
   }
 
-  // Использование
-  var card = Lampa.Activity.active().card;
-  if (card) showTitles(card);
+  function startPlugin() {
+    if (window.title_plugin) return;
+    window.title_plugin = true;
 
-  Lampa.Listener.follow("full", function (e) {
-    if (e.type === "complite") showTitles(e.data.movie);
-  });
+    Lampa.Listener.follow("full", function (e) {
+      if (e.type !== "complite") return;
+
+      const card = e.data.movie;
+      if (!card) return;
+
+      // Очищаем старые
+      const render = e.object.activity.render();
+      $(".original_title", render).remove();
+
+      // Сразу создаем контейнер
+      $(".full-start-new__title", render).after(
+        '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div></div></div>'
+      );
+
+      showTitles(card);
+    });
+  }
+
+  startPlugin();
 })();
