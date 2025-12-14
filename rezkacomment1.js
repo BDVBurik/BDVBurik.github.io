@@ -5,7 +5,9 @@
 
   let year;
   let namemovie;
+  const urlEndTMDB = "?language=ru-RU&api_key=4ef0d7355d9ffb5151e987764708ce96";
 
+  const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
@@ -33,19 +35,26 @@
 
   async function getEnTitle(id, type) {
     Lampa.Loading.start();
+    const url =
+      kp_prox +
+      tmdbApiUrl +
+      (type === "movie" ? "movie/" : "tv/") +
+      id +
+      urlEndTMDB;
 
+    let data;
     try {
-      const data = await Lampa.Api.sources.tmdb.get({
-        type: type, // "movie" или "tv"
-        id: id,
-        lang: "en", // получаем английское название
-      });
-
-      const enTitle = data.title || data.name;
-      if (enTitle) searchRezka(normalizeTitle(enTitle), year);
+      data = await fetch(url).then((r) => r.json());
     } catch (e) {
       console.error("TMDB error", e);
       Lampa.Loading.stop();
+      return;
+    }
+
+    const enTitle = data.title || data.name;
+
+    if (enTitle) {
+      searchRezka(normalizeTitle(enTitle), year);
     }
   }
 
@@ -261,8 +270,7 @@
           } else if (e.data.movie.first_air_date) {
             year = e.data.movie.first_air_date.slice(0, 4);
           }
-          const type = e.data.movie ? "movie" : "tv";
-          getEnTitle(e.data.movie?.id || e.data.tv?.id, type);
+          getEnTitle(e.data.movie.id, e.object.method);
         });
       }
     });
