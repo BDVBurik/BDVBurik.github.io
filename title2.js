@@ -33,10 +33,18 @@
             )
           ),
           tr = data.translations?.translations || [];
-        ru ||= tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")
-          ?.data.title;
-        en ||= tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")
-          ?.data.title;
+        ru ||=
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.name;
+
+        en ||=
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.name;
+
         titleCache[card.id] = { ru, en, timestamp: now };
         Lampa.Storage.set(storageKey, titleCache);
       } catch (e) {
