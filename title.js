@@ -1,4 +1,7 @@
 (() => {
+  // bdvburik.github.io plugin title.js
+  // 2025
+  //
   const storageKey = "title_cache",
     CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
   let titleCache = Lampa.Storage.get(storageKey) || {};
