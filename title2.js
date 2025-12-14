@@ -8,7 +8,6 @@
     const alt =
       card.alternative_titles?.titles || card.alternative_titles?.results || [];
 
-    // транслитерация — первый romaji или Transliteration
     let translitObj = alt.find(
       (t) => t.type === "Transliteration" || t.type === "romaji"
     );
@@ -28,7 +27,6 @@
       en ||= cache.en;
     }
 
-    // Запрос к TMDB если чего-то нет
     if (!ru || !en || !translit) {
       try {
         const type = card.first_air_date ? "tv" : "movie";
@@ -42,7 +40,6 @@
         );
         const tr = data.translations?.translations || [];
 
-        // TL: ищем romaji/Transliteration
         const translitData = tr.find(
           (t) => t.type === "Transliteration" || t.type === "romaji"
         );
@@ -51,8 +48,6 @@
           translitData?.data?.title ||
           translitData?.data?.name ||
           translit;
-
-        // RU/EN
         ru ||=
           tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
             ?.title ||
@@ -64,7 +59,6 @@
           tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
             ?.name;
 
-        // обновляем кэш
         titleCache[card.id] = { ru, en, timestamp: now };
         Lampa.Storage.set(storageKey, titleCache);
       } catch (e) {
