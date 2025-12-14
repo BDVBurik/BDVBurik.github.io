@@ -10,17 +10,15 @@
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
   async function searchRezka(name, ye) {
-    const body = new URLSearchParams({ q: name + (ye ? " " + ye : "") });
-
-    const r = await fetch(
-      kp_prox + "https://hdrezka.ag//engine/ajax/search.php",
+    const html = await fetch(
+      kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body,
+        body: new URLSearchParams({ q: name + (ye ? " " + ye : "") }),
       }
     ).then((r) => r.text());
 
@@ -31,9 +29,8 @@
     if (!a) return;
 
     namemovie = a.querySelector(".enty")?.innerText || a.innerText;
-    comment_rezka(a.href.match(/\/(\d+)-/)?.[1]);
-    console.log("Rezka comments for:", namemovie);
-    console.log("Rezka comments URL:", a.href.match(/\/(\d+)-/)?.[1], a.href);
+    const id = a.href.match(/\/(\d+)-/)?.[1];
+    comment_rezka(id);
   }
 
   // Функция для получения английского названия фильма или сериала
