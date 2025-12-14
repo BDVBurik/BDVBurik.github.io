@@ -36,7 +36,7 @@
 
   // Функция для получения английского названия фильма или сериала
 
-  async function getEnTitle(id, type) {
+  async function getEnTitle(id, type, year) {
     Lampa.Loading.start();
 
     try {
@@ -49,19 +49,22 @@
         )
       );
 
-      const tr = data.translations?.translations || [];
+      // массив переводов
+      const translations = data.translations?.translations || [];
 
+      // ищем английский вариант
       const en =
-        tr.find((t) => t.iso_639_1 === "en")?.data?.title ||
-        tr.find((t) => t.iso_639_1 === "en")?.data?.name ||
+        translations.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")
+          ?.data?.title ||
+        translations.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")
+          ?.data?.name ||
         data.title ||
         data.name;
 
-      if (en) {
-        searchRezka(normalizeTitle(en), year);
-      }
+      if (en) searchRezka(normalizeTitle(en), year);
     } catch (e) {
       console.error("[TMDB error]", e);
+    } finally {
       Lampa.Loading.stop();
     }
   }
