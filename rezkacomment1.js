@@ -33,7 +33,6 @@
 
   // Функция для получения английского названия фильма или сериала
   async function getEnTitle(id, type) {
-    Lampa.Loading.start();
     const url =
       kp_prox +
       tmdbApiUrl +
@@ -46,7 +45,7 @@
       data = await fetch(url).then((r) => r.json());
     } catch (e) {
       console.error("TMDB error", e);
-      Lampa.Loading.stop();
+
       return;
     }
 
@@ -184,12 +183,10 @@
         }
       } catch (e) {
         console.error(e);
-        Lampa.Loading.stop();
       }
     })();
 
     function openModal(treeContent) {
-      Lampa.Loading.stop();
       let modal = $(
         `<div><div class="broadcast__text" style="text-align:left;"><div class="comment"></div></div></div>`
       );
@@ -235,7 +232,6 @@
         style: "margin-top:10px;",
         mask: true,
         onBack: function () {
-          Lampa.Modal.close();
           $(".modal--large").remove();
         },
       });
