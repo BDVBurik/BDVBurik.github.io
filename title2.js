@@ -9,7 +9,8 @@
 
   async function showTitles(card) {
     const orig = card.original_title || card.original_name;
-    const alt = card.alternative_titles?.titles || [];
+    const alt =
+      card.alternative_titles?.titles || card.alternative_titles?.results || [];
 
     // Транслитерация
     const translit =
