@@ -9,18 +9,18 @@
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
-  // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const sr = name + (ye ? " " + ye : "");
-    const html = await fetch(
-      kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
+    const body = new URLSearchParams({ q: name + (ye ? " " + ye : "") });
+
+    const r = await fetch(
+      kp_prox + "https://hdrezka.ag//engine/ajax/search.php",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body: { q: sr },
+        body,
       }
     ).then((r) => r.text());
 
