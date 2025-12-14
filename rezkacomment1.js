@@ -5,80 +5,55 @@
 
   let year;
   let namemovie;
+  const urlEndTMDB = "?language=ru-RU&api_key=4ef0d7355d9ffb5151e987764708ce96";
 
+  const tmdbApiUrl = "https://api.themoviedb.org/3/";
   let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    const query = name + (ye ? " " + ye : "");
+    let fc = await fetch(
+      kp_prox +
+        "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
+        name +
+        (ye ? "+" + ye : ""),
+      { method: "GET", headers: { "Content-Type": "text/html" } }
+    ).then((response) => response.text());
 
-    const body = new URLSearchParams();
-    body.append("q", query);
+    let dom = new DOMParser().parseFromString(fc, "text/html");
 
-    const response = await fetch(
-      kp_prox + "https://hdrezka.ag/engine/ajax/search.php",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        body,
-      }
-    );
-
-    const html = await response.text();
-
-    const dom = new DOMParser().parseFromString(html, "text/html");
-
-    // первый найденный результат
-    const item = dom.querySelector(".b-search__live_section li a");
+    const item = dom.querySelector(".b-content__inline_item");
     if (!item) return;
 
-    const url = item.getAttribute("href");
-    const title = item.querySelector(".enty")?.innerText || item.innerText;
-
-    // Rezka ID вытаскиваем из URL
-    // /films/fiction/647-avatar-2009-latest.html
-    const match = url.match(/\/(\d+)-/);
-    const rezkaId = match ? match[1] : null;
-
-    if (!rezkaId) return;
-
-    namemovie = title;
-    comment_rezka(rezkaId);
+    namemovie =
+      item.querySelector(".b-content__inline_item-link")?.innerText || "";
+    comment_rezka(item.dataset.id);
   }
 
   // Функция для получения английского названия фильма или сериала
-
   async function getEnTitle(id, type) {
     Lampa.Loading.start();
+    const url =
+      kp_prox +
+      tmdbApiUrl +
+      (type === "movie" ? "movie/" : "tv/") +
+      id +
+      urlEndTMDB;
 
+    let data;
     try {
-      const data = await new Promise((res, rej) =>
-        Lampa.Api.sources.tmdb.get(
-          `${type}/${id}?append_to_response=translations`,
-          {},
-          res,
-          rej
-        )
-      );
-
-      const tr = data.translations?.translations || [];
-
-      const en =
-        tr.find((t) => t.iso_639_1 === "en")?.data?.title ||
-        tr.find((t) => t.iso_639_1 === "en")?.data?.name ||
-        data.title ||
-        data.name;
-
-      if (en) {
-        searchRezka(normalizeTitle(en), year);
-      }
+      data = await fetch(url).then((r) => r.json());
     } catch (e) {
-      console.error("[TMDB error]", e);
+      console.error("TMDB error", e);
       Lampa.Loading.stop();
+      return;
+    }
+
+    const enTitle = data.title || data.name;
+
+    if (enTitle) {
+      searchRezka(normalizeTitle(enTitle), year);
     }
   }
 
