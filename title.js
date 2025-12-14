@@ -1,101 +1,108 @@
-(function () {
-  "use strict";
-  //BDVBurik.github.io Title Plugin
-  //2025
-
-  const storageKey = "title_cache"; // ключ в Lampa.Storage
-  const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 дней
+(() => {
+  const storageKey = "title_cache",
+    CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
   let titleCache = Lampa.Storage.get(storageKey) || {};
 
-  async function titleOrigin(card) {
+  async function showTitles(card) {
+    const orig = card.original_title || card.original_name;
+    const alt =
+      card.alternative_titles?.titles || card.alternative_titles?.results || [];
+
+    let translitObj = alt.find(
+      (t) => t.type === "Transliteration" || t.type === "romaji"
+    );
+    let translit =
+      translitObj?.title ||
+      translitObj?.data?.title ||
+      translitObj?.data?.name ||
+      "";
+
+    let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
+    let en = alt.find((t) => t.iso_3166_1 === "US")?.title;
+
     const now = Date.now();
-    const cacheItem = titleCache[card.id];
-
-    // Если есть кэш — показываем сразу
-    if (cacheItem) {
-      _showEnTitle(cacheItem.en, cacheItem.ru);
+    const cache = titleCache[card.id];
+    if (cache && now - cache.timestamp < CACHE_TTL) {
+      ru ||= cache.ru;
+      en ||= cache.en;
     }
 
-    // Проверка срока жизни кэша
-    if (cacheItem && now - cacheItem.timestamp < CACHE_TTL) {
-      return; // кэш свежий, не обновляем
-    }
+    if (!ru || !en || !translit) {
+      try {
+        const type = card.first_air_date ? "tv" : "movie";
+        const data = await new Promise((res, rej) =>
+          Lampa.Api.sources.tmdb.get(
+            `${type}/${card.id}?append_to_response=translations`,
+            {},
+            res,
+            rej
+          )
+        );
+        const tr = data.translations?.translations || [];
 
-    // Параметры TMDB
-    const params = {
-      id: card.id,
-      url: card.first_air_date
-        ? "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/tv/"
-        : "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/https://api.themoviedb.org/3/movie/",
-      urlEnd: "&api_key=4ef0d7355d9ffb5151e987764708ce96",
-    };
-    const getOptions = {
-      method: "GET",
-      headers: { accept: "application/json" },
-    };
+        const translitData = tr.find(
+          (t) => t.type === "Transliteration" || t.type === "romaji"
+        );
+        translit =
+          translitData?.title ||
+          translitData?.data?.title ||
+          translitData?.data?.name ||
+          translit;
+        ru ||=
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "RU" || t.iso_639_1 === "ru")?.data
+            ?.name;
+        en ||=
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.title ||
+          tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+            ?.name;
 
-    // Функция получения названия по языку
-    async function fetchTitle(lang) {
-      const res = await fetch(
-        params.url + params.id + "?language=" + lang + params.urlEnd,
-        getOptions
-      );
-      const data = await res.json();
-      return data.title || data.name;
-    }
-
-    // Параллельная загрузка
-    const [etEnTitle, etRuTitle] = await Promise.all([
-      fetchTitle("en-US"),
-      fetchTitle("ru-RU"),
-    ]);
-
-    // Обновляем кэш
-    titleCache[card.id] = { en: etEnTitle, ru: etRuTitle, timestamp: now };
-    Lampa.Storage.set(storageKey, titleCache);
-
-    // Показываем обновлённые данные
-    _showEnTitle(etEnTitle, etRuTitle);
-
-    function _showEnTitle(en, ru) {
-      if (!en) return;
-      const render = Lampa.Activity.active().activity.render();
-      let ruHtml = "";
-      if (Lampa.Storage.get("language") !== "ru") {
-        ruHtml = `<div style='font-size:1.3em;'>Ru: ${ru}</div>`;
+        titleCache[card.id] = { ru, en, timestamp: now };
+        Lampa.Storage.set(storageKey, titleCache);
+      } catch (e) {
+        console.error(e);
       }
-      $(".original_title", render).find("> div").eq(0).after(`
-          <div id='titleen'>
-            <div>
-              <div style='font-size:1.3em;'>En: ${en}</div>
-              ${ruHtml}
-              <div style='font-size:1.3em;'>Orig: ${
-                card.original_title || card.original_name
-              }</div>
-            </div>
-          </div>
-        `);
     }
+
+    const render = Lampa.Activity.active().activity.render();
+    if (!render) return;
+    $(".original_title", render).remove();
+
+    const lang = Lampa.Storage.get("language"),
+      ruHtml =
+        ru && lang !== "ru"
+          ? `<div style='font-size:1.3em;'>${ru}: RU</div>`
+          : "",
+      enHtml =
+        en && lang !== "en" && en !== orig
+          ? `<div style='font-size:1.3em;'>${en}: EN</div>`
+          : "",
+      tlHtml =
+        translit && translit !== orig && translit !== en
+          ? `<div style='font-size:1.3em;'>${translit}: TL</div>`
+          : "";
+
+    $(".full-start-new__title", render).after(
+      `<div class="original_title" style="margin-top:-0.8em;text-align:right;">
+         <div>
+           <div style='font-size:1.3em;'>${orig}: Orig</div>
+           ${tlHtml}${enHtml}${ruHtml}
+         </div>
+       </div>`
+    );
   }
 
-  function startPlugin() {
+  if (!window.title_plugin) {
     window.title_plugin = true;
-    Lampa.Listener.follow("full", function (e) {
-      if (e.type === "complite") {
-        const render = e.object.activity.render();
-        $(".original_title", render).remove();
-        $(".full-start-new__title", render).after(
-          '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div>'
-        );
-
-        titleOrigin(e.data.movie);
-
-        $(".full-start-new__rate-line").css("margin-bottom", "0.8em");
-        $(".full-start-new__details").css("margin-bottom", "0.8em");
-        $(".full-start-new__tagline").css("margin-bottom", "0.4em");
-      }
+    Lampa.Listener.follow("full", (e) => {
+      if (e.type !== "complite" || !e.data.movie) return;
+      $(".original_title", e.object.activity.render()).remove();
+      $(".full-start-new__title", e.object.activity.render()).after(
+        '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div></div></div>'
+      );
+      showTitles(e.data.movie);
     });
   }
-
-  if (!window.title_plugin) startPlugin();
 })();
