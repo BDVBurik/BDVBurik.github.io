@@ -38,7 +38,7 @@
 
     try {
       const data = await Lampa.Api.sources.tmdb.get({
-        type: type === "movie" ? "movie/" : "tv/", // "movie" или "tv"
+        type: type, // "movie" или "tv"
         id: id,
         lang: "en", // получаем английское название
       });
@@ -264,7 +264,10 @@
           } else if (e.data.movie.first_air_date) {
             year = e.data.movie.first_air_date.slice(0, 4);
           }
-          getEnTitle(e.data.movie.id, e.object.method);
+          getEnTitle(
+            e.data.movie.id,
+            e.object.method === "movie" ? "movie" : "tv"
+          );
         });
       }
     });
