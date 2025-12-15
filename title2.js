@@ -34,7 +34,12 @@
       try {
         const type = card.first_air_date ? "tv" : "movie";
         const data = await new Promise((res, rej) =>
-          Lampa.Api.sources.tmdb.get(`${type}/${card.id}`, {}, res, rej)
+          Lampa.Api.sources.tmdb.get(
+            `${type}/${card.id}?append_to_response=translations`,
+            {},
+            res,
+            rej
+          )
         );
         console.log(data);
         const tr = data.translations?.translations || [];
