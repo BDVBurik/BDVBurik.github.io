@@ -2,9 +2,9 @@
   //BDVBurik 2024
   ////франшиза в алмпе
   ("use strict");
-  const tmdbApiUrl = "https://api.themoviedb.org/3/";
-  const kp_prox = "http://192.168.1.133:9118/corseu/token1/";
-  const urlEndTMDB = "?language=en-US&api_key=4ef0d7355d9ffb5151e987764708ce96";
+  const tmdbApiUrl = Lampa.TMDB.api();
+  const kp_prox = location.origin + "/corseu/token1/";
+  const urlEndTMDB = "?language=en-US&api_key=" + Lampa.TMDB.key();
   var namemovie;
   var www;
   var ew;
