@@ -3,7 +3,7 @@
   ////франшиза в алмпе
   ("use strict");
   const tmdbApiUrl = Lampa.TMDB.api("");
-  const kp_prox = location.origin + "/corseu/MY_SECRET_TOKEN";
+  const kp_prox = location.origin + "/corseu/MY_SECRET_TOKEN/";
   const urlEndTMDB = "?language=en-US&api_key=" + Lampa.TMDB.key();
   var namemovie;
   var www;
