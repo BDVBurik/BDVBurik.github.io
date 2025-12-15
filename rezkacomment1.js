@@ -274,6 +274,7 @@
           } else if (e.data.movie.first_air_date) {
             year = e.data.movie.first_air_date.slice(0, 4);
           }
+          Lampa.Loading.start();
           getEnTitle(e.data.movie.id, e.object.method);
         });
       }
