@@ -210,7 +210,7 @@
 .comment-wrap{display:flex;margin-bottom:5px;}
 .avatar-column{margin-right:10px;}
 .avatar-img{width:48px;height:48px;border-radius:4px;}
-.comment-card{background:#1b1b1b;padding:10px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
+.comment-card{background:#1b1b1b;padding:5px 12px;border-radius:6px;border:1px solid #2a2a2a;width:100%;}
 .comment-header{display:flex;justify-content:space-between;margin-bottom:6px;}
 .comment-header .name{font-weight:600;color:#fff;}
 .comment-header .date{opacity:.7;font-size:11px;}
