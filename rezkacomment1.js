@@ -43,7 +43,7 @@
           rej
         )
       );
-      console.log(data);
+
       const tr = data.translations?.translations;
       const enTitle =
         tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
