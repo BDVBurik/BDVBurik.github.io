@@ -50,8 +50,8 @@
           ?.title ||
         tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
           ?.name ||
-        e.data.movie.original_title ||
-        e.data.movie.original_name;
+        data.movie.original_title ||
+        data.movie.original_name;
       if (enTitle) {
         searchRezka(normalizeTitle(enTitle), year);
       }
