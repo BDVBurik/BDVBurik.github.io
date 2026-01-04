@@ -6,7 +6,7 @@
   ///freetorservlist https://t.me/s/torrserve_freeip/9
 
   Lampa.Platform.tv();
-
+const protoco = location.protocol;
   // -------- список серверов --------
   const servers = [
 '95.174.93.5:8090',
@@ -28,7 +28,7 @@
   // -------- проверка сервера --------
   async function pingServer(url, index) {
     try {
-      await fetch(`location.protocol//${url}/echo`);
+      await fetch(`location.${protoco}//${url}/echo`);
       Lampa.Storage.set(`FreeServ_${index+1}`, url);
     } catch (e) {
       Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
