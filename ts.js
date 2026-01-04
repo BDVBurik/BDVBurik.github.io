@@ -28,7 +28,7 @@
   // -------- проверка сервера --------
   async function pingServer(url, index) {
     try {
-      await fetch(`${url}/echo`);
+      await fetch(`location.protocol//${url}/echo`);
       Lampa.Storage.set(`FreeServ_${index+1}`, url);
     } catch (e) {
       Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
