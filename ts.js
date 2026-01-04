@@ -9,7 +9,7 @@
     { key: 'FreeServ_3', url: '176.124.198.209:8595' },
     { key: 'FreeServ_4', url: 'Trs.ix.tc:8595' },
     { key: 'FreeServ_5', url: 'Jaos.ix.tc:8595' },
-    { key: 'FreeServ_6', url: 'ts.ozerki.org:8090' }
+    {  url: 'ts.ozerki.org:8090' }
   ];
 
   // Обнуляем статусы при запуске
