@@ -38,7 +38,7 @@
   // -------- поочерёдный опрос --------
   async function pollServers() {
     for (let i = 0; i < servers.length; i++) {
-      await delay(4000);        // интервал можно менять
+    
       pingServer(servers[i], i);
     }
   }
