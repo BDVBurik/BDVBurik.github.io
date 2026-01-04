@@ -6,7 +6,7 @@
   ///freetorservlist https://t.me/s/torrserve_freeip/9
 
   Lampa.Platform.tv();
-const protoco = location.protocol;
+
   // -------- список серверов --------
   const servers = [
 '95.174.93.5:8090',
