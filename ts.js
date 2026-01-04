@@ -1,59 +1,66 @@
 (async function () {
   'use strict';
 
+  ///BDVburik.github.io
+  ///2025
+  ///freetorservlist https://t.me/s/torrserve_freeip/9
+
   Lampa.Platform.tv();
 
+  // -------- список серверов --------
   const servers = [
-    { key: 'FreeServ_1', url: 'trs.my.to:8595' },
-    { key: 'FreeServ_2', url: 'tr.my.to:8595' },
-    { key: 'FreeServ_3', url: '176.124.198.209:8595' },
-    { key: 'FreeServ_4', url: 'Trs.ix.tc:8595' },
-    { key: 'FreeServ_5', url: 'Jaos.ix.tc:8595' },
-    { key: 'FreeServ_6', url: 'ts.ozerki.org:8090' }
+'95.174.93.5:8090',
+'90.189.153.32:8191',
+'lom.my.to:8080',
+'185.235.218.109:8090',
+'212.92.252.254:8090',
+'77.110.122.115:8090'
   ];
 
-  // Обнуляем статусы при запуске
-  servers.forEach(s => Lampa.Storage.set(s.key, 'NotFound'));
-
-  // Хелпер задержки
+  // -------- вспомогательная задержка --------
   const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-  // Опрос сервера
-  async function pingServer(server) {
+  // -------- сбрасываем статусы --------
+  servers.forEach((_, i) => {
+    Lampa.Storage.set(`FreeServ_${i+1}`, 'NotFound');
+  });
+
+  // -------- проверка сервера --------
+  async function pingServer(url, index) {
     try {
-      await fetch(`http://${server.url}/echo`);
-      Lampa.Storage.set(server.key, server.url);
+      await fetch(`http://${url}/echo`);
+      Lampa.Storage.set(`FreeServ_${index+1}`, url);
     } catch (e) {
-      Lampa.Storage.set(server.key, 'NotFound');
+      Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
     }
   }
 
-  // Опрос всех серверов c шагом 4-5 сек (как у тебя)
+  // -------- поочерёдный опрос --------
   async function pollServers() {
     for (let i = 0; i < servers.length; i++) {
-      await delay(4000);   // можно менять интервал
-      pingServer(servers[i]);
+      await delay(4000);        // интервал можно менять
+      pingServer(servers[i], i);
     }
   }
 
-  // Прячем NotFound-строки
+  // -------- скрываем NotFound в выпадающих списках --------
   setInterval(() => {
     const el = $('.selectbox-item.selector > div:contains("NotFound")');
     if (el.length > 0) el.parent('div').hide();
   }, 100);
 
-  // Запускаем опрос
+  // запускаем опрос
   pollServers();
 
-  // Формируем меню после опроса
+  // -------- создаём пункт настроек --------
   setTimeout(() => {
     Lampa.SettingsApi.addParam({
       component: 'server',
       param: {
         name: 'freetorrserv',
         type: 'select',
-        values: servers.reduce((acc, s, i) => {
-          acc[i + 1] = Lampa.Storage.get(s.key) + '';
+        values: servers.reduce((acc, _, i) => {
+          acc[i + 1] = Lampa.Storage.get(`FreeServ_${i+1}`) + '';
           return acc;
         }, {}),
         default: 0
@@ -67,7 +74,7 @@
           Lampa.Storage.set('torrserver_url_two', '');
         } else {
           const idx = Number(value) - 1;
-          Lampa.Storage.set('torrserver_url_two', servers[idx].url);
+          Lampa.Storage.set('torrserver_url_two', servers[idx]);
         }
 
         Lampa.Storage.set('torrserver_use_link', 'two');
@@ -77,7 +84,9 @@
         setTimeout(function () {
           if ($('div[data-name="freetorrserv"]').length > 1) item.hide();
           $('.settings-param__name', item).css('color', 'f3d900');
-          $('div[data-name="freetorrserv"]').insertAfter('div[data-name="torrserver_use_link"]');
+          $('div[data-name="freetorrserv"]').insertAfter(
+            'div[data-name="torrserver_use_link"]'
+          );
         }, 0);
       }
     });
