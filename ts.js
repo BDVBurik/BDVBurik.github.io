@@ -1,37 +1,49 @@
 (async function () {
   'use strict';
 
-  ///BDVburik.github.io
-  ///2026
-  ///freetorservlist https://t.me/s/torrserve_freeip/9
+  /// BDVburik.github.io
+  /// 2026
+  /// freetorservlist https://t.me/s/sorrserve_freeip/9
 
   Lampa.Platform.tv();
 
-  // -------- список серверов --------
-import { servers } from './ts.json';
+  // -------- загрузка списка серверов из JSON --------
+  let servers = [];
+  try {
+    const response = await fetch('./ts.json');
+    const data = await response.json();
+    servers = data.servers || [];
+  } catch (e) {
+    console.error('Ошибка загрузки списка серверов:', e);
+  }
+
+  if (!servers.length) {
+    console.warn('Список серверов пустой!');
+    return;
+  }
 
   // -------- вспомогательная задержка --------
   const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-  // -------- сбрасываем статусы --------
+  // -------- сбрасываем статусы серверов --------
   servers.forEach((_, i) => {
-    Lampa.Storage.set(`FreeServ_${i+1}`, 'NotFound');
+    Lampa.Storage.set(`FreeServ_${i + 1}`, 'NotFound');
   });
 
   // -------- проверка сервера --------
   async function pingServer(url, index) {
     try {
       await fetch(`http://${url}/echo`);
-      Lampa.Storage.set(`FreeServ_${index+1}`, url);
+      Lampa.Storage.set(`FreeServ_${index + 1}`, url);
     } catch (e) {
-      Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
+      Lampa.Storage.set(`FreeServ_${index + 1}`, 'NotFound');
     }
   }
 
-  // -------- поочерёдный опрос --------
+  // -------- поочерёдный опрос серверов --------
   async function pollServers() {
     for (let i = 0; i < servers.length; i++) {
-    
+      await delay(4000); // интервал между проверками
       pingServer(servers[i], i);
     }
   }
@@ -45,7 +57,7 @@ import { servers } from './ts.json';
   // запускаем опрос
   pollServers();
 
-  // -------- создаём пункт настроек --------
+  // -------- создаём пункт настроек в Lampa --------
   setTimeout(() => {
     Lampa.SettingsApi.addParam({
       component: 'server',
@@ -53,7 +65,7 @@ import { servers } from './ts.json';
         name: 'freetorrserv',
         type: 'select',
         values: servers.reduce((acc, _, i) => {
-          acc[i + 1] = Lampa.Storage.get(`FreeServ_${i+1}`) + '';
+          acc[i + 1] = Lampa.Storage.get(`FreeServ_${i + 1}`) + '';
           return acc;
         }, {}),
         default: 0
@@ -76,7 +88,7 @@ import { servers } from './ts.json';
       onRender: function (item) {
         setTimeout(function () {
           if ($('div[data-name="freetorrserv"]').length > 1) item.hide();
-          $('.settings-param__name', item).css('color', 'f3d900');
+          $('.settings-param__name', item).css('color', '#f3d900');
           $('div[data-name="freetorrserv"]').insertAfter(
             'div[data-name="torrserver_use_link"]'
           );
@@ -84,5 +96,4 @@ import { servers } from './ts.json';
       }
     });
   }, 5000);
-
 })();
