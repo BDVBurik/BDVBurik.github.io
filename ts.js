@@ -1,49 +1,44 @@
 (async function () {
   'use strict';
 
-  /// BDVburik.github.io
-  /// 2026
-  /// freetorservlist https://t.me/s/sorrserve_freeip/9
+  ///BDVburik.github.io
+  ///2026
+  ///freetorservlist https://t.me/s/torrserve_freeip/9
 
   Lampa.Platform.tv();
 
-  // -------- загрузка списка серверов из JSON --------
-  let servers = [];
-  try {
-    const response = await fetch('./ts.json');
-    const data = await response.json();
-    servers = data.servers || [];
-  } catch (e) {
-    console.error('Ошибка загрузки списка серверов:', e);
-  }
-
-  if (!servers.length) {
-    console.warn('Список серверов пустой!');
-    return;
-  }
+  // -------- список серверов --------
+  const servers = [
+'95.174.93.5:8090',
+'90.189.153.32:8191',
+'lom.my.to:8080',
+'185.235.218.109:8090',
+'212.92.252.254:8090',
+'77.110.122.115:8090'
+  ];
 
   // -------- вспомогательная задержка --------
   const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-  // -------- сбрасываем статусы серверов --------
+  // -------- сбрасываем статусы --------
   servers.forEach((_, i) => {
-    Lampa.Storage.set(`FreeServ_${i + 1}`, 'NotFound');
+    Lampa.Storage.set(`FreeServ_${i+1}`, 'NotFound');
   });
 
   // -------- проверка сервера --------
   async function pingServer(url, index) {
     try {
       await fetch(`http://${url}/echo`);
-      Lampa.Storage.set(`FreeServ_${index + 1}`, url);
+      Lampa.Storage.set(`FreeServ_${index+1}`, url);
     } catch (e) {
-      Lampa.Storage.set(`FreeServ_${index + 1}`, 'NotFound');
+      Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
     }
   }
 
-  // -------- поочерёдный опрос серверов --------
+  // -------- поочерёдный опрос --------
   async function pollServers() {
     for (let i = 0; i < servers.length; i++) {
-      await delay(4000); // интервал между проверками
+      await delay(4000);        // интервал можно менять
       pingServer(servers[i], i);
     }
   }
@@ -57,7 +52,7 @@
   // запускаем опрос
   pollServers();
 
-  // -------- создаём пункт настроек в Lampa --------
+  // -------- создаём пункт настроек --------
   setTimeout(() => {
     Lampa.SettingsApi.addParam({
       component: 'server',
@@ -65,7 +60,7 @@
         name: 'freetorrserv',
         type: 'select',
         values: servers.reduce((acc, _, i) => {
-          acc[i + 1] = Lampa.Storage.get(`FreeServ_${i + 1}`) + '';
+          acc[i + 1] = Lampa.Storage.get(`FreeServ_${i+1}`) + '';
           return acc;
         }, {}),
         default: 0
@@ -88,7 +83,8 @@
       onRender: function (item) {
         setTimeout(function () {
           if ($('div[data-name="freetorrserv"]').length > 1) item.hide();
-          $('.settings-param__name', item).css('color', '#f3d900');
+          $('.settings-param__name', item).css('color', 'f3d900');
+		  $(".ad-server").hide();
           $('div[data-name="freetorrserv"]').insertAfter(
             'div[data-name="torrserver_use_link"]'
           );
@@ -96,4 +92,5 @@
       }
     });
   }, 5000);
+
 })();
