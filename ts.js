@@ -2,11 +2,11 @@
   'use strict';
 
   ///BDVburik.github.io
-  ///2025
+  ///2026
   ///freetorservlist https://t.me/s/torrserve_freeip/9
 
   Lampa.Platform.tv();
-const protoco = location.protocol;
+
   // -------- список серверов --------
   const servers = [
 '95.174.93.5:8090',
@@ -28,7 +28,7 @@ const protoco = location.protocol;
   // -------- проверка сервера --------
   async function pingServer(url, index) {
     try {
-      await fetch(`location.${protoco}//${url}/echo`);
+      await fetch(`location.${protocol}//${url}/echo`);
       Lampa.Storage.set(`FreeServ_${index+1}`, url);
     } catch (e) {
       Lampa.Storage.set(`FreeServ_${index+1}`, 'NotFound');
