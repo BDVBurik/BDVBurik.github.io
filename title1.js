@@ -200,15 +200,15 @@
       const lines = [];
       lines.push(`<div style="font-size:1.25em;">${orig}</div>`);
       if (showTL && translit)
-        lines.push(`<div style="font-size:1.25em;">🇯🇵 ${translit}</div>`);
+        lines.push(`<div style="font-size:1.25em;">${translit} 🇯🇵</div>`);
       if (showEN && en)
-        lines.push(`<div style="font-size:1.25em;">🇺🇸 ${en}</div>`);
+        lines.push(`<div style="font-size:1.25em;">${en} 🇺🇸</div>`);
       if (showRU && ru)
-        lines.push(`<div style="font-size:1.25em;">🇷🇺 ${ru}</div>`);
+        lines.push(`<div style="font-size:1.25em;">${ru} 🇷🇺</div>`);
       if (showUK && uk)
-        lines.push(`<div style="font-size:1.25em;">🇺🇦 ${uk}</div>`);
+        lines.push(`<div style="font-size:1.25em;">${uk} 🇺🇦</div>`);
       if (showBE && be)
-        lines.push(`<div style="font-size:1.25em;">🇧🇾 ${be}</div>`);
+        lines.push(`<div style="font-size:1.25em;">${be} 🇧🇾</div>`);
 
       $(".full-start-new__title", render).wrap(
         '<div class="original_title_container"></div>'
