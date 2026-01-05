@@ -42,30 +42,6 @@
   });
 
   function startPlugin() {
-    // ===== Додати CSS для рядкового відображення =====
-    // ===== Додаємо CSS =====
-    const style = document.createElement("style");
-    style.innerHTML = `
-  .original_title_container {
-    display: flex;
-    justify-content: space-between; /* ліва назва зліва, переклади справа */
-    align-items: center;
-    margin-top: -0.3em;
-  }
-  .full-start-new__title {
-    display: inline-block;
-  }
-  .original_title {
-    text-align: right; /* вирівнювання по правому краю */
-    display: inline-block;
-  }
-  .original_title div {
-    line-height: 1.2em;
-    font-size: 1.25em;
-  }
-`;
-    document.head.appendChild(style);
-
     // ===== Шаблон для Settings =====
     Lampa.Template.add("settings_title_plugin", `<div></div>`);
 
@@ -227,7 +203,7 @@
         if (e.type !== "complite" || !e.data.movie) return;
         $(".original_title", e.object.activity.render()).remove();
         $(".full-start-new__title", e.object.activity.render()).after(
-          '<div class="original_title_wrapper"><div class="original_title"><div></div></div></div>'
+          '<div class="original_title"><div></div></div>'
         );
         showTitles(e.data.movie);
       });
