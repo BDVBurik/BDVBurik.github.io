@@ -42,6 +42,27 @@
   });
 
   function startPlugin() {
+    // ===== Додати CSS для рядкового відображення =====
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .original_title_wrapper {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: -0.3em;
+      }
+      .full-start-new__title, .original_title_wrapper {
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 0.5em;
+      }
+      .original_title div {
+        line-height: 1.2em;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // ===== Шаблон для Settings =====
     Lampa.Template.add("settings_title_plugin", `<div></div>`);
 
     // ===== Додати пункт у меню інтерфейсу =====
@@ -172,21 +193,24 @@
       const showUK = Lampa.Storage.get("show_uk", true);
       const showBE = Lampa.Storage.get("show_be", true);
 
-      const styleBox = "margin-top:-0.8em;text-align:right;";
-      const styleLine = "font-size:1.25em;";
-
       const lines = [];
-      lines.push(`<div style="${styleLine}">${orig}</div>`);
+      lines.push(`<div style="font-size:1.25em;">${orig}</div>`);
       if (showTL && translit)
-        lines.push(`<div style="${styleLine}">🇯🇵 ${translit}</div>`);
-      if (showEN && en) lines.push(`<div style="${styleLine}">🇺🇸 ${en}</div>`);
-      if (showRU && ru) lines.push(`<div style="${styleLine}">🇷🇺 ${ru}</div>`);
-      if (showUK && uk) lines.push(`<div style="${styleLine}">🇺🇦 ${uk}</div>`);
-      if (showBE && be) lines.push(`<div style="${styleLine}">🇧🇾 ${be}</div>`);
+        lines.push(`<div style="font-size:1.25em;">🇯🇵 ${translit}</div>`);
+      if (showEN && en)
+        lines.push(`<div style="font-size:1.25em;">🇺🇸 ${en}</div>`);
+      if (showRU && ru)
+        lines.push(`<div style="font-size:1.25em;">🇷🇺 ${ru}</div>`);
+      if (showUK && uk)
+        lines.push(`<div style="font-size:1.25em;">🇺🇦 ${uk}</div>`);
+      if (showBE && be)
+        lines.push(`<div style="font-size:1.25em;">🇧🇾 ${be}</div>`);
 
       $(".full-start-new__title", render).after(`
-        <div class="original_title" style="${styleBox}">
-          <div>${lines.join("")}</div>
+        <div class="original_title_wrapper">
+          <div class="original_title">
+            <div>${lines.join("")}</div>
+          </div>
         </div>
       `);
     }
@@ -198,7 +222,7 @@
         if (e.type !== "complite" || !e.data.movie) return;
         $(".original_title", e.object.activity.render()).remove();
         $(".full-start-new__title", e.object.activity.render()).after(
-          '<div class="original_title" style="margin-top:-0.8em;text-align:right;"><div></div></div>'
+          '<div class="original_title_wrapper"><div class="original_title"><div></div></div></div>'
         );
         showTitles(e.data.movie);
       });
