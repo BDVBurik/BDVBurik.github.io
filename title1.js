@@ -15,6 +15,12 @@
       uk: "Показувати 🇷🇺 RU",
       be: "Паказваць 🇷🇺 RU",
     },
+    reset_to_default: {
+      ru: "Сбросить по умолчанию",
+      en: "Reset to Default",
+      uk: "Скинути за замовчуванням",
+      be: "Скінуць па змаўчанні",
+    },
     show_en: {
       ru: "Показывать 🇺🇸 EN",
       en: "Show 🇺🇸 EN",
@@ -220,7 +226,7 @@
       const title = Lampa.Lang.translate("show_" + lang);
       const isHidden = hidden.includes(lang);
       const item = $(`
-                <div class="menu-edit-list__item selector">
+                <div class="menu-edit-list__item">
                     <div class="menu-edit-list__title">${title}</div>
                     <div class="menu-edit-list__move move-up selector">▲</div>
                     <div class="menu-edit-list__move move-down selector">▼</div>
@@ -267,7 +273,9 @@
     });
 
     const resetBtn = $(
-      '<div class="selector folder-reset-button" style="margin-top:1em;padding:1em;text-align:center;">Сбросить по умолчанию</div>'
+      '<div class="selector folder-reset-button" style="margin-top:1em;padding:1em;text-align:center;">' +
+        Lampa.Lang.translate("reset_to_default") +
+        "</div>"
     );
     resetBtn.on("hover:enter", function () {
       Lampa.Storage.set(STORAGE_ORDER_KEY, LANGS.slice());
