@@ -118,19 +118,17 @@
         translitObj?.data?.title ||
         translitObj?.data?.name ||
         "";
-
-      let en = alt.find((t) => t.iso_3166_1 === "US")?.title;
-      let uk = alt.find((t) => t.iso_3166_1 === "UA")?.title;
-      let be = alt.find((t) => t.iso_3166_1 === "BY")?.title;
-      let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
-
+      let ru = "";
+      let en = "";
+      let uk = "";
+      let be = "";
       const now = Date.now();
       const cache = titleCache[card.id];
       if (cache && now - cache.timestamp < CACHE_TTL) {
-        en ||= cache.en;
-        uk ||= cache.uk;
-        be ||= cache.be;
-        ru ||= cache.ru;
+        en = cache.en;
+        uk = cache.uk;
+        be = cache.be;
+        ru = cache.ru;
         translit ||= cache.tl;
       }
 
@@ -181,6 +179,10 @@
         } catch (e) {
           console.error(e);
         }
+        en ||= alt.find((t) => t.iso_3166_1 === "US")?.title;
+        uk ||= alt.find((t) => t.iso_3166_1 === "UA")?.title;
+        be ||= alt.find((t) => t.iso_3166_1 === "BY")?.title;
+        ru ||= alt.find((t) => t.iso_3166_1 === "RU")?.title;
       }
 
       const render = Lampa.Activity.active().activity.render();
