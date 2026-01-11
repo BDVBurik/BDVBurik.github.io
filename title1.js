@@ -1,8 +1,6 @@
 (function () {
-  ("use strict");
-  // bdvburik.github.io plugin title.js
-  // 2026
-  //   //
+  "use strict";
+
   // ===== Локалізація =====
   Lampa.Lang.add({
     title_plugin: {
@@ -11,45 +9,50 @@
       uk: "Title Plugin",
       be: "Title Plugin",
     },
-    show_ru: {
-      ru: "Показывать 🇷🇺 RU",
-      en: "Show 🇷🇺 RU",
-      uk: "Показувати 🇷🇺 RU",
-      be: "Паказваць 🇷🇺 RU",
-    },
+
     reset_to_default: {
       ru: "Сбросить по умолчанию",
       en: "Reset to Default",
       uk: "Скинути за замовчуванням",
       be: "Скінуць па змаўчанні",
     },
+
     show_en: {
-      ru: "Показывать 🇺🇸 EN",
-      en: "Show 🇺🇸 EN",
-      uk: "Показувати 🇺🇸 EN",
-      be: "Паказваць 🇺🇸 EN",
+      ru: 'Показывать <img src="https://flagcdn.com/us.svg" style="width:1.15em;height:auto;vertical-align:middle;"> EN',
+      en: 'Show <img src="https://flagcdn.com/us.svg" style="width:1.15em;height:auto;vertical-align:middle;"> EN',
+      uk: 'Показувати <img src="https://flagcdn.com/us.svg" style="width:1.15em;height:auto;vertical-align:middle;"> EN',
+      be: 'Паказваць <img src="https://flagcdn.com/us.svg" style="width:1.15em;height:auto;vertical-align:middle;"> EN',
     },
+
     show_tl: {
-      ru: "Показывать 🇯🇵 Romaji",
-      en: "Show 🇯🇵 Romaji",
-      uk: "Показувати 🇯🇵 Romaji",
-      be: "Паказваць 🇯🇵 Romaji",
+      ru: "Показывать Romaji (transliteration)",
+      en: "Show Romaji (transliteration)",
+      uk: "Показувати Romaji (transliteration)",
+      be: "Паказваць Romaji (transliteration)",
     },
+
     show_uk: {
-      ru: "Показывать 🇺🇦 UA",
-      en: "Show 🇺🇦 UA",
-      uk: "Показувати 🇺🇦 UA",
-      be: "Паказваць 🇺🇦 UA",
+      ru: 'Показывать <img src="https://flagcdn.com/ua.svg" style="width:1.15em;height:auto;vertical-align:middle;"> UA',
+      en: 'Show <img src="https://flagcdn.com/ua.svg" style="width:1.15em;height:auto;vertical-align:middle;"> UA',
+      uk: 'Показувати <img src="https://flagcdn.com/ua.svg" style="width:1.15em;height:auto;vertical-align:middle;"> UA',
+      be: 'Паказваць <img src="https://flagcdn.com/ua.svg" style="width:1.15em;height:auto;vertical-align:middle;"> UA',
     },
+
     show_be: {
-      ru: "Показывать 🇧🇾 BE",
-      en: "Show 🇧🇾 BE",
-      uk: "Показувати 🇧🇾 BE",
-      be: "Паказваць 🇧🇾 BE",
+      ru: 'Показывать <img src="https://flagcdn.com/by.svg" style="width:1.15em;height:auto;vertical-align:middle;"> BE',
+      en: 'Show <img src="https://flagcdn.com/by.svg" style="width:1.15em;height:auto;vertical-align:middle;"> BE',
+      uk: 'Показувати <img src="https://flagcdn.com/by.svg" style="width:1.15em;height:auto;vertical-align:middle;"> BE',
+      be: 'Паказваць <img src="https://flagcdn.com/by.svg" style="width:1.15em;height:auto;vertical-align:middle;"> BE',
+    },
+    show_ru: {
+      ru: 'Показывать <img src="https://flagcdn.com/ru.svg" style="width:1.15em;height:auto;vertical-align:middle;"> RU',
+      en: 'Show <img src="https://flagcdn.com/ru.svg" style="width:1.15em;height:auto;vertical-align:middle;"> RU',
+      uk: 'Показувати <img src="https://flagcdn.com/ru.svg" style="width:1.15em;height:auto;vertical-align:middle;"> RU',
+      be: 'Паказваць <img src="https://flagcdn.com/ru.svg" style="width:1.15em;height:auto;vertical-align:middle;"> RU',
     },
   });
 
-  const LANGS = ["ru", "en", "tl", "uk", "be"];
+  const LANGS = ["en", "tl", "uk", "be", "ru"];
   const STORAGE_ORDER_KEY = "title_plugin_order";
   const STORAGE_HIDDEN_KEY = "title_plugin_hidden";
 
@@ -77,13 +80,25 @@
         [];
       function countryFlag(code) {
         if (!code) return "";
-        // Каждый символ кода страны преобразуется в региональные индикаторы Unicode
-        return code
-          .toUpperCase()
-          .split("")
-          .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-          .join("");
+
+        let ref =
+          document.querySelector('div[style*="font-size"]') || document.body;
+
+        let fontSize = parseFloat(getComputedStyle(ref).fontSize);
+
+        return `
+        <img 
+            src="https://flagcdn.com/${code.toLowerCase()}.svg"
+            style="
+                width:1.15em;
+                height:auto;
+                vertical-align:inherit;                
+            "
+            alt="${code.toUpperCase()}"
+        >
+    `;
       }
+
       let translitObj = alt.find((t) =>
         [
           "Transliteration",
@@ -103,18 +118,19 @@
         translitObj?.data?.title ||
         translitObj?.data?.name ||
         "";
-      let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
+
       let en = alt.find((t) => t.iso_3166_1 === "US")?.title;
       let uk = alt.find((t) => t.iso_3166_1 === "UA")?.title;
       let be = alt.find((t) => t.iso_3166_1 === "BY")?.title;
+      let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
 
       const now = Date.now();
       const cache = titleCache[card.id];
       if (cache && now - cache.timestamp < CACHE_TTL) {
-        ru ||= cache.ru;
         en ||= cache.en;
         uk ||= cache.uk;
         be ||= cache.be;
+        ru ||= cache.ru;
         translit ||= cache.tl;
       }
 
@@ -147,10 +163,11 @@
           }
 
           // Использование
-          ru ||= findLang(tr, ["RU", "ru"]);
+
           en ||= findLang(tr, ["US", "en"]);
           uk ||= findLang(tr, ["UA", "uk"]);
           be ||= findLang(tr, ["BY", "be"]);
+          ru ||= findLang(tr, ["RU", "ru"]);
 
           titleCache[card.id] = {
             ru,
@@ -180,7 +197,7 @@
 
       showOrder.forEach((lang) => {
         if (hiddenLangs.includes(lang)) return;
-        const val = lang === "tl" ? translit : { ru, en, uk, be }[lang];
+        const val = lang === "tl" ? translit : { en, uk, be, ru }[lang];
         if (val)
           lines.push(
             `<div style="font-size:1.25em;">${val} ${countryFlag(
