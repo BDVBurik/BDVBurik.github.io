@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  /* ================= Локализация ================= */
+  /* ================= ЛОКАЛИЗАЦИЯ ================= */
 
   Lampa.Lang.add({
     title_plugin: {
@@ -10,70 +10,36 @@
       uk: "Title Plugin",
       be: "Title Plugin",
     },
-    title_plugin_order: {
+    title_order: {
       ru: "Порядок названий",
       en: "Title order",
       uk: "Порядок назв",
       be: "Парадак назваў",
     },
-    show_ru: {
-      ru: "Показывать 🇷🇺 RU",
-      en: "Show 🇷🇺 RU",
-      uk: "Показувати 🇷🇺 RU",
-      be: "Паказваць 🇷🇺 RU",
-    },
-    show_en: {
-      ru: "Показывать 🇺🇸 EN",
-      en: "Show 🇺🇸 EN",
-      uk: "Показувати 🇺🇸 EN",
-      be: "Паказваць 🇺🇸 EN",
-    },
-    show_tl: {
-      ru: "Показывать 🇯🇵 Romaji",
-      en: "Show 🇯🇵 Romaji",
-      uk: "Показувати 🇯🇵 Romaji",
-      be: "Паказваць 🇯🇵 Romaji",
-    },
-    show_uk: {
-      ru: "Показывать 🇺🇦 UA",
-      en: "Show 🇺🇦 UA",
-      uk: "Показувати 🇺🇦 UA",
-      be: "Паказваць 🇺🇦 UA",
-    },
-    show_be: {
-      ru: "Показывать 🇧🇾 BE",
-      en: "Show 🇧🇾 BE",
-      uk: "Показувати 🇧🇾 BE",
-      be: "Паказваць 🇧🇾 BE",
-    },
+    show_ru: { ru: "🇷🇺 Русский" },
+    show_en: { ru: "🇺🇸 English" },
+    show_tl: { ru: "🇯🇵 Romaji" },
+    show_uk: { ru: "🇺🇦 Українська" },
+    show_be: { ru: "🇧🇾 Беларуская" },
+    show_orig: { ru: "🎬 Оригинал" },
   });
 
-  /* ================= Константы ================= */
+  const LANGS = [
+    { id: "orig", label: "show_orig" },
+    { id: "tl", label: "show_tl" },
+    { id: "en", label: "show_en" },
+    { id: "ru", label: "show_ru" },
+    { id: "uk", label: "show_uk" },
+    { id: "be", label: "show_be" },
+  ];
 
-  const ORDER_KEY = "title_plugin_order";
-  const DEFAULT_ORDER = ["orig", "tl", "en", "ru", "uk", "be"];
-
-  const TITLE_LABELS = {
-    orig: "Оригинал",
-    tl: "Romaji",
-    en: "EN 🇺🇸",
-    ru: "RU 🇷🇺",
-    uk: "UA 🇺🇦",
-    be: "BE 🇧🇾",
-  };
-
-  function getOrder() {
-    return Lampa.Storage.get(ORDER_KEY, DEFAULT_ORDER.slice());
-  }
-
-  function setOrder(order) {
-    Lampa.Storage.set(ORDER_KEY, order);
-  }
-
-  /* ================= Старт ================= */
+  const ORDER_KEY = "title_lang_order";
+  const ENABLE_KEY = "title_lang_enabled";
 
   function startPlugin() {
-    /* ===== Меню настроек ===== */
+    Lampa.Template.add("settings_title_plugin", `<div></div>`);
+
+    /* ========== ПУНКТ В НАСТРОЙКАХ ========== */
 
     Lampa.SettingsApi.addParam({
       component: "interface",
@@ -89,121 +55,127 @@
       },
     });
 
-    /* ===== Переключатели языков ===== */
+    /* ========== ИНИЦИАЛИЗАЦИЯ STORAGE ========== */
 
-    ["ru", "en", "tl", "uk", "be"].forEach((l) => {
-      Lampa.SettingsApi.addParam({
-        component: "title_plugin",
-        param: { type: "trigger", default: true, name: "show_" + l },
-        field: { name: Lampa.Lang.translate("show_" + l) },
-      });
+    let order = Lampa.Storage.get(ORDER_KEY);
+    if (!Array.isArray(order)) {
+      order = LANGS.map((l) => l.id);
+      Lampa.Storage.set(ORDER_KEY, order);
+    }
+
+    let enabled = Lampa.Storage.get(ENABLE_KEY) || {};
+    LANGS.forEach((l) => {
+      if (!(l.id in enabled)) enabled[l.id] = true;
+    });
+    Lampa.Storage.set(ENABLE_KEY, enabled);
+
+    /* ========== НАСТРОЙКА ПОРЯДКА ========== */
+
+    Lampa.SettingsApi.addParam({
+      component: "title_plugin",
+      param: { type: "static" },
+      field: {
+        name: Lampa.Lang.translate("title_order"),
+      },
     });
 
-    /* ===== Порядок ===== */
+    function renderOrderMenu() {
+      const list = $("<div class='menu-edit-list'></div>");
+
+      order.forEach((id) => {
+        const lang = LANGS.find((l) => l.id === id);
+        if (!lang) return;
+
+        const item = $(`
+          <div class="menu-edit-list__item">
+            <div class="menu-edit-list__title">${Lampa.Lang.translate(
+              lang.label
+            )}</div>
+            <div class="menu-edit-list__move move-up selector">⬆</div>
+            <div class="menu-edit-list__move move-down selector">⬇</div>
+            <div class="menu-edit-list__toggle selector">
+              ${enabled[id] ? "✔" : "✖"}
+            </div>
+          </div>
+        `);
+
+        item.find(".move-up").on("hover:enter", () => {
+          const i = order.indexOf(id);
+          if (i > 0) {
+            [order[i - 1], order[i]] = [order[i], order[i - 1]];
+            Lampa.Storage.set(ORDER_KEY, order);
+            openSettings();
+          }
+        });
+
+        item.find(".move-down").on("hover:enter", () => {
+          const i = order.indexOf(id);
+          if (i < order.length - 1) {
+            [order[i + 1], order[i]] = [order[i], order[i + 1]];
+            Lampa.Storage.set(ORDER_KEY, order);
+            openSettings();
+          }
+        });
+
+        item.find(".menu-edit-list__toggle").on("hover:enter", () => {
+          enabled[id] = !enabled[id];
+          Lampa.Storage.set(ENABLE_KEY, enabled);
+          openSettings();
+        });
+
+        list.append(item);
+      });
+
+      return list;
+    }
+
+    function openSettings() {
+      Lampa.Modal.open({
+        title: Lampa.Lang.translate("title_plugin"),
+        html: renderOrderMenu(),
+        size: "small",
+        onBack: () => {
+          Lampa.Modal.close();
+          Lampa.Controller.toggle("full_start");
+        },
+      });
+    }
 
     Lampa.SettingsApi.addParam({
       component: "title_plugin",
       param: { type: "button" },
-      field: {
-        name: Lampa.Lang.translate("title_plugin_order"),
-      },
-      onChange: openOrderDialog,
+      field: { name: Lampa.Lang.translate("title_order") },
+      onChange: openSettings,
     });
 
-    /* ================= Диалог порядка ================= */
-
-    function openOrderDialog() {
-      let order = getOrder();
-      const list = $("<div class='menu-edit-list'></div>");
-
-      function render() {
-        list.empty();
-
-        order.forEach((key, index) => {
-          const item = $(`
-            <div class="menu-edit-list__item">
-              <div class="menu-edit-list__title">${TITLE_LABELS[key]}</div>
-              <div class="menu-edit-list__move up selector">▲</div>
-              <div class="menu-edit-list__move down selector">▼</div>
-            </div>
-          `);
-
-          item.find(".up").on("hover:enter", () => {
-            if (index > 0) {
-              [order[index - 1], order[index]] = [
-                order[index],
-                order[index - 1],
-              ];
-              setOrder(order);
-              render();
-            }
-          });
-
-          item.find(".down").on("hover:enter", () => {
-            if (index < order.length - 1) {
-              [order[index + 1], order[index]] = [
-                order[index],
-                order[index + 1],
-              ];
-              setOrder(order);
-              render();
-            }
-          });
-
-          list.append(item);
-        });
-      }
-
-      render();
-
-      Lampa.Modal.open({
-        title: Lampa.Lang.translate("title_plugin_order"),
-        html: list,
-        size: "small",
-        onBack: () => Lampa.Modal.close(),
-      });
-    }
-
-    /* ================= Логика отображения ================= */
+    /* ========== ОТРИСОВКА НАЗВАНИЙ ========== */
 
     async function showTitles(card) {
       const orig = card.original_title || card.original_name;
+      const alt = card.alternative_titles?.titles || [];
 
-      let ru, en, uk, be, tl;
-
-      const alt =
-        card.alternative_titles?.titles ||
-        card.alternative_titles?.results ||
-        [];
-
-      tl = alt.find((t) => /roma|latin|kana/i.test(t.type || ""))?.title;
-      ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
-      en = alt.find((t) => t.iso_3166_1 === "US")?.title;
-      uk = alt.find((t) => t.iso_3166_1 === "UA")?.title;
-      be = alt.find((t) => t.iso_3166_1 === "BY")?.title;
-
-      const values = { orig, ru, en, uk, be, tl };
-      const enabled = {
-        orig: true,
-        ru: Lampa.Storage.get("show_ru", true),
-        en: Lampa.Storage.get("show_en", true),
-        uk: Lampa.Storage.get("show_uk", true),
-        be: Lampa.Storage.get("show_be", true),
-        tl: Lampa.Storage.get("show_tl", true),
+      const map = {
+        orig: orig,
+        tl: alt.find((t) => /roma|latin/i.test(t.type))?.title,
+        en: alt.find((t) => t.iso_3166_1 === "US")?.title,
+        ru: alt.find((t) => t.iso_3166_1 === "RU")?.title,
+        uk: alt.find((t) => t.iso_3166_1 === "UA")?.title,
+        be: alt.find((t) => t.iso_3166_1 === "BY")?.title,
       };
 
-      const order = getOrder();
+      const render = Lampa.Activity.active().activity.render();
+      if (!render) return;
+
+      $(".original_title", render).remove();
+
       const lines = [];
-
-      order.forEach((key) => {
-        if (!enabled[key]) return;
-        if (!values[key]) return;
-
-        lines.push(`<div style="font-size:1.25em">${values[key]}</div>`);
+      order.forEach((id) => {
+        if (enabled[id] && map[id]) {
+          lines.push(`<div style="font-size:1.25em;">${map[id]}</div>`);
+        }
       });
 
-      const render = Lampa.Activity.active().activity.render();
-      $(".original_title", render).remove();
+      if (!lines.length) return;
 
       $(".full-start-new__title", render).after(`
         <div class="original_title" style="margin-bottom:7px;text-align:right">
@@ -212,7 +184,7 @@
       `);
     }
 
-    /* ================= Listener ================= */
+    /* ========== LISTENER ========== */
 
     if (!window.title_plugin) {
       window.title_plugin = true;
