@@ -1,6 +1,8 @@
 (function () {
-  "use strict";
-
+  ("use strict");
+  // bdvburik.github.io plugin title.js
+  // 2026
+  //   //
   // ===== Локалізація =====
   Lampa.Lang.add({
     title_plugin: {
