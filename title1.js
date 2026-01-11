@@ -1,8 +1,7 @@
 (function () {
   "use strict";
 
-  /* ================= ЛОКАЛИЗАЦИЯ ================= */
-
+  // ===== Локалізація =====
   Lampa.Lang.add({
     title_plugin: {
       ru: "Title Plugin",
@@ -10,37 +9,44 @@
       uk: "Title Plugin",
       be: "Title Plugin",
     },
-    title_order: {
-      ru: "Порядок названий",
-      en: "Title order",
-      uk: "Порядок назв",
-      be: "Парадак назваў",
+    show_ru: {
+      ru: "Показывать 🇷🇺 RU",
+      en: "Show 🇷🇺 RU",
+      uk: "Показувати 🇷🇺 RU",
+      be: "Паказваць 🇷🇺 RU",
     },
-    show_ru: { ru: "🇷🇺 Русский" },
-    show_en: { ru: "🇺🇸 English" },
-    show_tl: { ru: "🇯🇵 Romaji" },
-    show_uk: { ru: "🇺🇦 Українська" },
-    show_be: { ru: "🇧🇾 Беларуская" },
-    show_orig: { ru: "🎬 Оригинал" },
+    show_en: {
+      ru: "Показывать 🇺🇸 EN",
+      en: "Show 🇺🇸 EN",
+      uk: "Показувати 🇺🇸 EN",
+      be: "Паказваць 🇺🇸 EN",
+    },
+    show_tl: {
+      ru: "Показывать 🇯🇵 Romaji",
+      en: "Show 🇯🇵 Romaji",
+      uk: "Показувати 🇯🇵 Romaji",
+      be: "Паказваць 🇯🇵 Romaji",
+    },
+    show_uk: {
+      ru: "Показывать 🇺🇦 UA",
+      en: "Show 🇺🇦 UA",
+      uk: "Показувати 🇺🇦 UA",
+      be: "Паказваць 🇺🇦 UA",
+    },
+    show_be: {
+      ru: "Показывать 🇧🇾 BE",
+      en: "Show 🇧🇾 BE",
+      uk: "Показувати 🇧🇾 BE",
+      be: "Паказваць 🇧🇾 BE",
+    },
   });
 
-  const LANGS = [
-    { id: "orig", label: "show_orig" },
-    { id: "tl", label: "show_tl" },
-    { id: "en", label: "show_en" },
-    { id: "ru", label: "show_ru" },
-    { id: "uk", label: "show_uk" },
-    { id: "be", label: "show_be" },
-  ];
-
-  const ORDER_KEY = "title_lang_order";
-  const ENABLE_KEY = "title_lang_enabled";
+  const LANGS = ["ru", "en", "tl", "uk", "be"];
+  const STORAGE_ORDER_KEY = "title_plugin_order";
+  const STORAGE_HIDDEN_KEY = "title_plugin_hidden";
 
   function startPlugin() {
-    Lampa.Template.add("settings_title_plugin", `<div></div>`);
-
-    /* ========== ПУНКТ В НАСТРОЙКАХ ========== */
-
+    // ===== Settings button =====
     Lampa.SettingsApi.addParam({
       component: "interface",
       param: { type: "button" },
@@ -48,144 +54,142 @@
         name: Lampa.Lang.translate("title_plugin"),
         description: "Title Plugin settings",
       },
-      onChange: () => {
-        Lampa.Settings.create("title_plugin", {
-          onBack: () => Lampa.Settings.create("interface"),
-        });
-      },
+      onChange: openEditor,
     });
 
-    /* ========== ИНИЦИАЛИЗАЦИЯ STORAGE ========== */
-
-    let order = Lampa.Storage.get(ORDER_KEY);
-    if (!Array.isArray(order)) {
-      order = LANGS.map((l) => l.id);
-      Lampa.Storage.set(ORDER_KEY, order);
-    }
-
-    let enabled = Lampa.Storage.get(ENABLE_KEY) || {};
-    LANGS.forEach((l) => {
-      if (!(l.id in enabled)) enabled[l.id] = true;
-    });
-    Lampa.Storage.set(ENABLE_KEY, enabled);
-
-    /* ========== НАСТРОЙКА ПОРЯДКА ========== */
-
-    Lampa.SettingsApi.addParam({
-      component: "title_plugin",
-      param: { type: "static" },
-      field: {
-        name: Lampa.Lang.translate("title_order"),
-      },
-    });
-
-    function renderOrderMenu() {
-      const list = $("<div class='menu-edit-list'></div>");
-
-      order.forEach((id) => {
-        const lang = LANGS.find((l) => l.id === id);
-        if (!lang) return;
-
-        const item = $(`
-          <div class="menu-edit-list__item">
-            <div class="menu-edit-list__title">${Lampa.Lang.translate(
-              lang.label
-            )}</div>
-            <div class="menu-edit-list__move move-up selector">⬆</div>
-            <div class="menu-edit-list__move move-down selector">⬇</div>
-            <div class="menu-edit-list__toggle selector">
-              ${enabled[id] ? "✔" : "✖"}
-            </div>
-          </div>
-        `);
-
-        item.find(".move-up").on("hover:enter", () => {
-          const i = order.indexOf(id);
-          if (i > 0) {
-            [order[i - 1], order[i]] = [order[i], order[i - 1]];
-            Lampa.Storage.set(ORDER_KEY, order);
-            openSettings();
-          }
-        });
-
-        item.find(".move-down").on("hover:enter", () => {
-          const i = order.indexOf(id);
-          if (i < order.length - 1) {
-            [order[i + 1], order[i]] = [order[i], order[i + 1]];
-            Lampa.Storage.set(ORDER_KEY, order);
-            openSettings();
-          }
-        });
-
-        item.find(".menu-edit-list__toggle").on("hover:enter", () => {
-          enabled[id] = !enabled[id];
-          Lampa.Storage.set(ENABLE_KEY, enabled);
-          openSettings();
-        });
-
-        list.append(item);
-      });
-
-      return list;
-    }
-
-    function openSettings() {
-      Lampa.Modal.open({
-        title: Lampa.Lang.translate("title_plugin"),
-        html: renderOrderMenu(),
-        size: "small",
-        onBack: () => {
-          Lampa.Modal.close();
-          Lampa.Controller.toggle("full_start");
-        },
-      });
-    }
-
-    Lampa.SettingsApi.addParam({
-      component: "title_plugin",
-      param: { type: "button" },
-      field: { name: Lampa.Lang.translate("title_order") },
-      onChange: openSettings,
-    });
-
-    /* ========== ОТРИСОВКА НАЗВАНИЙ ========== */
+    // ===== Title display logic =====
+    const CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
+    let titleCache = Lampa.Storage.get("title_cache") || {};
 
     async function showTitles(card) {
       const orig = card.original_title || card.original_name;
-      const alt = card.alternative_titles?.titles || [];
+      const alt =
+        card.alternative_titles?.titles ||
+        card.alternative_titles?.results ||
+        [];
+      function countryFlag(code) {
+        if (!code) return "";
+        // Каждый символ кода страны преобразуется в региональные индикаторы Unicode
+        return code
+          .toUpperCase()
+          .split("")
+          .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+          .join("");
+      }
+      let translitObj = alt.find((t) =>
+        [
+          "Transliteration",
+          "romaji",
+          "Romanization",
+          "Latynization",
+          "pinyin",
+          "kana",
+          "romaji_japanese",
+          "romaji_korean",
+          "romaji_chinese",
+          "latinization",
+        ].includes(t.type)
+      );
+      let translit =
+        translitObj?.title ||
+        translitObj?.data?.title ||
+        translitObj?.data?.name ||
+        "";
+      let ru = alt.find((t) => t.iso_3166_1 === "RU")?.title;
+      let en = alt.find((t) => t.iso_3166_1 === "US")?.title;
+      let uk = alt.find((t) => t.iso_3166_1 === "UA")?.title;
+      let be = alt.find((t) => t.iso_3166_1 === "BY")?.title;
 
-      const map = {
-        orig: orig,
-        tl: alt.find((t) => /roma|latin/i.test(t.type))?.title,
-        en: alt.find((t) => t.iso_3166_1 === "US")?.title,
-        ru: alt.find((t) => t.iso_3166_1 === "RU")?.title,
-        uk: alt.find((t) => t.iso_3166_1 === "UA")?.title,
-        be: alt.find((t) => t.iso_3166_1 === "BY")?.title,
-      };
+      const now = Date.now();
+      const cache = titleCache[card.id];
+      if (cache && now - cache.timestamp < CACHE_TTL) {
+        ru ||= cache.ru;
+        en ||= cache.en;
+        uk ||= cache.uk;
+        be ||= cache.be;
+        translit ||= cache.tl;
+      }
+
+      if (!ru || !en || !translit || !uk || !be) {
+        try {
+          const type = card.first_air_date ? "tv" : "movie";
+          const data = await new Promise((res, rej) => {
+            Lampa.Api.sources.tmdb.get(
+              `${type}/${card.id}?append_to_response=translations`,
+              {},
+              res,
+              rej
+            );
+          });
+          const tr = data.translations?.translations || [];
+          const translitData = tr.find((t) =>
+            ["Transliteration", "romaji"].includes(t.type)
+          );
+          translit =
+            translitData?.title ||
+            translitData?.data?.title ||
+            translitData?.data?.name ||
+            translit;
+          // Универсальная функция для поиска нужного языка/страны
+          function findLang(list, codes) {
+            const t = list.find(
+              (t) => codes.includes(t.iso_3166_1) || codes.includes(t.iso_639_1)
+            );
+            return t?.data?.title || t?.data?.name;
+          }
+
+          // Использование
+          ru ||= findLang(tr, ["RU", "ru"]);
+          en ||= findLang(tr, ["US", "en"]);
+          uk ||= findLang(tr, ["UA", "uk"]);
+          be ||= findLang(tr, ["BY", "be"]);
+
+          titleCache[card.id] = {
+            ru,
+            en,
+            tl: translit,
+            uk,
+            be,
+            timestamp: now,
+          };
+          Lampa.Storage.set("title_cache", titleCache);
+        } catch (e) {
+          console.error(e);
+        }
+      }
 
       const render = Lampa.Activity.active().activity.render();
       if (!render) return;
-
       $(".original_title", render).remove();
 
-      const lines = [];
-      order.forEach((id) => {
-        if (enabled[id] && map[id]) {
-          lines.push(`<div style="font-size:1.25em;">${map[id]}</div>`);
-        }
+      let showOrder = Lampa.Storage.get(STORAGE_ORDER_KEY, LANGS.slice());
+      let hiddenLangs = Lampa.Storage.get(STORAGE_HIDDEN_KEY, []);
+      const lines = [
+        `<div style="font-size:1.25em;">${orig}  ${countryFlag(
+          card.origin_country[0]
+        )}</div>`,
+      ];
+
+      showOrder.forEach((lang) => {
+        if (hiddenLangs.includes(lang)) return;
+        const val = lang === "tl" ? translit : { ru, en, uk, be }[lang];
+        if (val)
+          lines.push(
+            `<div style="font-size:1.25em;">${val} ${countryFlag(
+              { ru: "RU", en: "US", uk: "UA", be: "BY" }[lang]
+            )}
+            </div>`
+          );
       });
 
-      if (!lines.length) return;
-
-      $(".full-start-new__title", render).after(`
-        <div class="original_title" style="margin-bottom:7px;text-align:right">
-          ${lines.join("")}
-        </div>
-      `);
+      $(".full-start-new__title", render).after(
+        `<div class="original_title" style="margin-bottom:7px;text-align:right;"><div>${lines.join(
+          ""
+        )}</div></div>`
+      );
     }
 
-    /* ========== LISTENER ========== */
-
+    // ===== Listener =====
     if (!window.title_plugin) {
       window.title_plugin = true;
       Lampa.Listener.follow("full", (e) => {
@@ -195,6 +199,109 @@
     }
   }
 
+  // ===== Editor modal =====
+  function openEditor() {
+    const order = Lampa.Storage.get(STORAGE_ORDER_KEY, LANGS.slice());
+    const hidden = Lampa.Storage.get(STORAGE_HIDDEN_KEY, []);
+    const list = $('<div class="menu-edit-list"></div>');
+    const style = $(`
+        <style>
+        .menu-edit-list__item { display:flex; align-items:center; justify-content:space-between; margin:0.3em 0; }
+        .menu-edit-list__title { flex:1; font-size:1.1em; padding-left:0.5em; }
+        .menu-edit-list__move { width:1.8em; height:1.8em; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold; user-select:none; }
+        .menu-edit-list__toggle { width:1.8em; height:1.8em; display:flex; align-items:center; justify-content:center; cursor:pointer; margin-left:0.5em; border:2px solid rgba(255,255,255,0.5); border-radius:3px; }
+        .menu-edit-list__toggle .dot { width:1em; height:1em; }
+        .folder-reset-button { background: rgba(200,100,100,0.3); margin-top:1em; border-radius:0.3em; padding:0.5em; text-align:center; cursor:pointer; }
+        </style>
+    `);
+    $("body").append(style);
+
+    order.forEach((lang) => {
+      const title = Lampa.Lang.translate("show_" + lang);
+      const isHidden = hidden.includes(lang);
+      const item = $(`
+                <div class="menu-edit-list__item selector">
+                    <div class="menu-edit-list__title">${title}</div>
+                    <div class="menu-edit-list__move move-up selector">▲</div>
+                    <div class="menu-edit-list__move move-down selector">▼</div>
+                    <div class="menu-edit-list__toggle selector">
+                        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1.89111" y="1.78369" width="21.793" height="21.793" rx="3.5" stroke="currentColor" stroke-width="3"/>
+                            <path d="M7.44873 12.9658L10.8179 16.3349L18.1269 9.02588" stroke="currentColor" stroke-width="3" class="dot" opacity="${
+                              isHidden ? 0 : 1
+                            }" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>`);
+
+      // ===== Toggle hide/show =====
+      item.find(".menu-edit-list__toggle").on("hover:enter", function () {
+        const idx = hidden.indexOf(lang);
+        if (idx !== -1) {
+          hidden.splice(idx, 1);
+          item.find(".dot").attr("opacity", "1");
+        } else {
+          hidden.push(lang);
+          item.find(".dot").attr("opacity", "0");
+        }
+        Lampa.Storage.set(STORAGE_HIDDEN_KEY, hidden);
+      });
+
+      // ===== Move up/down =====
+      item.find(".move-up").on("hover:enter", function () {
+        const prev = item.prev();
+        if (prev.length) {
+          item.insertBefore(prev);
+          updateOrder();
+        }
+      });
+      item.find(".move-down").on("hover:enter", function () {
+        const next = item.next();
+        if (next.length) {
+          item.insertAfter(next);
+          updateOrder();
+        }
+      });
+
+      list.append(item);
+    });
+
+    const resetBtn = $(
+      '<div class="selector folder-reset-button" style="margin-top:1em;padding:1em;text-align:center;">Сбросить по умолчанию</div>'
+    );
+    resetBtn.on("hover:enter", function () {
+      Lampa.Storage.set(STORAGE_ORDER_KEY, LANGS.slice());
+      Lampa.Storage.set(STORAGE_HIDDEN_KEY, []);
+      Lampa.Modal.close();
+      Lampa.Controller.toggle("settings");
+    });
+    list.append(resetBtn);
+
+    function updateOrder() {
+      const newOrder = [];
+      list.find(".menu-edit-list__item").each(function () {
+        const title = $(this).find(".menu-edit-list__title").text();
+        const key = LANGS.find(
+          (l) => Lampa.Lang.translate("show_" + l) === title
+        );
+        if (key) newOrder.push(key);
+      });
+      Lampa.Storage.set(STORAGE_ORDER_KEY, newOrder);
+    }
+
+    Lampa.Modal.open({
+      title: Lampa.Lang.translate("title_plugin"),
+      html: list,
+      size: "small",
+      scroll_to_center: true,
+      onBack: function () {
+        Lampa.Modal.close();
+        Lampa.Controller.toggle("settings");
+      },
+    });
+  }
+
+  // ===== Init plugin =====
   if (window.appready) startPlugin();
   else
     Lampa.Listener.follow("app", (e) => {
