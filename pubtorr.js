@@ -34,7 +34,7 @@
   async function pingServer(p,index){
     try{
       let r = await fetch(
-        `http://${p.settings.url}/api/v2.0/indexers/all/results?apikey=${p.settings.key}&Query=test`,
+        `https://${p.settings.url}/api/v2.0/indexers/all/results?apikey=${p.settings.key}&Query=test`,
         { cache:'no-store' }
       );
 
