@@ -8,9 +8,9 @@
 
     // ждём загрузку интерфейса Lampa
 
-  if (window.appready) startPlugin();
-  else
-    Lampa.Listener.follow("app", (e) => {
-      if (e.type === "ready") startPlugin();
-    });
+      Lampa.Listener.follow("full", (e) => {
+        if (e.type !== "complite" || !e.data.movie) return;
+        removeOptionsButton();
+      });
+ 
 })();
