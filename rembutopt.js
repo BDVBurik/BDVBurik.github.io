@@ -7,10 +7,10 @@
     }
 
     // ждём загрузку интерфейса Lampa
-    Lampa.Listener.follow('app', function (e) {
-        if (e.type === 'ready') {
-            setTimeout(removeOptionsButton, 500);
-        }
-    });
 
+  if (window.appready) startPlugin();
+  else
+    Lampa.Listener.follow("app", (e) => {
+      if (e.type === "ready") startPlugin();
+    });
 })();
