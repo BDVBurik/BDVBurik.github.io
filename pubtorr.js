@@ -16,6 +16,9 @@
 
   var parsersInfo = [
     { base:'lampaUA', name:'Lampa.UA', settings:{url:'lampaua.mooo.com',key:'1',parser_torrent_type:'jackett'}}, 
+    { base:'jackettUA', name:'jackett.UA', settings:{url:'jackettua.mooo.com',key:'ua',parser_torrent_type:'jackett'}}, 
+    { base:'prowlarrUA', name:'prowlarr.UA', settings:{url:'prowlarrua.mooo.com',key:'ua',parser_torrent_type:'jackett'}}, 
+    
     { base:'lampa_app', name:'Lampa.app', settings:{url:'lampa.app',key:'',parser_torrent_type:'jackett'}},
     { base:'jacred_xyz', name:'Jacred.xyz', settings:{url:'jacred.xyz',key:'',parser_torrent_type:'jackett'}},
     { base:'jr_maxvol_pro', name:'jr.maxvol.pro', settings:{url:'jr.maxvol.pro',key:'',parser_torrent_type:'jackett'}}
