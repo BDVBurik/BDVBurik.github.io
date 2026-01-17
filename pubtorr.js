@@ -18,6 +18,25 @@
     { base:'lampaUA', name:'Lampa.UA', settings:{url:'lampaua.mooo.com',key:'1',parser_torrent_type:'jackett'}}, 
     { base:'jackettUA', name:'jackett.UA', settings:{url:'jackettua.mooo.com',key:'ua',parser_torrent_type:'jackett'}}, 
     { base:'prowlarrUA', name:'prowlarr.UA', settings:{url:'prowlarrua.mooo.com',key:'ua',parser_torrent_type:'jackett'}}, 
+    {
+      // Перший парсер: Spawn UA (V1).
+      base: 'spawnum_duckdns_org_59117', // Унікальний ідентифікатор
+      name: 'Spawn UA (V1)', // Назва, що відображається користувачу
+      settings: {
+          url: 'spawnum.duckdns.org:59117', // Адреса сервера парсера
+          key: '2', // Ключ API
+          parser_torrent_type: 'jackett' // Тип парсера
+      }
+  }, {
+      // Другий парсер: Spawn UA (V2).
+      base: 'spawnum_duckdns_org_49117', 
+      name: 'Spawn UA (V2)', 
+      settings: {
+          url: 'spawnum.duckdns.org:49117', 
+          key: '2', 
+          parser_torrent_type: 'jackett' 
+      }
+  },
     
     { base:'lampa_app', name:'Lampa.app', settings:{url:'lampa.app',key:'',parser_torrent_type:'jackett'}},
     { base:'jacred_xyz', name:'Jacred.xyz', settings:{url:'jacred.xyz',key:'',parser_torrent_type:'jackett'}},
