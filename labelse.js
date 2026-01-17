@@ -1,501 +1,805 @@
 (function () {
     'use strict';
 
-    // --- Захист від повторного запуску плагіна ---
-    // Перевіряємо, чи плагін вже був ініціалізований
+    // --- Защит от повторного запуска плагина ---
     if (window.SeasonBadgePlugin && window.SeasonBadgePlugin.__initialized) return;
     
-    // Ініціалізуємо глобальний об'єкт плагіна
     window.SeasonBadgePlugin = window.SeasonBadgePlugin || {};
     window.SeasonBadgePlugin.__initialized = true;
 
-    // === НАЛАШТУВАННЯ ПЛАГІНА ===
+    // === НАСТРОЙКИ ПЛАГИНА ===
     var CONFIG = {
-        tmdbApiKey: '1ad1fd4b4938e876aa6c96d0cded9395',   // API ключ для доступу до TMDB
-        cacheTime: 12 * 60 * 60 * 1000,                   // Час зберігання кешу (12 години)
-        enabled: true,                                    // Активувати/деактивувати плагін
-        language: 'uk'                                    // Мова для запитів до TMDB
+        tmdbApiKey: '27489d4d8c9dbd0f2b3e89f68821de34',
+        cacheTime: 12 * 60 * 60 * 1000,
+        enabled: true,
+        language: 'uk'
     };
 
-    // === СТИЛІ ДЛЯ МІТОК СЕЗОНУ ===
+    // === МУЛЬТИЯЗЫЧНЫЕ ТЕКСТЫ СТАТУСОВ ===
+    var STATUS_TRANSLATIONS = {
+        ru: {
+            sequel: 'Сиквел',
+            series: 'Сериал',
+            ended: 'Завершился',
+            canceled: 'Отменено',
+            tomorrow: 'Завтра',
+            inWeek: 'Через неделю',
+            inDays: 'Через %d дн.',
+            movie: 'Фильм',
+            tv: 'Сериал'
+        },
+        en: {
+            sequel: 'Sequel',
+            series: 'Series',
+            ended: 'Ended',
+            canceled: 'Canceled',
+            tomorrow: 'Tomorrow',
+            inWeek: 'In a week',
+            inDays: 'In %d days',
+            movie: 'Movie',
+            tv: 'TV Series'
+        },
+        uk: {
+            sequel: 'Сіквел',
+            series: 'Серіал',
+            ended: 'Завершився',
+            canceled: 'Скасовано',
+            tomorrow: 'Завтра',
+            inWeek: 'Через тиждень',
+            inDays: 'Через %d дн.',
+            movie: 'Фільм',
+            tv: 'Серіал'
+        },
+        be: {
+            sequel: 'Сіквел',
+            series: 'Серыял',
+            ended: 'Скончыўся',
+            canceled: 'Скасавана',
+            tomorrow: 'Заўтра',
+            inWeek: 'Праз тыдзень',
+            inDays: 'Праз %d дн.',
+            movie: 'Фільм',
+            tv: 'Серыял'
+        },
+        zh: {
+            sequel: '续集',
+            series: '剧集',
+            ended: '已完结',
+            canceled: '已取消',
+            tomorrow: '明天有新剧集',
+            inWeek: '一周后',
+            inDays: '%d天后',
+            movie: '电影',
+            tv: '电视剧'
+        },
+        pt: {
+            sequel: 'Sequência',
+            series: 'Série',
+            ended: 'Terminado',
+            canceled: 'Cancelado',
+            tomorrow: 'Amanhã',
+            inWeek: 'Em uma semana',
+            inDays: 'Em %d dias',
+            movie: 'Filme',
+            tv: 'Série'
+        },
+        bg: {
+            sequel: 'Сиквел',
+            series: 'Сериал',
+            ended: 'Приключил',
+            canceled: 'Отменен',
+            tomorrow: 'Утре',
+            inWeek: 'След седмица',
+            inDays: 'След %d дни',
+            movie: 'Филм',
+            tv: 'Сериал'
+        }
+    };
+
+    // Глобальная переменная для хранения текущего языка
+    var currentLanguage = null;
+
+    // === ФУНКЦИЯ ОПРЕДЕЛЕНИЯ ЯЗЫКА ПРИЛОЖЕНИЯ (ОДИН РАЗ ПРИ ИНИЦИАЛИЗАЦИИ) ===
+    function initAppLanguage() {
+        if (currentLanguage) return currentLanguage;
+        
+        var lang = 'ru';
+        console.log('SeasonBadgePlugin: Инициализация языка...');
+
+        // 1. Пробуем получить язык из Lampa приложения
+        try {
+            if (window.Lampa && Lampa.Manager) {
+                console.log('SeasonBadgePlugin: Lampa найдена, ищем язык...');
+                
+                if (Lampa.Settings && Lampa.Settings.get) {
+                    var settingsLang = Lampa.Settings.get('language') || Lampa.Settings.get('lang');
+                    if (settingsLang && STATUS_TRANSLATIONS[settingsLang]) {
+                        lang = settingsLang;
+                        console.log('SeasonBadgePlugin: Язык из Lampa Settings -', lang);
+                        currentLanguage = lang;
+                        return lang;
+                    }
+                }
+                
+                if (Lampa.Storage && Lampa.Storage.get) {
+                    var storageLang = Lampa.Storage.get('language') || Lampa.Storage.get('lang');
+                    if (storageLang && STATUS_TRANSLATIONS[storageLang]) {
+                        lang = storageLang;
+                        console.log('SeasonBadgePlugin: Язык из Lampa Storage -', lang);
+                        currentLanguage = lang;
+                        return lang;
+                    }
+                }
+                
+                if (Lampa.Manager.getter && typeof Lampa.Manager.getter === 'function') {
+                    try {
+                        var managerLang = Lampa.Manager.getter('language') || Lampa.Manager.getter('lang');
+                        if (managerLang && STATUS_TRANSLATIONS[managerLang]) {
+                            lang = managerLang;
+                            console.log('SeasonBadgePlugin: Язык из Lampa Manager -', lang);
+                            currentLanguage = lang;
+                            return lang;
+                        }
+                    } catch (e) {
+                        console.log('SeasonBadgePlugin: Ошибка получения языка из Manager', e);
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('SeasonBadgePlugin: Ошибка получения языка из Lampa', e);
+        }
+        
+        // 2. Пробуем получить язык из localStorage
+        try {
+            var lampaLangKeys = ['lampa_language', 'lampa_lang', 'lampa__language', 'lampa__lang'];
+            for (var i = 0; i < lampaLangKeys.length; i++) {
+                var key = lampaLangKeys[i];
+                var value = localStorage.getItem(key);
+                if (value && STATUS_TRANSLATIONS[value]) {
+                    lang = value;
+                    console.log('SeasonBadgePlugin: Язык из localStorage (' + key + ') -', lang);
+                    currentLanguage = lang;
+                    return lang;
+                }
+            }
+            
+            var generalKeys = ['app_language', 'app_lang', 'language', 'lang', 'user_language'];
+            for (var j = 0; j < generalKeys.length; j++) {
+                var genKey = generalKeys[j];
+                var genValue = localStorage.getItem(genKey);
+                if (genValue && STATUS_TRANSLATIONS[genValue]) {
+                    lang = genValue;
+                    console.log('SeasonBadgePlugin: Язык из localStorage (' + genKey + ') -', lang);
+                    currentLanguage = lang;
+                    return lang;
+                }
+            }
+        } catch (e) {
+            console.log('SeasonBadgePlugin: Ошибка получения языка из localStorage', e);
+        }
+        
+        // 3. Пробуем определить язык браузера
+        try {
+            var browserLang = (navigator.language || navigator.userLanguage || 'ru').substring(0, 2);
+            if (STATUS_TRANSLATIONS[browserLang]) {
+                lang = browserLang;
+                console.log('SeasonBadgePlugin: Язык из браузера -', lang);
+                currentLanguage = lang;
+                return lang;
+            }
+        } catch (e) {
+            console.log('SeasonBadgePlugin: Ошибка определения языка браузера', e);
+        }
+        
+        console.log('SeasonBadgePlugin: Используется язык по умолчанию -', lang);
+        currentLanguage = lang;
+        return lang;
+    }
+
+    // === ФУНКЦИЯ ПЕРЕВОДА СТАТУСОВ ===
+    function translateStatus(key, params) {
+        if (!currentLanguage) {
+            initAppLanguage();
+        }
+        
+        var translation = STATUS_TRANSLATIONS[currentLanguage] || STATUS_TRANSLATIONS.ru;
+        var text = translation[key] || STATUS_TRANSLATIONS.ru[key] || key;
+        
+        if (params && params.length > 0) {
+            for (var i = 0; i < params.length; i++) {
+                text = text.replace('%d', params[i]);
+            }
+        }
+        
+        return text;
+    }
+
+    // === СТИЛИ ДЛЯ МЕТОК ===
     var style = document.createElement('style');
     style.textContent = `
-    /* Стиль для ЗАВЕРШЕНИХ сезонів (зелена мітка) */
+    /* === СТИЛЬ ДЛЯ МЕТКИ ТИПА КОНТЕНТА (левый верхний угол) === */
+    .card--content-type {
+        position: absolute;
+        top: 5px;
+        left: 0;
+        margin-left: -0.25em;
+        z-index: 12;
+        width: fit-content;
+        max-width: calc(100% - 1em);
+        border-radius: 0.2em;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.22s ease-in-out;
+        font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+        font-weight: 700;
+        font-size: 0.85em;
+        padding: 0.3em 0.3em;
+        white-space: nowrap;
+        text-align: center;
+        text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
+    }
+    
+    /* Цветовые варианты для типа контента */
+    .card--content-type.movie {
+        background-color: rgba(33, 150, 243, 0.9);
+        color: #ffffff;
+    }
+    
+    .card--content-type.tv {
+        background-color: rgba(156, 39, 176, 0.9);
+        color: #ffffff;
+    }
+    
+    .card--content-type.show {
+        opacity: 1;
+    }
+
+    /* Стиль для ЗАВЕРШЕННЫХ сезонов */
     .card--season-complete {
         position: absolute;
         left: 0;
-        margin-left: -0.65em; //ВІДСТУП за лівий край 
-        bottom: 0.50em;
-        background-color: rgba(61, 161, 141, 0.9);  /* Зелений колір, стандартна прозорість фону 0.8 (1 - фон не прозорий) */
+        margin-left: -0.25em;
+        bottom: 43px;
+        background-color: rgba(61, 161, 141, 0.9);
         z-index: 12;
         width: fit-content;
         max-width: calc(100% - 1em);
-        border-radius: 0.3em 0.3em 0.3em 0.3em;
+        border-radius: 0.2em;
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.22s ease-in-out;
     }
     
-    /* Стиль для НЕЗАВЕРШЕНИХ сезонів (жовта мітка з прогресом) */
+    /* Стиль для НЕЗАВЕРШЕННЫХ сезонов */
     .card--season-progress {
         position: absolute;
         left: 0;
-        margin-left: -0.65em; //ВІДСТУП за лівий край 
-        bottom: 0.50em;
-        background-color: rgba(255, 66, 66, 1);   /* Жовтий колір, rgba(255, 193, 7, 0.9) стандартна прозорість фону 0.8 (1 - фон не прозорий)  //колір як в стандартної мітки TV -> rgba(255, 66, 66, 1)*/
+        margin-left: -0.25em;
+        bottom: 43px;
+        background-color: rgba(255, 193, 7, 0.9);
         z-index: 12;
         width: fit-content;
         max-width: calc(100% - 1em);
-        border-radius: 0.3em 0.3em 0.3em 0.3em;
+        border-radius: 0.2em;
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.22s ease-in-out;
     }
     
-    /* Загальні стилі для тексту в мітках - ОДИНАКОВІ ДЛЯ ОБОХ ТИПІВ */
+    /* Общие стили для текста в метках сезона */
     .card--season-complete div,
     .card--season-progress div {
         text-transform: uppercase;
         font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;  
-        font-weight: 700;                                                    /* жирний шрифт */
-        font-size: 1.0 em;                                                   /* розмір */
-        padding: 0.39em 0.39em;                                              /* відступ */
-        white-space: nowrap;                                                 /* перенос */
-        display: flex;                                                       /* flex */
-        align-items: center;                                                 /* вирівнювання */
-        gap: 4px;                                                            /* проміжок */
+        font-weight: 700;
+        font-size: 0.85em;
+        padding: 0.3em 0.3em;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
+        text-align: center;
+    }
+    
+    .card--season-complete div {
+        color: #ffffff;
+    }
+    
+    .card--season-progress div {
+        color: #000000;
+    }
+    
+    .card--season-complete.show,
+    .card--season-progress.show {
+        opacity: 1;
+    }
+    
+    /* === СТИЛИ ДЛЯ МЕТКИ СТАТУСА СЕРИАЛА === */
+    .card--series-status {
+        position: absolute;
+        right: 0;
+        margin-right: -0.25em;
+        bottom: 43px;
+        z-index: 12;
+        width: fit-content;
+        max-width: calc(100% - 1em);
+        border-radius: 0.2em;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.22s ease-in-out;
+        font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+        font-weight: 700;
+        font-size: 0.85em;
+        padding: 0.3em 0.3em;
+        white-space: nowrap;
+        text-align: center;
         text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
     }
     
-    /* Колір тексту для завершених сезонів (білий на зеленому) */
-    .card--season-complete div {
-        color: #ffffff;  /* Білий текст для кращої видимості на зеленому фоні */
+    /* Цветовые варианты для статусов */
+    .card--series-status.orange {
+        background-color: rgba(255, 152, 0, 0.9);
+        color: #000000;
     }
     
-    /* Колір тексту для незавершених сезонів (білий) */
-    .card--season-progress div {
-        color: #ffffff;  /*  Або чорний  color: #000000 текст для кращої видимості на фоні */
+    .card--series-status.purple {
+        background-color: rgba(156, 39, 176, 0.9);
+        color: #ffffff;
     }
     
-    /* Клас для плавного показу мітки */
-    .card--season-complete.show,
-    .card--season-progress.show {
-        opacity: 1;  /* Повна видимість при показі */
+    .card--series-status.blue {
+        background-color: rgba(33, 150, 243, 0.9);
+        color: #ffffff;
     }
     
-    /* Адаптація для мобільних пристроїв */
+    .card--series-status.green {
+        background-color: rgba(76, 175, 80, 0.9);
+        color: #ffffff;
+    }
+    
+    .card--series-status.red {
+        background-color: rgba(244, 67, 54, 0.9);
+        color: #ffffff;
+    }
+    
+    .card--series-status.show {
+        opacity: 1;
+    }
+    
+    /* Адаптация для мобильных устройств */
     @media (max-width: 768px) {
+        .card--content-type {
+            top: 4px;
+            margin-left: -0.15em;
+            font-size: 0.75em;
+            padding: 0.25em 0.2em;
+            border-radius: 0.18em;
+        }
+        
+        .card--season-complete,
+        .card--season-progress {
+            bottom: 43px;
+            margin-left: -0.15em;
+            border-radius: 0.18em;
+        }
+        
         .card--season-complete div,
         .card--season-progress div {
-            font-size: 0.95em;  /* Трохи менший розмір шрифту на мобільних */
-            padding: 0.35em 0.40em; /* додано МЕНШІ ВІДСТУПИ НА МОБІЛЬНИХ */
+            font-size: 0.75em;
+            padding: 0.25em 0.2em;
+        }
+        
+        .card--series-status {
+            bottom: 43px;
+            margin-right: -0.15em;
+            font-size: 0.75em;
+            padding: 0.25em 0.2em;
+            border-radius: 0.18em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .card--content-type {
+            top: 3px;
+            margin-left: -0.1em;
+            font-size: 0.7em;
+            padding: 0.2em 0.15em;
+            border-radius: 0.15em;
+        }
+        
+        .card--season-complete,
+        .card--season-progress {
+            bottom: 43px;
+            margin-left: -0.1em;
+            border-radius: 0.15em;
+        }
+        
+        .card--season-complete div,
+        .card--season-progress div {
+            font-size: 0.7em;
+            padding: 0.2em 0.15em;
+        }
+        
+        .card--series-status {
+            bottom: 43px;
+            margin-right: -0.1em;
+            font-size: 0.7em;
+            padding: 0.2em 0.15em;
+            border-radius: 0.15em;
         }
     }
     `;
-    // Додаємо стилі до головної частини документа
     document.head.appendChild(style);
 
-    // === ДОПОМІЖНІ ФУНКЦІЇ ===
+    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
-    /**
-     * Визначає тип медіа на основі даних картки
-     * @param {Object} cardData - дані картки
-     * @returns {string} - тип медіа ('tv', 'movie', 'unknown')
-     */
     function getMediaType(cardData) {
-        // Якщо дані відсутні - повертаємо 'unknown'
         if (!cardData) return 'unknown';
-        
-        // Перевірка на серіал (наявність назви або дати першого ефіру)
         if (cardData.name || cardData.first_air_date) return 'tv';
-        
-        // Перевірка на фільм (наявність назви або дати релізу)
         if (cardData.title || cardData.release_date) return 'movie';
-        
-        // Якщо тип не визначено
         return 'unknown';
     }
 
-    // Ініціалізація кешу з localStorage
-    // Використовуємо localStorage для зберігання кешованих даних
+    function createContentTypeBadge(mediaType) {
+        var contentTypeBadge = document.createElement('div');
+        contentTypeBadge.className = 'card--content-type ' + mediaType;
+        
+        var text = mediaType === 'movie' ? translateStatus('movie') : translateStatus('tv');
+        contentTypeBadge.textContent = text;
+        
+        return contentTypeBadge;
+    }
+
     var cache = JSON.parse(localStorage.getItem('seasonBadgeCache') || '{}');
 
-    /**
-     * Завантажує дані серіалу з TMDB API з використанням кешу
-     * @param {number} tmdbId - ID серіалу в базі TMDB
-     * @returns {Promise} - проміс з даними серіалу
-     */
     function fetchSeriesData(tmdbId) {
         return new Promise(function(resolve, reject) {
-            // Перевірка кешу: якщо дані є і не прострочені - використовуємо їх
             if (cache[tmdbId] && (Date.now() - cache[tmdbId].timestamp < CONFIG.cacheTime)) {
                 return resolve(cache[tmdbId].data);
             }
 
-            // Перевірка коректності API ключа
             if (!CONFIG.tmdbApiKey || CONFIG.tmdbApiKey === 'ваш_tmdb_api_key_тут') {
-                return reject(new Error('Будь ласка, вставте коректний TMDB API ключ'));
+                return reject(new Error('Пожалуйста, вставьте корректный TMDB API ключ'));
             }
 
-            // Формування URL для запиту до TMDB API
-            var url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${CONFIG.tmdbApiKey}&language=${CONFIG.language}`;
+            // Используем глобальный currentLanguage вместо вызова getAppLanguage()
+            var url = 'https://api.themoviedb.org/3/tv/' + tmdbId + '?api_key=' + CONFIG.tmdbApiKey + '&language=' + currentLanguage;
             
-            // Виконання HTTP запиту до TMDB API
-            fetch(url)
-                .then(response => response.json())  // Перетворюємо відповідь в JSON
-                .then(function(data) {
-                    // Перевірка на помилку від API
-                    if (data.success === false) throw new Error(data.status_message);
+            // Используем XMLHttpRequest вместо fetch для совместимости со старыми устройствами
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            if (data.success === false) {
+                                reject(new Error(data.status_message));
+                                return;
+                            }
 
-                    // Збереження даних в кеш з поточною міткою часу
-                    cache[tmdbId] = { 
-                        data: data, 
-                        timestamp: Date.now() 
-                    };
-                    // Зберігаємо оновлений кеш в localStorage
-                    localStorage.setItem('seasonBadgeCache', JSON.stringify(cache));
-
-                    // Повертаємо отримані дані
-                    resolve(data);
-                })
-                .catch(reject);  // Передаємо помилку далі
+                            cache[tmdbId] = { 
+                                data: data, 
+                                timestamp: Date.now() 
+                            };
+                            localStorage.setItem('seasonBadgeCache', JSON.stringify(cache));
+                            resolve(data);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    } else {
+                        reject(new Error('HTTP error ' + xhr.status));
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                reject(new Error('Network error'));
+            };
+            xhr.send();
         });
     }
 
-    /**
-     * Перевіряє стан сезону та повертає інформацію про прогрес
-     * @param {Object} tmdbData - дані серіалу з TMDB
-     * @returns {Object|boolean} - інформація про прогрес або false
-     */
     function getSeasonProgress(tmdbData) {
-        // Перевірка наявності необхідних даних
         if (!tmdbData || !tmdbData.seasons || !tmdbData.last_episode_to_air) return false;
         
-        // Останній випущений епізод
         var lastEpisode = tmdbData.last_episode_to_air;
+        var currentSeason = null;
         
-        // Пошук поточного сезону (сезони з номером > 0, щоб виключити спеціальні сезони)
-        var currentSeason = tmdbData.seasons.find(s => 
-            s.season_number === lastEpisode.season_number && s.season_number > 0
-        );
+        for (var i = 0; i < tmdbData.seasons.length; i++) {
+            var season = tmdbData.seasons[i];
+            if (season.season_number === lastEpisode.season_number && season.season_number > 0) {
+                currentSeason = season;
+                break;
+            }
+        }
         
-        // Якщо сезон не знайдено
         if (!currentSeason) return false;
         
-        // Загальна кількість епізодів в сезоні
         var totalEpisodes = currentSeason.episode_count || 0;
-        
-        // Кількість випущених епізодів
         var airedEpisodes = lastEpisode.episode_number || 0;
         
-        // Повертаємо об'єкт з детальною інформацією про прогрес
         return {
-            seasonNumber: lastEpisode.season_number,  // Номер поточного сезону
-            airedEpisodes: airedEpisodes,             // Кількість випущених епізодів
-            totalEpisodes: totalEpisodes,             // Загальна кількість епізодів
-            isComplete: airedEpisodes >= totalEpisodes  // Чи завершений сезон
+            seasonNumber: lastEpisode.season_number,
+            airedEpisodes: airedEpisodes,
+            totalEpisodes: totalEpisodes,
+            isComplete: airedEpisodes >= totalEpisodes
         };
     }
 
-    /**
-     * Створює DOM-елемент мітки сезону
-     * @param {string} content - текстовий вміст мітки
-     * @param {boolean} isComplete - чи є сезон завершеним
-     * @param {boolean} loading - чи є це тимчасовою міткою завантаження
-     * @returns {HTMLElement} - створений елемент мітки
-     */
+    function getSeriesStatus(tmdbData) {
+        if (!tmdbData) return null;
+
+        var status = tmdbData.status;
+        var lastAirDate = tmdbData.last_air_date;
+        var nextEpisode = tmdbData.next_episode_to_air;
+        
+        var statusType = 'blue';
+        var statusText = translateStatus('series');
+        
+        if (status === 'Returning Series') {
+            statusType = 'orange';
+            statusText = translateStatus('sequel');
+        } 
+        else if (status === 'Ended') {
+            statusType = 'green';
+            statusText = translateStatus('ended');
+        } 
+        else if (status === 'Canceled' || status === 'Cancelled') {
+            statusType = 'red';
+            statusText = translateStatus('canceled');
+        }
+        
+        if (nextEpisode && nextEpisode.air_date) {
+            var nextAirDate = new Date(nextEpisode.air_date);
+            var today = new Date();
+            var diffTime = nextAirDate - today;
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0 && diffDays <= 30) {
+                statusType = 'purple';
+                if (diffDays === 1) {
+                    statusText = translateStatus('tomorrow');
+                } else if (diffDays === 7) {
+                    statusText = translateStatus('inWeek');
+                } else {
+                    statusText = translateStatus('inDays', [diffDays]);
+                }
+            }
+        }
+        
+        return {
+            type: statusType,
+            text: statusText
+        };
+    }
+
     function createBadge(content, isComplete, loading) {
-        // Створюємо новий div елемент для мітки
         var badge = document.createElement('div');
-        
-        // Вибираємо CSS клас в залежності від стану сезону
         var badgeClass = isComplete ? 'card--season-complete' : 'card--season-progress';
-        
-        // Встановлюємо клас елемента (додаємо 'loading' якщо це тимчасова мітка)
         badge.className = badgeClass + (loading ? ' loading' : '');
         
-        // Встановлюємо HTML вміст мітки
-        badge.innerHTML = `<div>${content}</div>`;
+        var symbol = '';
+        if (!loading) {
+            symbol = isComplete ? ' ✓' : ' ⏱';
+        }
         
-        // Повертаємо створений елемент
+        var innerDiv = document.createElement('div');
+        innerDiv.textContent = content + symbol;
+        badge.appendChild(innerDiv);
+        
         return badge;
     }
 
-    /**
-     * Вирівнює мітку сезону відносно мітки якості
-     * @param {HTMLElement} cardEl - елемент картки
-     * @param {HTMLElement} badge - елемент мітки сезону
-     */
-    function adjustBadgePosition(cardEl, badge) {
-        // Знаходимо мітку якості відео в картці
-        let quality = cardEl.querySelector('.card__quality');
-        
-        if (quality && badge) {
-            // ВИПАДОК 1: Є мітка якості - розміщуємо мітку сезону вище неї
-            
-            // Отримуємо фактичну висоту мітки якості
-            let qHeight = quality.offsetHeight; 
-            
-            // Отримуємо значення нижнього відступу мітки якості з CSS
-            let qBottom = parseFloat(getComputedStyle(quality).bottom) || 0; 
-            
-            // Встановлюємо позицію мітки сезону (вище мітки якості)
-            badge.style.bottom = (qHeight + qBottom) + 'px';
-        } else if (badge) {
-            // ВИПАДОК 2: Мітки якості немає - розміщуємо мітку сезону в стандартному положенні
-            badge.style.bottom = '0.50em'; // Стандартний нижній відступ
-        }
+    function createStatusBadge(text, type) {
+        var statusBadge = document.createElement('div');
+        statusBadge.className = 'card--series-status ' + type;
+        statusBadge.textContent = text;
+        return statusBadge;
     }
 
-    // === ДОДАТКОВІ ФУНКЦІЇ ДЛЯ РОБОТИ З МІТКАМИ ЯКОСТІ ===
-    
-    /**
-     * Оновлює позиції всіх міток сезону при змінах в картці
-     * Використовується при додаванні/видаленні міток якості
-     * @param {HTMLElement} cardEl - елемент картки
-     */
-    function updateBadgePositions(cardEl) {
-        // Знаходимо всі мітки сезону в картці (обох типів)
-        var badges = cardEl.querySelectorAll('.card--season-complete, .card--season-progress');
-        
-        // Для кожної знайденої мітки оновлюємо позицію
-        badges.forEach(function(badge) {
-            adjustBadgePosition(cardEl, badge);
-        });
-    }
-
-    // === СПОСТЕРЕЖЕННЯ ЗА ЗМІНАМИ МІТОК ЯКОСТІ ===
-    // Створюємо спостерігач для відстеження додавання/видалення міток якості
-    var qualityObserver = new MutationObserver(function(mutations) {
-        // Перебираємо всі знайдені зміни
-        mutations.forEach(function(mutation) {
-            
-            // Перевіряємо додані вузли (нові мітки якості)
-            mutation.addedNodes?.forEach(function(node) {
-                // Перевіряємо, чи додано мітку якості
-                if (node.classList && node.classList.contains('card__quality')) {
-                    // Знаходимо батьківську картку для цієї мітки якості
-                    var cardEl = node.closest('.card');
-                    if (cardEl) {
-                        // Оновлюємо позицію мітки сезону при додаванні мітки якості
-                        // Використовуємо затримку для гарантії що DOM оновився
-                        setTimeout(() => {
-                            updateBadgePositions(cardEl);
-                        }, 100);
-                    }
-                }
-            });
-            
-            // Перевіряємо видалені вузли (видалені мітки якості)
-            mutation.removedNodes?.forEach(function(node) {
-                if (node.classList && node.classList.contains('card__quality')) {
-                    // Знаходимо батьківську картку для видаленої мітки якості
-                    var cardEl = node.closest('.card');
-                    if (cardEl) {
-                        // Оновлюємо позицію мітки сезону при видаленні мітки якості
-                        setTimeout(() => {
-                            updateBadgePositions(cardEl);
-                        }, 100);
-                    }
-                }
-            });
-        });
-    });
-
-    /**
-     * Додає мітку статусу сезону до картки серіалу
-     * @param {HTMLElement} cardEl - елемент картки
-     */
     function addSeasonBadge(cardEl) {
-        // Перевірка: чи картка вже оброблена або відсутня
         if (!cardEl || cardEl.hasAttribute('data-season-processed')) return;
 
-        // Перевірка: чи готові дані картки (якщо ні - відкладаємо обробку)
         if (!cardEl.card_data) {
-            // Викликаємо функцію знову через requestAnimationFrame
-            requestAnimationFrame(() => addSeasonBadge(cardEl));
+            // Используем setTimeout вместо requestAnimationFrame для старых устройств
+            setTimeout(function() { addSeasonBadge(cardEl); }, 100);
             return;
         }
 
-        // Отримуємо дані картки
         var data = cardEl.card_data;
-
-        // Перевірка: чи є це серіал (тільки для серіалів показуємо мітку)
-        if (getMediaType(data) !== 'tv') return;
-
-        // Знаходження контейнера для міток (елемент .card__view)
+        var mediaType = getMediaType(data);
         var view = cardEl.querySelector('.card__view');
         if (!view) return;
 
-        // Видалення попередніх міток обох типів (якщо вони існують)
-        var oldBadges = view.querySelectorAll('.card--season-complete, .card--season-progress');
-        oldBadges.forEach(function(badge) {
-            badge.remove();
-        });
-
-        // Створення тимчасової мітки завантаження (по дефолту - для незавершених сезонів)
-        var badge = createBadge('...', false, true);
-        
-        // Додавання мітки до DOM
-        view.appendChild(badge);
-        
-        // ВИКЛИК 1: Перше вирівнювання одразу після додавання в DOM
-        adjustBadgePosition(cardEl, badge);
-
-        // === СПОСТЕРЕЖЕННЯ ЗА МІТКОЮ ЯКОСТІ В ЦІЙ КАРТЦІ ===
-        // Підключаємо спостерігач для відстеження змін міток якості
-        try {
-            qualityObserver.observe(view, {
-                childList: true,    // Спостереження за додаванням/видаленням дочірніх елементів
-                subtree: true       // Спостереження за всіма вкладеними елементами
-            });
-        } catch (e) {
-            // Обробка можливих помилок при спостереженні
-            console.log('Помилка спостереження за мітками якості:', e);
+        // Удаление предыдущих меток
+        var oldBadges = view.querySelectorAll('.card--content-type, .card--season-complete, .card--season-progress, .card--series-status');
+        for (var i = 0; i < oldBadges.length; i++) {
+            if (oldBadges[i].parentNode) {
+                oldBadges[i].parentNode.removeChild(oldBadges[i]);
+            }
         }
 
-        // Позначення картки як обробленої (статус: завантаження)
-        cardEl.setAttribute('data-season-processed', 'loading');
+        // Создание метки типа контента
+        if (mediaType === 'movie' || mediaType === 'tv') {
+            var contentTypeBadge = createContentTypeBadge(mediaType);
+            view.appendChild(contentTypeBadge);
+            
+            setTimeout(function() {
+                contentTypeBadge.classList.add('show');
+            }, 50);
+        }
 
-        // Завантаження даних серіалу з TMDB
-        fetchSeriesData(data.id)
-            .then(function(tmdbData) {
-                // Отримуємо інформацію про прогрес сезону
-                var progressInfo = getSeasonProgress(tmdbData);
-                
-                // Перевіряємо, чи вдалося отримати інформацію
-                if (progressInfo) {
-                    var content = '';
-                    var isComplete = progressInfo.isComplete;
+        // Для сериалов добавляем дополнительные метки
+        if (mediaType === 'tv') {
+            var badge = createBadge('...', false, true);
+            view.appendChild(badge);
+
+            cardEl.setAttribute('data-season-processed', 'loading');
+
+            fetchSeriesData(data.id)
+                .then(function(tmdbData) {
+                    var progressInfo = getSeasonProgress(tmdbData);
+                    var statusInfo = getSeriesStatus(tmdbData);
                     
-                    if (isComplete) {
-                        // ДЛЯ ЗАВЕРШЕНИХ СЕЗОНІВ: "S1 ✓" (зелена мітка)
-                        content = `S${progressInfo.seasonNumber}`;
+                    if (progressInfo) {
+                        var content = '';
+                        var isComplete = progressInfo.isComplete;
+                        
+                        if (isComplete) {
+                            content = 'S' + progressInfo.seasonNumber;
+                        } else {
+                            content = 'S' + progressInfo.seasonNumber + ' ' + progressInfo.airedEpisodes + '/' + progressInfo.totalEpisodes;
+                        }
+                        
+                        // Удаляем старый badge
+                        if (badge.parentNode) {
+                            badge.parentNode.removeChild(badge);
+                        }
+                        
+                        // Создаем новый badge
+                        badge = createBadge(content, isComplete, false);
+                        view.appendChild(badge);
+
+                        setTimeout(function() {
+                            badge.classList.add('show');
+                        }, 50);
+
+                        cardEl.setAttribute('data-season-processed', isComplete ? 'complete' : 'in-progress');
                     } else {
-                        // ДЛЯ НЕЗАВЕРШЕНИХ СЕЗОНІВ: "S1 5/10" (жовта мітка з прогресом)
-                        content = `S${progressInfo.seasonNumber} ${progressInfo.airedEpisodes}/${progressInfo.totalEpisodes}`;
+                        if (badge.parentNode) {
+                            badge.parentNode.removeChild(badge);
+                        }
+                        cardEl.setAttribute('data-season-processed', 'error');
                     }
                     
-                    // Оновлюємо мітку з правильним класом та вмістом
-                    badge.className = isComplete ? 'card--season-complete' : 'card--season-progress';
-                    badge.innerHTML = `<div>${content}</div>`;
-                    
-                    // ВИКЛИК 2: Вирівнювання після оновлення вмісту мітки
-                    adjustBadgePosition(cardEl, badge);
-
-                    // Затримка для плавного показу мітки
-                    setTimeout(() => {
-                        // Додаємо клас для плавного показу
-                        badge.classList.add('show');
+                    if (statusInfo) {
+                        var statusBadge = createStatusBadge(statusInfo.text, statusInfo.type);
+                        view.appendChild(statusBadge);
                         
-                        // ВИКЛИК 3: Фінальне вирівнювання після показу
-                        adjustBadgePosition(cardEl, badge);
-                    }, 50);
-
-                    // Позначення картки як обробленої (статус: завершено або в процесі)
-                    cardEl.setAttribute('data-season-processed', isComplete ? 'complete' : 'in-progress');
-                } else {
-                    // Якщо не вдалося отримати інформацію про сезон - видаляємо мітку
-                    badge.remove();
+                        setTimeout(function() {
+                            statusBadge.classList.add('show');
+                        }, 100);
+                    }
+                })
+                .catch(function(error) {
+                    console.log('SeasonBadgePlugin ошибка:', error.message);
+                    if (badge.parentNode) {
+                        badge.parentNode.removeChild(badge);
+                    }
                     cardEl.setAttribute('data-season-processed', 'error');
-                }
-            })
-            .catch(function(error) {
-                // Обробка помилок завантаження даних
-                console.log('SeasonBadgePlugin помилка:', error.message);
-                badge.remove();
-                cardEl.setAttribute('data-season-processed', 'error');
-            });
+                });
+        } else {
+            cardEl.setAttribute('data-season-processed', 'not-tv');
+        }
     }
 
-    // === СИСТЕМА СПОСТЕРЕЖЕННЯ ЗА НОВИМИ КАРТКАМИ ===
-    // Створюємо спостерігач за змінами в DOM
-    var observer = new MutationObserver(function(mutations) {
-        // Перебираємо всі знайдені зміни
-        mutations.forEach(function(mutation) {
-            // Перебираємо всі додані вузли
-            mutation.addedNodes?.forEach(function(node) {
-                // Перевірка, що це HTML-елемент (не текстовий вузол)
-                if (node.nodeType !== 1) return;
+    // === СИСТЕМА НАБЛЮДЕНИЯ ЗА НОВЫМИ КАРТОЧКАМИ ===
+    var observer = null;
+    
+    // Проверяем поддержку MutationObserver
+    if (typeof MutationObserver !== 'undefined') {
+        observer = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                var mutation = mutations[i];
+                var addedNodes = mutation.addedNodes;
+                if (addedNodes) {
+                    for (var j = 0; j < addedNodes.length; j++) {
+                        var node = addedNodes[j];
+                        if (node.nodeType !== 1) continue;
 
-                // Якщо доданий елемент є карткою - обробляємо його
-                if (node.classList && node.classList.contains('card')) {
-                    addSeasonBadge(node);
+                        if (node.classList && node.classList.contains('card')) {
+                            addSeasonBadge(node);
+                        }
+
+                        if (node.querySelectorAll) {
+                            var cards = node.querySelectorAll('.card');
+                            for (var k = 0; k < cards.length; k++) {
+                                addSeasonBadge(cards[k]);
+                            }
+                        }
+                    }
                 }
-
-                // Якщо доданий контейнер містить картки - обробляємо всі внутрішні картки
-                if (node.querySelectorAll) {
-                    node.querySelectorAll('.card').forEach(addSeasonBadge);
-                }
-            });
-        });
-    });
-
-    // === ОБРОБНИК ЗМІНИ РОЗМІРУ ВІКНА ===
-    // Додаємо обробник події зміни розміру вікна
-    window.addEventListener('resize', function() {
-        // Оновлюємо позиції всіх міток при зміні розміру вікна
-        var allBadges = document.querySelectorAll('.card--season-complete, .card--season-progress');
-        allBadges.forEach(function(badge) {
-            var cardEl = badge.closest('.card');
-            if (cardEl) {
-                adjustBadgePosition(cardEl, badge);
             }
         });
-    });
+    }
 
-    /**
-     * Основна функція ініціалізації плагіна
-     */
     function initPlugin() {
-        // Перевірка активності плагіна
         if (!CONFIG.enabled) return;
 
-        // Список контейнерів, де можуть знаходитись картки
-        var containers = document.querySelectorAll('.cards, .card-list, .content, .main, .cards-list, .preview__list');
+        // ИНИЦИАЛИЗАЦИЯ ЯЗЫКА ОДИН РАЗ ПРИ ЗАПУСКЕ ПЛАГИНА
+        initAppLanguage();
 
-        if (containers.length > 0) {
-            // Підключення спостерігача до кожного знайденого контейнера
-            containers.forEach(container => {
-                try {
-                    observer.observe(container, {
-                        childList: true,    // Спостереження за додаванням/видаленням дітей
-                        subtree: true      // Спостереження за всіма нащадками
-                    });
-                } catch (e) {
-                    console.log('Помилка спостереження за контейнером:', e);
+        // Если MutationObserver не поддерживается, используем fallback
+        if (!observer) {
+            console.log('SeasonBadgePlugin: MutationObserver не поддерживается, используется fallback');
+            // Периодическая проверка новых карточек
+            setInterval(function() {
+                var newCards = document.querySelectorAll('.card:not([data-season-processed])');
+                for (var i = 0; i < newCards.length; i++) {
+                    addSeasonBadge(newCards[i]);
                 }
-            });
+            }, 1000);
         } else {
-            // Якщо контейнери не знайдені - спостерігаємо за всім документом
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
+            var containers = document.querySelectorAll('.cards, .card-list, .content, .main, .cards-list, .preview__list');
+
+            if (containers.length > 0) {
+                for (var i = 0; i < containers.length; i++) {
+                    try {
+                        observer.observe(containers[i], {
+                            childList: true,
+                            subtree: true
+                        });
+                    } catch (e) {
+                        console.log('Ошибка наблюдения за контейнером:', e);
+                    }
+                }
+            } else {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         }
 
-        // Обробка вже існуючих карток на сторінці
-        document.querySelectorAll('.card:not([data-season-processed])').forEach((card, index) => {
-            // Затримка для уникнення одночасного завантаження великої кількості карток
-            setTimeout(() => addSeasonBadge(card), index * 300);
-        });
+        // Обработка существующих карточек
+        var existingCards = document.querySelectorAll('.card:not([data-season-processed])');
+        for (var j = 0; j < existingCards.length; j++) {
+            (function(index) {
+                setTimeout(function() { addSeasonBadge(existingCards[index]); }, index * 300);
+            })(j);
+        }
     }
 
-    // === СИСТЕМА ЗАПУСКУ ПЛАГІНА ===
-
-    // ВАРІАНТ 1: Якщо додаток вже готовий (стандартний випадок)
-    if (window.appready) {
-        initPlugin();
-    } 
-    // ВАРІАНТ 2: Для Lampa Framework (чекаємо подію готовності)
-    else if (window.Lampa && Lampa.Listener) {
-        Lampa.Listener.follow('app', function(e) {
-            if (e.type === 'ready') initPlugin();
-        });
-    } 
-    // ВАРІАНТ 3: Резервний варіант (запуск через 2 секунди)
-    else {
-        setTimeout(initPlugin, 2000);
+    // === СИСТЕМА ЗАПУСКА ПЛАГИНА ===
+    function startPlugin() {
+        if (document.readyState === 'loading') {
+            if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', initPlugin);
+            } else if (document.attachEvent) {
+                document.attachEvent('onreadystatechange', function() {
+                    if (document.readyState === 'complete') {
+                        initPlugin();
+                    }
+                });
+            }
+        } else {
+            // Если документ уже загружен
+            if (window.appready) {
+                initPlugin();
+            } 
+            else if (window.Lampa && Lampa.Listener) {
+                Lampa.Listener.follow('app', function(e) {
+                    if (e.type === 'ready') initPlugin();
+                });
+            } 
+            else {
+                setTimeout(initPlugin, 2000);
+            }
+        }
     }
+
+    // Запускаем плагин
+    startPlugin();
 
 })();
