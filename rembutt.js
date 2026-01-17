@@ -4,13 +4,13 @@
     function removeviewtrailer() {
     
 
-                document.querySelectorAll('[class*="view--trailer"]').forEach(el => {
-    el.classList.add('hide');
-    }
+             
+   document.querySelectorAll('.shots-view-button')[0].classList.add('hide');
+    };
         function removeshots() {
-        document.querySelectorAll('[class*="shots-view-button"]').forEach(el => {
-    el.classList.add('hide');
-});
+document.querySelectorAll('.view--trailer')[0].classList.add('hide');
+};
+);
 
     }
 
