@@ -290,14 +290,14 @@
 .card--season-complete,
 .card--season-progress {
     left: 0;
-    bottom: 4em;
+    bottom: 5em;
     margin-left: -0.25em;
 }
 
 /* Статус сериала (правый низ) */
 .card--series-status {
     right: 0;
-    bottom: 4em;
+    bottom: 5em;
     margin-right: -0.25em;
 }
 
