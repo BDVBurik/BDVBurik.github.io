@@ -251,219 +251,142 @@
 
   // === СТИЛИ ДЛЯ МЕТОК ===
   var style = document.createElement("style");
-  style.textContent = `
-    /* === СТИЛЬ ДЛЯ МЕТКИ ТИПА КОНТЕНТА (левый верхний угол) === */
-    .card--content-type {
-        position: absolute;
-        top: 5px;
-        left: 0;
-        margin-left: -0.25em;
-        z-index: 12;
-        width: fit-content;
-        max-width: calc(100% - 1em);
-        border-radius: 0.2em;
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.22s ease-in-out;
-        font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
-        font-weight: 700;
-        font-size: 0.85em;
-        padding: 0.3em 0.3em;
-        white-space: nowrap;
-        text-align: center;
-        text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
-    }
-    
-    /* Цветовые варианты для типа контента */
-    .card--content-type.movie {
-        background-color: rgba(33, 150, 243, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--content-type.tv {
-        background-color: rgba(156, 39, 176, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--content-type.show {
-        opacity: 1;
-    }
+  style.textContent = `/* =========================================================
+   === ОБЩИЕ БАЗОВЫЕ СТИЛИ ДЛЯ ВСЕХ МЕТОК ===
+   ========================================================= */
+.card--content-type,
+.card--season-complete,
+.card--season-progress,
+.card--series-status {
+    position: absolute;
+    z-index: 12;
+    width: fit-content;
+    max-width: calc(100% - 1em);
+    border-radius: 0.2em;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.22s ease-in-out;
+    font-family: 'Roboto Condensed','Arial Narrow',Arial,sans-serif;
+    font-weight: 700;
+    font-size: 0.85em;
+    padding: 0.3em 0.3em;
+    white-space: nowrap;
+    text-align: center;
+    text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
+}
 
-    /* Стиль для ЗАВЕРШЕННЫХ сезонов */
-    .card--season-complete {
-        position: absolute;
-        left: 0;
-        margin-left: -0.25em;
-        bottom: 43px;
-        background-color: rgba(61, 161, 141, 0.9);
-        z-index: 12;
-        width: fit-content;
-        max-width: calc(100% - 1em);
-        border-radius: 0.2em;
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.22s ease-in-out;
-    }
-    
-    /* Стиль для НЕЗАВЕРШЕННЫХ сезонов */
-    .card--season-progress {
-        position: absolute;
-        left: 0;
-        margin-left: -0.25em;
-        bottom: 43px;
-        background-color: rgba(255, 193, 7, 0.9);
-        z-index: 12;
-        width: fit-content;
-        max-width: calc(100% - 1em);
-        border-radius: 0.2em;
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.22s ease-in-out;
-    }
-    
-    /* Общие стили для текста в метках сезона */
-    .card--season-complete div,
-    .card--season-progress div {
-        text-transform: uppercase;
-        font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;  
-        font-weight: 700;
-        font-size: 0.85em;
-        padding: 0.3em 0.3em;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
-        text-align: center;
-    }
-    
-    .card--season-complete div {
-        color: #ffffff;
-    }
-    
-    .card--season-progress div {
-        color: #000000;
-    }
-    
-    .card--season-complete.show,
-    .card--season-progress.show {
-        opacity: 1;
-    }
-    
-    /* === СТИЛИ ДЛЯ МЕТКИ СТАТУСА СЕРИАЛА === */
+/* =========================================================
+   === ПОЗИЦИОНИРОВАНИЕ МЕТОК ===
+   ========================================================= */
+
+/* Тип контента (левый верхний угол) */
+.card--content-type {
+    top: 5px;
+    left: 0;
+    margin-left: -0.25em;
+}
+
+/* Метки сезонов (левый низ) */
+.card--season-complete,
+.card--season-progress {
+    left: 0;
+    bottom: 4em;
+    margin-left: -0.25em;
+}
+
+/* Статус сериала (правый низ) */
+.card--series-status {
+    right: 0;
+    bottom: 4em;
+    margin-right: -0.25em;
+}
+
+/* =========================================================
+   === ЛОГИКА ОТОБРАЖЕНИЯ ===
+   ========================================================= */
+
+/* Показывать метку */
+.show {
+    opacity: 1;
+}
+
+/* =========================================================
+   === ЦВЕТОВЫЕ ВАРИАНТЫ ===
+   ========================================================= */
+
+/* Тип контента */
+.card--content-type.movie { background: rgba(33,150,243,0.9); color:#fff; }
+.card--content-type.tv    { background: rgba(156,39,176,0.9); color:#fff; }
+
+/* Состояние сезона */
+.card--season-complete  { background: rgba(61,161,141,0.9); }
+.card--season-progress  { background: rgba(255,193,7,0.9); }
+
+/* Статус сериала */
+.card--series-status.orange { background: rgba(255,152,0,0.9); color:#000; }
+.card--series-status.purple { background: rgba(156,39,176,0.9); color:#fff; }
+.card--series-status.blue   { background: rgba(33,150,243,0.9); color:#fff; }
+.card--series-status.green  { background: rgba(76,175,80,0.9); color:#fff; }
+.card--series-status.red    { background: rgba(244,67,54,0.9); color:#fff; }
+
+/* =========================================================
+   === ТЕКСТ В МЕТКАХ СЕЗОНА ===
+   ========================================================= */
+
+.card--season-complete div,
+.card--season-progress div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+}
+
+/* Цвет текста */
+.card--season-complete div { color:#fff; }
+.card--season-progress div { color:#000; }
+
+/* =========================================================
+   === АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ ===
+   ========================================================= */
+
+@media (max-width:768px) {
+
+    /* Общие размеры */
+    .card--content-type,
+    .card--season-complete,
+    .card--season-progress,
     .card--series-status {
-        position: absolute;
-        right: 0;
-        margin-right: -0.25em;
-        bottom: 43px;
-        z-index: 12;
-        width: fit-content;
-        max-width: calc(100% - 1em);
-        border-radius: 0.2em;
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.22s ease-in-out;
-        font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
-        font-weight: 700;
-        font-size: 0.85em;
-        padding: 0.3em 0.3em;
-        white-space: nowrap;
-        text-align: center;
-        text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.3);
-    }
-    
-    /* Цветовые варианты для статусов */
-    .card--series-status.orange {
-        background-color: rgba(255, 152, 0, 0.9);
-        color: #000000;
-    }
-    
-    .card--series-status.purple {
-        background-color: rgba(156, 39, 176, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--series-status.blue {
-        background-color: rgba(33, 150, 243, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--series-status.green {
-        background-color: rgba(76, 175, 80, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--series-status.red {
-        background-color: rgba(244, 67, 54, 0.9);
-        color: #ffffff;
-    }
-    
-    .card--series-status.show {
-        opacity: 1;
-    }
-    
-    /* Адаптация для мобильных устройств */
-    @media (max-width: 768px) {
-        .card--content-type {
-            top: 4px;
-            margin-left: -0.15em;
-            font-size: 0.75em;
-            padding: 0.25em 0.2em;
-            border-radius: 0.18em;
-        }
-        
-        .card--season-complete,
-        .card--season-progress {
-            bottom: 43px;
-            margin-left: -0.15em;
-            border-radius: 0.18em;
-        }
-        
-        .card--season-complete div,
-        .card--season-progress div {
-            font-size: 0.75em;
-            padding: 0.25em 0.2em;
-        }
-        
-        .card--series-status {
-            bottom: 43px;
-            margin-right: -0.15em;
-            font-size: 0.75em;
-            padding: 0.25em 0.2em;
-            border-radius: 0.18em;
-        }
+        font-size: 0.75em;
+        padding: 0.25em 0.2em;
+        border-radius: 0.18em;
     }
 
-    @media (max-width: 480px) {
-        .card--content-type {
-            top: 3px;
-            margin-left: -0.1em;
-            font-size: 0.7em;
-            padding: 0.2em 0.15em;
-            border-radius: 0.15em;
-        }
-        
-        .card--season-complete,
-        .card--season-progress {
-            bottom: 43px;
-            margin-left: -0.1em;
-            border-radius: 0.15em;
-        }
-        
-        .card--season-complete div,
-        .card--season-progress div {
-            font-size: 0.7em;
-            padding: 0.2em 0.15em;
-        }
-        
-        .card--series-status {
-            bottom: 43px;
-            margin-right: -0.1em;
-            font-size: 0.7em;
-            padding: 0.2em 0.15em;
-            border-radius: 0.15em;
-        }
+    /* Смещения */
+    .card--content-type { top:4px; margin-left:-0.15em; }
+    .card--season-complete,
+    .card--season-progress { margin-left:-0.15em; }
+    .card--series-status { margin-right:-0.15em; }
+}
+
+@media (max-width:480px) {
+
+    /* Общие размеры */
+    .card--content-type,
+    .card--season-complete,
+    .card--season-progress,
+    .card--series-status {
+        font-size: 0.7em;
+        padding: 0.2em 0.15em;
+        border-radius: 0.15em;
     }
+
+    /* Смещения */
+    .card--content-type { top:3px; margin-left:-0.1em; }
+    .card--season-complete,
+    .card--season-progress { margin-left:-0.1em; }
+    .card--series-status { margin-right:-0.1em; }
+}
+
     `;
   document.head.appendChild(style);
 
