@@ -2,10 +2,16 @@
     'use strict';
 
     function removeviewtrailer() {
-        document.getElementsByClassName('view--trailer')[0].remove();
+    
+
+                document.querySelectorAll('[class*="view--trailer"]').forEach(el => {
+    el.classList.add('hide');
     }
         function removeshots() {
-        document.getElementsByClassName('shots-view-button')[0].remove();
+        document.querySelectorAll('[class*="shots-view-button"]').forEach(el => {
+    el.classList.add('hide');
+});
+
     }
 
 
