@@ -1,26 +1,18 @@
 (function () {
-    'use strict';
+  "use strict";
 
-    function removeviewtrailer() {
-    
+  function removeviewtrailer() {
+    document.querySelectorAll(".shots-view-button")[0].classList.add("hide");
+  }
+  function removeshots() {
+    document.querySelectorAll(".view--trailer")[0].classList.add("hide");
+  }
 
-             
-   document.querySelectorAll('.shots-view-button')[0].classList.add('hide');
-    };
-        function removeshots() {
-document.querySelectorAll('.view--trailer')[0].classList.add('hide');
-};
-);
+  // ждём загрузку интерфейса Lampa
 
-    }
-
-
-    // ждём загрузку интерфейса Lampa
-
-      Lampa.Listener.follow("full", (e) => {
-        if (e.type !== "complite" || !e.data.movie) return;
-        removeviewtrailer();
-          removeshots();
-      });
- 
+  Lampa.Listener.follow("full", (e) => {
+    if (e.type !== "complite" || !e.data.movie) return;
+    removeviewtrailer();
+    removeshots();
+  });
 })();
