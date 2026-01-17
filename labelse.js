@@ -290,7 +290,7 @@
 .card--season-complete,
 .card--season-progress {
     left: 0;
-    bottom: 5em;
+    bottom: 4.4em;
     margin-left: -0.25em;
 }
 
