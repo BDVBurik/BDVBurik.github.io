@@ -1,5 +1,11 @@
 (function () {
   "use strict";
+  var DEBUG = false;
+  function log() {
+    if (DEBUG && console && console.log) {
+      console.log.apply(console, arguments);
+    }
+  }
 
   // --- Защит от повторного запуска плагина ---
   if (window.SeasonBadgePlugin && window.SeasonBadgePlugin.__initialized)
@@ -105,19 +111,19 @@
     if (currentLanguage) return currentLanguage;
 
     var lang = "ru";
-    console.log("SeasonBadgePlugin: Инициализация языка...");
+    log("SeasonBadgePlugin: Инициализация языка...");
 
     // 1. Пробуем получить язык из Lampa приложения
     try {
       if (window.Lampa && Lampa.Manager) {
-        console.log("SeasonBadgePlugin: Lampa найдена, ищем язык...");
+        log("SeasonBadgePlugin: Lampa найдена, ищем язык...");
 
         if (Lampa.Settings && Lampa.Settings.get) {
           var settingsLang =
             Lampa.Settings.get("language") || Lampa.Settings.get("lang");
           if (settingsLang && STATUS_TRANSLATIONS[settingsLang]) {
             lang = settingsLang;
-            console.log("SeasonBadgePlugin: Язык из Lampa Settings -", lang);
+            log("SeasonBadgePlugin: Язык из Lampa Settings -", lang);
             currentLanguage = lang;
             return lang;
           }
@@ -128,7 +134,7 @@
             Lampa.Storage.get("language") || Lampa.Storage.get("lang");
           if (storageLang && STATUS_TRANSLATIONS[storageLang]) {
             lang = storageLang;
-            console.log("SeasonBadgePlugin: Язык из Lampa Storage -", lang);
+            log("SeasonBadgePlugin: Язык из Lampa Storage -", lang);
             currentLanguage = lang;
             return lang;
           }
@@ -143,20 +149,17 @@
               Lampa.Manager.getter("language") || Lampa.Manager.getter("lang");
             if (managerLang && STATUS_TRANSLATIONS[managerLang]) {
               lang = managerLang;
-              console.log("SeasonBadgePlugin: Язык из Lampa Manager -", lang);
+              log("SeasonBadgePlugin: Язык из Lampa Manager -", lang);
               currentLanguage = lang;
               return lang;
             }
           } catch (e) {
-            console.log(
-              "SeasonBadgePlugin: Ошибка получения языка из Manager",
-              e
-            );
+            log("SeasonBadgePlugin: Ошибка получения языка из Manager", e);
           }
         }
       }
     } catch (e) {
-      console.log("SeasonBadgePlugin: Ошибка получения языка из Lampa", e);
+      log("SeasonBadgePlugin: Ошибка получения языка из Lampa", e);
     }
 
     // 2. Пробуем получить язык из localStorage
@@ -172,10 +175,7 @@
         var value = localStorage.getItem(key);
         if (value && STATUS_TRANSLATIONS[value]) {
           lang = value;
-          console.log(
-            "SeasonBadgePlugin: Язык из localStorage (" + key + ") -",
-            lang
-          );
+          log("SeasonBadgePlugin: Язык из localStorage (" + key + ") -", lang);
           currentLanguage = lang;
           return lang;
         }
@@ -193,7 +193,7 @@
         var genValue = localStorage.getItem(genKey);
         if (genValue && STATUS_TRANSLATIONS[genValue]) {
           lang = genValue;
-          console.log(
+          log(
             "SeasonBadgePlugin: Язык из localStorage (" + genKey + ") -",
             lang
           );
@@ -202,10 +202,7 @@
         }
       }
     } catch (e) {
-      console.log(
-        "SeasonBadgePlugin: Ошибка получения языка из localStorage",
-        e
-      );
+      log("SeasonBadgePlugin: Ошибка получения языка из localStorage", e);
     }
 
     // 3. Пробуем определить язык браузера
@@ -217,15 +214,15 @@
       ).substring(0, 2);
       if (STATUS_TRANSLATIONS[browserLang]) {
         lang = browserLang;
-        console.log("SeasonBadgePlugin: Язык из браузера -", lang);
+        log("SeasonBadgePlugin: Язык из браузера -", lang);
         currentLanguage = lang;
         return lang;
       }
     } catch (e) {
-      console.log("SeasonBadgePlugin: Ошибка определения языка браузера", e);
+      log("SeasonBadgePlugin: Ошибка определения языка браузера", e);
     }
 
-    console.log("SeasonBadgePlugin: Используется язык по умолчанию -", lang);
+    log("SeasonBadgePlugin: Используется язык по умолчанию -", lang);
     currentLanguage = lang;
     return lang;
   }
@@ -673,7 +670,7 @@
           }
         })
         .catch(function (error) {
-          console.log("SeasonBadgePlugin ошибка:", error.message);
+          log("SeasonBadgePlugin ошибка:", error.message);
           if (badge.parentNode) {
             badge.parentNode.removeChild(badge);
           }
@@ -722,7 +719,7 @@
 
     // Если MutationObserver не поддерживается, используем fallback
     if (!observer) {
-      console.log(
+      log(
         "SeasonBadgePlugin: MutationObserver не поддерживается, используется fallback"
       );
       // Периодическая проверка новых карточек
@@ -747,7 +744,7 @@
               subtree: true,
             });
           } catch (e) {
-            console.log("Ошибка наблюдения за контейнером:", e);
+            log("Ошибка наблюдения за контейнером:", e);
           }
         }
       } else {
