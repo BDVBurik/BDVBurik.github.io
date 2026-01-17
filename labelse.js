@@ -612,7 +612,7 @@
         var view = cardEl.querySelector('.card__view');
         if (!view) return;
 
-        Удаление предыдущих меток
+        // Удаление предыдущих меток
         var oldBadges = view.querySelectorAll('.card--content-type, .card--season-complete, .card--season-progress, .card--series-status');
         for (var i = 0; i < oldBadges.length; i++) {
             if (oldBadges[i].parentNode) {
