@@ -612,13 +612,13 @@
         var view = cardEl.querySelector('.card__view');
         if (!view) return;
 
-        // Удаление предыдущих меток
-        // var oldBadges = view.querySelectorAll('.card--content-type, .card--season-complete, .card--season-progress, .card--series-status');
-        // for (var i = 0; i < oldBadges.length; i++) {
-        //     if (oldBadges[i].parentNode) {
-        //         oldBadges[i].parentNode.removeChild(oldBadges[i]);
-        //     }
-        // }
+        Удаление предыдущих меток
+        var oldBadges = view.querySelectorAll('.card--content-type, .card--season-complete, .card--season-progress, .card--series-status');
+        for (var i = 0; i < oldBadges.length; i++) {
+            if (oldBadges[i].parentNode) {
+                oldBadges[i].parentNode.removeChild(oldBadges[i]);
+            }
+        }
 
         // Создание метки типа контента
         if (mediaType === 'movie' || mediaType === 'tv') {
@@ -673,14 +673,14 @@
                         cardEl.setAttribute('data-season-processed', 'error');
                     }
                     
-                    // if (statusInfo) {
-                    //     var statusBadge = createStatusBadge(statusInfo.text, statusInfo.type);
-                    //     view.appendChild(statusBadge);
+                    if (statusInfo) {
+                        var statusBadge = createStatusBadge(statusInfo.text, statusInfo.type);
+                        view.appendChild(statusBadge);
                         
-                    //     setTimeout(function() {
-                    //         statusBadge.classList.add('show');
-                    //     }, 100);
-                    // }
+                        setTimeout(function() {
+                            statusBadge.classList.add('show');
+                        }, 100);
+                    }
                 })
                 .catch(function(error) {
                     console.log('SeasonBadgePlugin ошибка:', error.message);
