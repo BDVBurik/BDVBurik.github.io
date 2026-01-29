@@ -14,6 +14,7 @@
           "https://bdvburik.github.io/title.js",
           "https://bdvburik.github.io/rezkacomment.js",
           "https://bdvburik.github.io/ads.js",
+          " https://bdvburik.github.io/myshows.js",
         ],
         function () {},
       );
