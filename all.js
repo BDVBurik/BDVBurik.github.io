@@ -14,14 +14,17 @@
           "https://bdvburik.github.io/title.js",
           "https://bdvburik.github.io/rezkacomment.js",
           "https://bdvburik.github.io/ads.js",
-          "https://bdvburik.github.io/myshows.js",
           "https://bdvburik.github.io/rembutt.js",
           "https://bdvburik.github.io/pubtorr.js",
+          "https://bdvburik.github.io/store.js",
+
           "https://skaztv.online/js/tricks.js",
 
           "https://ipavlin98.github.io/lmp-series-skip-db/series-skip.js",
           "https://ipavlin98.github.io/lmp-plugins/anime-skip.js",
           "https://ipavlin98.github.io/lmp-plugins/season-fix.js",
+
+          "https://igorek1986.github.io/lampa-plugins/myshows.js",
 
           "http://bwa.to/oeogfeb",
 
