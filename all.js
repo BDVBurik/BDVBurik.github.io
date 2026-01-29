@@ -30,6 +30,8 @@
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
           "https://and7ey.github.io/lampa/head_filter.js",
+
+          "https://lampame.github.io/main/bo.js",
         ],
         function () {},
       );
