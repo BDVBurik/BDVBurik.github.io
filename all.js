@@ -16,6 +16,20 @@
           "https://bdvburik.github.io/ads.js",
           "https://bdvburik.github.io/myshows.js",
           "https://bdvburik.github.io/rembutt.js",
+          "https://bdvburik.github.io/pubtorr.js",
+          "https://skaztv.online/js/tricks.js",
+
+          "https://ipavlin98.github.io/lmp-series-skip-db/series-skip.js",
+          "https://ipavlin98.github.io/lmp-plugins/anime-skip.js",
+          "https://ipavlin98.github.io/lmp-plugins/season-fix.js",
+
+          "http://bwa.to/oeogfeb",
+
+          "https://bywolf88.github.io/lampa-plugins/interface_mod.js",
+
+          "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
+          "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
+          "https://and7ey.github.io/lampa/head_filter.js",
         ],
         function () {},
       );
