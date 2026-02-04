@@ -7,6 +7,9 @@
 
       Lampa.Utils.putScriptAsync(
         [
+
+          "http://wtch.ch/m", //хз что
+          
           "https://bdvburik.github.io/ts.js",
           "https://bdvburik.github.io/labelse.js",
           "https://bdvburik.github.io/sub.js",
