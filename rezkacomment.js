@@ -16,7 +16,7 @@
         "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
         name +
         (ye ? "+" + ye : ""),
-      { method: "GET", headers: { "Content-Type": "text/html" } }
+      { method: "GET", headers: { "Content-Type": "text/html" } },
     ).then((response) => response.text());
 
     let dom = new DOMParser().parseFromString(fc, "text/html");
@@ -40,8 +40,8 @@
           }/${id}?append_to_response=translations`,
           {},
           res,
-          rej
-        )
+          rej,
+        ),
       );
 
       const tr = data.translations?.translations;
@@ -73,7 +73,7 @@
       str
         .toLowerCase()
         .replace(/[\-\u2010-\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D]+/g, "-")
-        .replace(/ё/g, "е")
+        .replace(/ё/g, "е"),
     );
   }
 
@@ -140,8 +140,8 @@
     const now = Date.now();
 
     // 1. Показываем из storage сразу
-    let savedHTML = localStorage.getItem(storageKey);
-    let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
+    //let savedHTML = localStorage.getItem(storageKey);
+    // let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
     if (savedHTML && now - savedTime < oneDay) {
       const container = document.createElement("div");
       container.innerHTML = savedHTML;
@@ -159,7 +159,7 @@
           {
             method: "GET",
             headers: { "Content-Type": "text/plain" },
-          }
+          },
         ).then((r) => r.json());
 
         let dom = new DOMParser().parseFromString(fc.comments, "text/html");
@@ -172,13 +172,13 @@
         // Сохраняем в storage
         const container = document.createElement("div");
         container.appendChild(newTree.cloneNode(true));
-        localStorage.setItem(storageKey, container.innerHTML);
-        localStorage.setItem(storageTimeKey, Date.now().toString());
+        // localStorage.setItem(storageKey, container.innerHTML);
+        // localStorage.setItem(storageTimeKey, Date.now().toString());
 
         // Если уже показали старое, обновляем содержимое
         if (savedHTML && now - savedTime < oneDay) {
           const commentWrapper = document.querySelector(
-            ".broadcast__text .comment"
+            ".broadcast__text .comment",
           );
           if (commentWrapper) {
             commentWrapper.innerHTML = "";
@@ -196,7 +196,7 @@
     function openModal(treeContent) {
       Lampa.Loading.stop();
       let modal = $(
-        `<div><div class="broadcast__text" style="text-align:left;"><div class="comment"></div></div></div>`
+        `<div><div class="broadcast__text" style="text-align:left;"><div class="comment"></div></div></div>`,
       );
       modal.find(".comment").append(treeContent);
 
@@ -250,7 +250,7 @@
         .querySelector(".modal__head")
         ?.insertAdjacentHTML(
           "afterend",
-          `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`
+          `<button class="modal-close-btn selector" onclick="$('.modal--large').remove()">&times;</button>  ${namemovie}`,
         );
     }
   }
@@ -263,8 +263,8 @@
         $(".button--comment").remove();
         $(".full-start-new__buttons").append(
           `<div class="full-start__button selector button--comment"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 356.484 356.484"><g><path d="M293.984 7.23H62.5C28.037 7.23 0 35.268 0 69.731v142.78c0 34.463 28.037 62.5 62.5 62.5l147.443.001 70.581 70.58a12.492 12.492 0 0 0 13.622 2.709 12.496 12.496 0 0 0 7.717-11.547v-62.237c30.759-3.885 54.621-30.211 54.621-62.006V69.731c0-34.463-28.037-62.501-62.5-62.501zm37.5 205.282c0 20.678-16.822 37.5-37.5 37.5h-4.621c-6.903 0-12.5 5.598-12.5 12.5v44.064l-52.903-52.903a12.493 12.493 0 0 0-8.839-3.661H62.5c-20.678 0-37.5-16.822-37.5-37.5V69.732c0-20.678 16.822-37.5 37.5-37.5h231.484c20.678 0 37.5 16.822 37.5 37.5v142.78z" fill="currentcolor"/></g></svg><span>${Lampa.Lang.translate(
-            "title_comments"
-          )}</span></div>`
+            "title_comments",
+          )}</span></div>`,
         );
 
         $(".button--comment").on("hover:enter", function (card) {
