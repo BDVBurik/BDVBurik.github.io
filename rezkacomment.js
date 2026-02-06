@@ -134,19 +134,19 @@
 
   // === Основная обработка комментариев Rezka с storage на сутки ===
   async function comment_rezka(id) {
-    const storageKey = "rezkaComments_" + id;
-    const storageTimeKey = storageKey + "_time";
-    const oneDay = 24 * 60 * 60 * 1000;
-    const now = Date.now();
+    // const storageKey = "rezkaComments_" + id;
+    // const storageTimeKey = storageKey + "_time";
+    // const oneDay = 24 * 60 * 60 * 1000;
+    // const now = Date.now();
 
     // 1. Показываем из storage сразу
     //let savedHTML = localStorage.getItem(storageKey);
     // let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
-    if (savedHTML && now - savedTime < oneDay) {
-      const container = document.createElement("div");
-      container.innerHTML = savedHTML;
-      openModal(container); // показываем сразу
-    }
+    // if (savedHTML && now - savedTime < oneDay) {
+    //   const container = document.createElement("div");
+    //   container.innerHTML = savedHTML;
+    //   openModal(container); // показываем сразу
+    // }
 
     // 2. Обновляем в фоне
     (async () => {
@@ -170,23 +170,23 @@
         let newTree = buildTree(rootList);
 
         // Сохраняем в storage
-        const container = document.createElement("div");
-        container.appendChild(newTree.cloneNode(true));
+        // const container = document.createElement("div");
+        // container.appendChild(newTree.cloneNode(true));
         // localStorage.setItem(storageKey, container.innerHTML);
         // localStorage.setItem(storageTimeKey, Date.now().toString());
 
         // Если уже показали старое, обновляем содержимое
-        if (savedHTML && now - savedTime < oneDay) {
-          const commentWrapper = document.querySelector(
-            ".broadcast__text .comment",
-          );
-          if (commentWrapper) {
-            commentWrapper.innerHTML = "";
-            commentWrapper.appendChild(newTree);
-          }
-        } else {
-          openModal(newTree);
-        }
+        // if (savedHTML && now - savedTime < oneDay) {
+        //   const commentWrapper = document.querySelector(
+        //     ".broadcast__text .comment",
+        //   );
+        //   if (commentWrapper) {
+        //     commentWrapper.innerHTML = "";
+        //     commentWrapper.appendChild(newTree);
+        //   }
+        // } else {
+        openModal(newTree);
+        // }
       } catch (e) {
         console.error(e);
         Lampa.Loading.stop();
