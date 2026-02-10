@@ -7,7 +7,7 @@
   let namemovie;
   let savedHTML = null;
 
-  let kp_prox = "https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/";
+  let kp_prox = "https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/";
   let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
 
   // Функция для поиска на сайте hdrezka
