@@ -7,7 +7,7 @@
 		var search_date = card.release_date || card.first_air_date || card.last_air_date || '0000';
 		var search_year = parseInt((search_date + '').slice(0, 4));
 		var orig = card.original_title || card.original_name;
-		var kp_prox = 'https://worker-patient-dream-26d7.bdvburik.workers.dev:8443/';
+		var kp_prox = 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/';
 		var params = {
 			id: card.id,
 			url: kp_prox + 'https://kinopoiskapiunofficial.tech/',
