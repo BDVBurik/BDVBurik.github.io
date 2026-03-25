@@ -6,7 +6,7 @@
       clearInterval(timer);
 
       Lampa.Utils.putScriptAsync(
-        [
+        ["http://lampalampa.free.nf/uacoments.js",
 
           "http://wtch.ch/m", //хз что
           
