@@ -28,7 +28,7 @@
           // "https://ipavlin98.github.io/lmp-plugins/anime-skip.js",
           // "https://ipavlin98.github.io/lmp-plugins/season-fix.js",
 
-          "https://igorek1986.github.io/lampa-plugins/myshows.js",
+          //"https://igorek1986.github.io/lampa-plugins/myshows.js",
 
          // "http://bwa.to/oeogfeb",
 
