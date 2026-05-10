@@ -25,7 +25,7 @@
           "https://skaztv.online/js/tricks.js",
 
           "https://lampame.github.io/main/trakttv.js",
-		 "https://igorek1986.github.io/lampa-plugins/myshows.js",
+		
 		 "https://lampame.github.io/main/hikka.js",
 		 "https://lampame.github.io/main/cw.js",
 		 "https://lampame.github.io/main/newcategory.js",
@@ -36,6 +36,7 @@
           "https://and7ey.github.io/lampa/head_filter.js",
 
           "https://lampame.github.io/main/bo.js",
+		  "https://igorek1986.github.io/lampa-plugins/myshows.js",
         ],
         function () {},
       );
