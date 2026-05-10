@@ -9,7 +9,7 @@
       Lampa.Utils.putScriptAsync(
         ["http://lampalampa.free.nf/uacoments.js",
 
-          "http://wtch.ch/m", //хз что
+         // "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
           "https://bdvburik.github.io/ts.js",
           "https://bdvburik.github.io/labelse.js",
@@ -30,7 +30,7 @@
 
           "https://igorek1986.github.io/lampa-plugins/myshows.js",
 
-          "http://bwa.to/oeogfeb",
+         // "http://bwa.to/oeogfeb",
 
           "https://bywolf88.github.io/lampa-plugins/interface_mod.js",
 
