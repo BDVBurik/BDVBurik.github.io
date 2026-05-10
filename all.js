@@ -24,14 +24,8 @@
 
           "https://skaztv.online/js/tricks.js",
 
-          // "https://ipavlin98.github.io/lmp-series-skip-db/series-skip.js",
-          // "https://ipavlin98.github.io/lmp-plugins/anime-skip.js",
-          // "https://ipavlin98.github.io/lmp-plugins/season-fix.js",
-
           "https://lampame.github.io/main/trakttv.js",
-
-         // "http://bwa.to/oeogfeb",
-
+		 "https://lampame.github.io/main/hikka.js",
           "https://bywolf88.github.io/lampa-plugins/interface_mod.js",
 
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
