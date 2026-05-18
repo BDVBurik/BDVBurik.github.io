@@ -14,15 +14,19 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
+
 BASE_URL = "https://hdrezka-home.tv/franchises/page/{}/"
-OUTPUT_FILE = "franchises_full.json"
+
+RAW_FILE = "franchises_full.json"
+EXPORT_FILE = "lampa_export.json"
+
 TMDB_API_KEY = "ae4bd1b6fce2a5648671bfc171d15ba4"
 
 request_counter = 0
 
 
 # =========================
-# Delay / cooldown
+# delay
 # =========================
 def human_delay(a=1, b=3):
     time.sleep(random.uniform(a, b))
@@ -33,120 +37,74 @@ def cooldown():
     request_counter += 1
 
     if request_counter % 25 == 0:
-        pause = random.uniform(20, 50)
-        print(f"Cooling down {pause:.1f}s")
-        time.sleep(pause)
+        time.sleep(random.uniform(20, 50))
 
     if request_counter % 300 == 0:
-        pause = random.uniform(300, 600)
-        print(f"Long cooldown {pause/60:.1f} min")
-        time.sleep(pause)
+        time.sleep(random.uniform(300, 600))
 
 
 # =========================
-# IMDb decode
+# imdb decode
 # =========================
 def decode_imdb_id(help_url):
     try:
         encoded = help_url.split("/help/")[1].strip("/")
         decoded = base64.b64decode(encoded).decode("utf-8")
-        match = re.search(r"tt\d+", decoded)
-        return match.group(0)
+        return re.search(r"tt\d+", decoded).group(0)
     except:
         return None
 
 
 # =========================
-# Driver
+# driver
 # =========================
 def create_driver():
     options = Options()
-
     options.add_argument("--headless=new")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
     options.add_argument(
-        f"user-agent=Mozilla/5.0 " f"Chrome/{random.randint(120,125)}.0.0.0"
+        f"user-agent=Mozilla/5.0 Chrome/{random.randint(120,125)}.0.0.0"
     )
 
     return webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()), options=options
+        service=Service(ChromeDriverManager().install()),
+        options=options
     )
 
 
 # =========================
-# Wait
+# wait
 # =========================
-def wait_for(driver, selector, timeout=15):
-    return WebDriverWait(driver, timeout).until(
+def wait_for(driver, selector):
+    return WebDriverWait(driver, 15).until(
         EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector))
     )
 
 
 # =========================
-# Safe GET
+# safe load
 # =========================
-def safe_get(driver, url, retries=3):
-    for attempt in range(retries):
+def safe_get(driver, url):
+    for _ in range(3):
         try:
             driver.get(url)
-
             WebDriverWait(driver, 15).until(
                 lambda d: d.execute_script("return document.readyState") == "complete"
             )
-
             human_delay()
             cooldown()
             return True
-
         except:
-            print(f"Retry {attempt+1}/{retries}: {url}")
             time.sleep(10)
 
     return False
 
 
 # =========================
-# Compact JSON
-# =========================
-def compact_data(data):
-    compact = []
-
-    for fr in data:
-        compact_fr = {
-            "title": fr.get("title"),
-            "url": fr.get("url"),
-            "parts": fr.get("parts"),
-            "movies": [],
-        }
-
-        for mv in fr.get("movies", []):
-            compact_mv = {
-                "title": mv.get("title"),
-                "url": mv.get("url"),
-                "imdb_id": mv.get("imdb_id"),
-                "tmdb_id": mv.get("tmdb_id"),
-            }
-
-            if mv.get("media_type"):
-                compact_mv["media_type"] = mv["media_type"]
-
-            compact_fr["movies"].append(compact_mv)
-
-        compact.append(compact_fr)
-
-    return compact
-
-
-def save(data):
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(compact_data(data), f, ensure_ascii=False, indent=2)
-
-
-# =========================
-# Franchises
+# franchises
 # =========================
 def get_franchises(driver, page):
     if not safe_get(driver, BASE_URL.format(page)):
@@ -157,32 +115,30 @@ def get_franchises(driver, page):
     except TimeoutException:
         return []
 
-    result = []
+    data = []
 
     for item in items:
         try:
-            title_el = item.find_element(By.CSS_SELECTOR, "a.title")
+            a = item.find_element(By.CSS_SELECTOR, "a.title")
 
-            result.append(
-                {
-                    "title": title_el.text.strip(),
-                    "url": title_el.get_attribute("href"),
-                    "parts": item.find_element(By.CSS_SELECTOR, ".num").text.strip(),
-                    "movies": [],
-                }
-            )
+            data.append({
+                "title": a.text.strip(),
+                "url": a.get_attribute("href"),
+                "parts": item.find_element(By.CSS_SELECTOR, ".num").text.strip(),
+                "movies": []
+            })
 
         except:
             continue
 
-    return result
+    return data
 
 
 # =========================
-# Parse movies
+# movies
 # =========================
-def parse_movies(driver, franchise_url):
-    if not safe_get(driver, franchise_url):
+def parse_movies(driver, url):
+    if not safe_get(driver, url):
         return []
 
     try:
@@ -198,13 +154,10 @@ def parse_movies(driver, franchise_url):
         try:
             link = item.find_element(By.CSS_SELECTOR, ".td.title a")
 
-            movies.append(
-                {
-                    "title": link.text.strip(),
-                    "url": link.get_attribute("href"),
-                    "year": item.find_element(By.CSS_SELECTOR, ".td.year").text.strip(),
-                }
-            )
+            movies.append({
+                "title": link.text.strip(),
+                "url": link.get_attribute("href")
+            })
 
         except:
             continue
@@ -213,28 +166,35 @@ def parse_movies(driver, franchise_url):
 
 
 # =========================
-# TMDB lookup
+# tmdb
 # =========================
 def get_tmdb_data(imdb_id):
     if not imdb_id:
         return None
 
     try:
-        url = f"https://api.themoviedb.org/3/find/{imdb_id}"
-
         r = requests.get(
-            url,
-            params={"api_key": TMDB_API_KEY, "external_source": "imdb_id"},
-            timeout=10,
+            f"https://api.themoviedb.org/3/find/{imdb_id}",
+            params={
+                "api_key": TMDB_API_KEY,
+                "external_source": "imdb_id"
+            },
+            timeout=10
         )
 
         data = r.json()
 
         if data.get("movie_results"):
-            return {"id": data["movie_results"][0]["id"], "type": "movie"}
+            return {
+                "id": data["movie_results"][0]["id"],
+                "type": "movie"
+            }
 
         if data.get("tv_results"):
-            return {"id": data["tv_results"][0]["id"], "type": "tv"}
+            return {
+                "id": data["tv_results"][0]["id"],
+                "type": "tv"
+            }
 
     except:
         pass
@@ -243,7 +203,7 @@ def get_tmdb_data(imdb_id):
 
 
 # =========================
-# Movie details
+# details
 # =========================
 def parse_movie_details(driver, url):
     if not safe_get(driver, url):
@@ -252,14 +212,13 @@ def parse_movie_details(driver, url):
     result = {}
 
     try:
-        imdb_elements = driver.find_elements(
-            By.CSS_SELECTOR, ".b-post__info_rates.imdb"
+        imdb_block = driver.find_elements(
+            By.CSS_SELECTOR,
+            ".b-post__info_rates.imdb"
         )
 
-        if imdb_elements:
-            imdb_block = imdb_elements[0]
-
-            help_url = imdb_block.find_element(By.TAG_NAME, "a").get_attribute("href")
+        if imdb_block:
+            help_url = imdb_block[0].find_element(By.TAG_NAME, "a").get_attribute("href")
 
             imdb_id = decode_imdb_id(help_url)
 
@@ -278,59 +237,88 @@ def parse_movie_details(driver, url):
 
 
 # =========================
-# Main
+# EXPORT FOR LAMPA
+# =========================
+def export_lampa(data):
+    out = []
+
+    for fr in data:
+        fr_out = {
+            "tf": fr.get("title"),
+            "p": fr.get("parts"),
+            "m": []
+        }
+
+        for mv in fr.get("movies", []):
+            fr_out["m"].append({
+                "t": mv.get("title"),
+                "i_id": mv.get("imdb_id"),
+                "t_id": mv.get("tmdb_id")
+            })
+
+        out.append(fr_out)
+
+    return out
+
+
+def save_export(data):
+    with open(EXPORT_FILE, "w", encoding="utf-8") as f:
+        json.dump(export_lampa(data), f, ensure_ascii=False, indent=2)
+
+
+# =========================
+# SAVE RAW
+# =========================
+def save_raw(data):
+    with open(RAW_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# =========================
+# MAIN
 # =========================
 def main():
     driver = create_driver()
 
     try:
         try:
-            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            with open(RAW_FILE, "r", encoding="utf-8") as f:
                 all_franchises = json.load(f)
-
-            all_franchises = compact_data(all_franchises)
-            save(all_franchises)
-
-            print(f"Loaded checkpoint: " f"{len(all_franchises)} franchises")
-
         except:
             all_franchises = []
 
-        # collect franchises
         if not all_franchises:
             for page in range(1, 110):
-                print(f"\nPAGE {page}/109")
+                print(f"PAGE {page}")
+                fr = get_franchises(driver, page)
 
-                franchises = get_franchises(driver, page)
-
-                if not franchises:
+                if not fr:
                     break
 
-                all_franchises.extend(franchises)
-                save(all_franchises)
+                all_franchises.extend(fr)
+                save_raw(all_franchises)
 
-        print(f"\nTotal franchises: " f"{len(all_franchises)}")
-
-        # continue parsing
         for i, fr in enumerate(all_franchises, 1):
-            print(f"\n[{i}] {fr['title']}")
+            print(f"[{i}] {fr['title']}")
 
             if not fr.get("movies"):
                 fr["movies"] = parse_movies(driver, fr["url"])
-                save(all_franchises)
+                save_raw(all_franchises)
 
-            for j, mv in enumerate(fr["movies"], 1):
+            for mv in fr["movies"]:
 
                 if mv.get("imdb_id"):
                     continue
 
-                print(f"   -> {j}/{len(fr['movies'])} " f"{mv['title']}")
+                print(" ->", mv.get("url"))
 
                 mv.update(parse_movie_details(driver, mv["url"]))
+                save_raw(all_franchises)
 
-                save(all_franchises)
+                # export обновляется всегда
+                save_export(all_franchises)
 
-        print(f"\nDONE -> {OUTPUT_FILE}")
+        print("DONE")
 
     finally:
         driver.quit()

@@ -2,13 +2,15 @@
   "use strict";
 
   const DATA_URL =
-    "https://BDVBurik.github.io/franchises_plugin.json";
+    "https://BDVBurik.github.io/lampa_export.json";
 
   let franchises = [];
   let loaded = false;
 
+  const tmdbCache = {};
+
   // =========================
-  // Load DB
+  // LOAD DB
   // =========================
   async function loadDatabase() {
     if (loaded) return;
@@ -18,33 +20,21 @@
       franchises = await response.json();
       loaded = true;
 
-      console.log(
-        "Franchise DB loaded:",
-        franchises.length
-      );
+      console.log("Franchise DB loaded:", franchises.length);
     } catch (e) {
       console.error("Franchise DB error", e);
     }
   }
 
   // =========================
-  // Detect media type
-  // =========================
-  function detectMediaType(movie, currentMethod) {
-    if (movie.media_type) return movie.media_type;
-
-    return currentMethod === "tv" ? "tv" : "movie";
-  }
-
-  // =========================
-  // Find franchise
+  // FIND FRANCHISE
   // =========================
   function findFranchise(tmdbId) {
-    for (const franchise of franchises) {
-      for (const movie of franchise.movies || []) {
-        if (String(movie.tmdb_id) === String(tmdbId)) {
-          return franchise;
-        }
+    const id = String(tmdbId);
+
+    for (const fr of franchises) {
+      for (const mv of fr.m || []) {
+        if (String(mv.t_id) === id) return fr;
       }
     }
 
@@ -52,62 +42,88 @@
   }
 
   // =========================
-  // Open card
+  // OPEN CARD
   // =========================
   function openMovie(tmdbId, mediaType) {
-    mediaType = mediaType || "movie";
-
     Lampa.Activity.push({
       url: "",
       component: "full",
       id: Number(tmdbId),
-      method: mediaType,
+      method: mediaType || "movie",
       card: {
         id: Number(tmdbId),
-        media_type: mediaType
+        media_type: mediaType || "movie"
       }
     });
   }
 
   // =========================
-  // Render
+  // TMDB FETCH (year + rating)
   // =========================
-  function renderCollection(
-    franchise,
-    currentTmdbId,
-    currentMethod
-  ) {
-    if (!franchise?.movies?.length) return;
+  async function getTmdbInfo(id, type) {
+    if (!id) return null;
+
+    if (tmdbCache[id]) return tmdbCache[id];
+
+    try {
+      const url =
+        "https://api.themoviedb.org/3/" +
+        type +
+        "/" +
+        id +
+        "?api_key=" +
+        Lampa.TMDB.key() +
+        "&language=ru-RU";
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const info = {
+        year: (data.release_date || data.first_air_date || "").slice(0, 4),
+        rating: data.vote_average || ""
+      };
+
+      tmdbCache[id] = info;
+
+      return info;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // =========================
+  // RENDER
+  // =========================
+  function renderCollection(franchise, currentTmdbId, currentMethod) {
+    if (!franchise?.m?.length) return;
 
     $(".collection").remove();
 
     let html = "";
-    let currentIndex = 0;
+    let focusIndex = 0;
 
-    franchise.movies.forEach((movie, index) => {
-      const isCurrent =
-        String(movie.tmdb_id) === String(currentTmdbId);
+    const total = franchise.m.length;
 
-      if (isCurrent) currentIndex = index;
+    franchise.m.forEach((movie, index) => {
+      const id = movie.t_id;
+      const isCurrent = String(id) === String(currentTmdbId);
 
-      const mediaType = detectMediaType(
-        movie,
-        currentMethod
-      );
+      if (isCurrent) focusIndex = index;
+
+      const displayIndex = total - index;
 
       html += `
-        <div
-          class="b-post__partcontent_item selector ${isCurrent ? "current focus" : ""
-        }"
-          data-id="${movie.tmdb_id}"
-          data-type="${mediaType}"
-        >
-          <span class="td num">${index + 1}</span>
-          <span class="td title">${movie.title || ""}</span>
-          <span class="td year">${movie.year || ""}</span>
-          <span class="td rating">${movie.imdb_rating || ""}</span>
-        </div>
-      `;
+    <div
+      class="b-post__partcontent_item selector ${isCurrent ? "current focus" : ""}"
+      data-id="${id}"
+      data-type="${movie.type || currentMethod || "movie"}"
+    >
+      <span class="td num">${displayIndex}</span>
+      <span class="td title">${movie.t || ""}</span>
+      <span class="td year" id="y-${id}"></span>
+      <span class="td rating" id="r-${id}"></span>
+    </div>
+  `;
     });
 
     const block = $(`
@@ -116,37 +132,70 @@
       </div>
     `);
 
-    $(".items-line__body").append(block);
-    bindControls(currentIndex);
+    const container = $(".full-descr__left");
+
+    container.css({
+      "overflow": "hidden",
+      "position": "relative"
+    });
+
+    container.append(block);
+
+    bindControls(focusIndex);
+
+    // =========================
+    // ASYNC TMDB ENRICHMENT
+    // =========================
+    franchise.m.forEach(async (movie) => {
+      const id = movie.t_id;
+      const type = movie.type || "movie";
+
+      const info = await getTmdbInfo(id, type);
+      if (!info) return;
+
+      if (info.year) $(`#y-${id}`).text(info.year);
+      if (info.rating) $(`#r-${id}`).text(info.rating.toFixed(1));
+    });
   }
 
   // =========================
-  // Controls
+  // CONTROLS
   // =========================
-  function bindControls(currentIndex) {
+  function bindControls(focusIndex) {
     const items = $("#collect .b-post__partcontent_item");
 
-    items.off();
+    items.off("hover:enter hover:focus");
 
     items.on("hover:focus", function () {
       items.removeClass("focus");
       $(this).addClass("focus");
+
+      const parent = $("#collect");
+      const top = $(this).position().top;
+      const height = $(this).outerHeight();
+
+      parent.stop().animate({
+        scrollTop:
+          parent.scrollTop() +
+          top -
+          parent.height() / 2 +
+          height / 2
+      }, 120);
     });
 
     items.on("hover:enter", function () {
-      const id = $(this).data("id");
-      const type = $(this).data("type");
-
-      openMovie(id, type);
+      openMovie(
+        $(this).data("id"),
+        $(this).data("type")
+      );
     });
 
     setTimeout(() => {
-      items.eq(currentIndex).trigger("hover:focus");
-    }, 200);
+      items.eq(focusIndex).trigger("hover:focus");
+    }, 150);
   }
-
   // =========================
-  // Style
+  // STYLE
   // =========================
   function injectStyle() {
     if ($("#franchise-style").length) return;
@@ -154,49 +203,45 @@
     $("head").append(`
     <style id="franchise-style">
 
-      /* изоляция от других плагинов */
-      #collect,
-      #collect *{
-        box-sizing:border-box !important;
-      }
-
       #collect{
-        display:block !important;
-        position:relative !important;
-        width:100% !important;
-        max-width:100% !important;
-        overflow:hidden !important;
-        margin-top:1.5em !important;
-        clear:both !important;
-        flex:none !important;
-      }
-
-      /* ломает конфликт с uacoments */
-      .items-line__body #collect{
-        width:100% !important;
-        min-width:0 !important;
-        flex:0 0 auto !important;
-      }
-
-      #collect.collection{
         display:flex !important;
         flex-direction:column !important;
         gap:.15em !important;
+        margin-top:1em !important;
+
+        max-height:42vh !important;
+        overflow-y:auto !important;
+        overflow-x:hidden !important;
+
+        padding-right:8px !important;
+      }
+
+      #collect::-webkit-scrollbar{
+        width:4px;
+      }
+
+      #collect::-webkit-scrollbar-thumb{
+        background:rgba(255,255,255,.25);
+        border-radius:4px;
       }
 
       #collect .b-post__partcontent_item{
         display:flex !important;
-        width:100% !important;
-        min-width:0 !important;
         align-items:center !important;
-        padding:.8em 1em !important;
+
+        min-height:48px !important;
+        flex-shrink:0 !important;
+
+        padding:.7em 1em !important;
         border-radius:.4em !important;
-        background:rgba(255,255,255,.04) !important;
-        overflow:hidden !important;
+        background:rgba(255,255,255,.05) !important;
+
+        transition:all .15s ease;
       }
 
       #collect .b-post__partcontent_item.focus{
-        background:rgba(255,255,255,.18) !important;
+        background:rgba(255,255,255,.22) !important;
+        transform:scale(1.015);
       }
 
       #collect .b-post__partcontent_item.current{
@@ -204,29 +249,32 @@
       }
 
       #collect .td{
-        min-width:0 !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        white-space:nowrap !important;
+        overflow:hidden;
+        white-space:nowrap;
+        text-overflow:ellipsis;
       }
 
       #collect .num{
-        flex:0 0 45px !important;
+        width:44px;
         text-align:center;
+        flex-shrink:0;
       }
 
       #collect .title{
-        flex:1 1 auto !important;
+        flex:1;
+        padding:0 .8em;
       }
 
       #collect .year{
-        flex:0 0 80px !important;
+        width:72px;
         text-align:right;
+        flex-shrink:0;
       }
 
       #collect .rating{
-        flex:0 0 60px !important;
+        width:60px;
         text-align:center;
+        flex-shrink:0;
       }
 
     </style>
@@ -234,9 +282,9 @@
   }
 
   // =========================
-  // Init
+  // INIT
   // =========================
-  async function startPlugin() {
+  async function start() {
     if (window.franchise_json_plugin) return;
     window.franchise_json_plugin = true;
 
@@ -247,19 +295,15 @@
       if (e.type !== "complite") return;
 
       const tmdbId = e.data.movie.id;
-      const currentMethod = e.object.method;
+      const method = e.object.method;
 
       const franchise = findFranchise(tmdbId);
 
       if (franchise) {
-        renderCollection(
-          franchise,
-          tmdbId,
-          currentMethod
-        );
+        renderCollection(franchise, tmdbId, method);
       }
     });
   }
 
-  startPlugin();
+  start();
 })();
