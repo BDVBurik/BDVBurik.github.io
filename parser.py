@@ -18,7 +18,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 BASE_URL = "https://hdrezka-home.tv/franchises/page/{}/"
 OUTPUT_FILE = "franchises_full.json"
 TMDB_API_KEY = "ae4bd1b6fce2a5648671bfc171d15ba4"
-
+PLUGIN_FILE = "franchises_plugin.json"
 request_counter = 0
 
 
@@ -118,6 +118,27 @@ def safe_get(driver, url, retries=3):
 # =========================
 # Compact JSON
 # =========================
+
+def compact_plugin_data(data):
+    compact = []
+
+    for fr in data:
+        compact_fr = {"title": fr.get("title"), "parts": fr.get("parts"), "movies": []}
+
+        for mv in fr.get("movies", []):
+            if mv.get("tmdb_id"):
+                compact_mv = {"tmdb_id": mv.get("tmdb_id")}
+
+                if mv.get("media_type"):
+                    compact_mv["media_type"] = mv["media_type"]
+
+                compact_fr["movies"].append(compact_mv)
+
+        compact.append(compact_fr)
+
+    return compact
+
+
 def compact_data(data):
     compact = []
 
@@ -149,13 +170,13 @@ def compact_data(data):
 
 
 def save(data):
+    # full checkpoint
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(
-            compact_data(data),
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    # lightweight plugin file
+    with open(PLUGIN_FILE, "w", encoding="utf-8") as f:
+        json.dump(compact_plugin_data(data), f, ensure_ascii=False, indent=2)
 
 
 # =========================
