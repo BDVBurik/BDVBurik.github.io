@@ -2,7 +2,7 @@
   "use strict";
 
   const DATA_URL =
-    "https://BDVBurik.github.io/franchises_full.json";
+    "https://BDVBurik.github.io/franchises_plugin.json";
 
   let franchises = [];
   let loaded = false;
@@ -149,9 +149,9 @@
   // Style
   // =========================
   function injectStyle() {
-  if ($("#franchise-style").length) return;
+    if ($("#franchise-style").length) return;
 
-  $("head").append(`
+    $("head").append(`
     <style id="franchise-style">
 
       /* изоляция от других плагинов */
@@ -231,7 +231,7 @@
 
     </style>
   `);
-}
+  }
 
   // =========================
   // Init
