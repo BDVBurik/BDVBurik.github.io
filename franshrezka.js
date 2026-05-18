@@ -55,15 +55,17 @@
   // Open card
   // =========================
   function openMovie(tmdbId, mediaType) {
-    Lampa.Api.sources.tmdb.card({
-      id: tmdbId,
-      method: mediaType
-    }).then(function (json) {
-      Lampa.Activity.push({
-        card: json,
-        component: "full",
-        page: 1
-      });
+    mediaType = mediaType || "movie";
+
+    Lampa.Activity.push({
+      url: "",
+      component: "full",
+      id: Number(tmdbId),
+      method: mediaType,
+      card: {
+        id: Number(tmdbId),
+        media_type: mediaType
+      }
     });
   }
 
@@ -114,8 +116,7 @@
       </div>
     `);
 
-    $(".full-descr__text").after(block);
-
+    $(".items-line__body").append(block);
     bindControls(currentIndex);
   }
 
@@ -148,69 +149,89 @@
   // Style
   // =========================
   function injectStyle() {
-    if ($("#franchise-style").length) return;
+  if ($("#franchise-style").length) return;
 
-    $("head").append(`
-      <style id="franchise-style">
+  $("head").append(`
+    <style id="franchise-style">
 
-        .collection{
-          margin-top:1.5em;
-          width:100%;
-          display:flex;
-          flex-direction:column;
-          gap:.15em;
-        }
+      /* изоляция от других плагинов */
+      #collect,
+      #collect *{
+        box-sizing:border-box !important;
+      }
 
-        .b-post__partcontent_item{
-          display:flex;
-          align-items:center;
-          padding:.8em 1em;
-          border-radius:.4em;
-          background:rgba(255,255,255,.03);
-          transition:.2s;
-        }
+      #collect{
+        display:block !important;
+        position:relative !important;
+        width:100% !important;
+        max-width:100% !important;
+        overflow:hidden !important;
+        margin-top:1.5em !important;
+        clear:both !important;
+        flex:none !important;
+      }
 
-        .b-post__partcontent_item.focus{
-          background:rgba(255,255,255,.18);
-          transform:scale(1.01);
-        }
+      /* ломает конфликт с uacoments */
+      .items-line__body #collect{
+        width:100% !important;
+        min-width:0 !important;
+        flex:0 0 auto !important;
+      }
 
-        .b-post__partcontent_item.current{
-          border-left:4px solid #fff;
-        }
+      #collect.collection{
+        display:flex !important;
+        flex-direction:column !important;
+        gap:.15em !important;
+      }
 
-        .td{
-          flex:1;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-        }
+      #collect .b-post__partcontent_item{
+        display:flex !important;
+        width:100% !important;
+        min-width:0 !important;
+        align-items:center !important;
+        padding:.8em 1em !important;
+        border-radius:.4em !important;
+        background:rgba(255,255,255,.04) !important;
+        overflow:hidden !important;
+      }
 
-        .num{
-          max-width:45px;
-          text-align:center;
-          opacity:.6;
-        }
+      #collect .b-post__partcontent_item.focus{
+        background:rgba(255,255,255,.18) !important;
+      }
 
-        .title{
-          flex:5;
-        }
+      #collect .b-post__partcontent_item.current{
+        border-left:4px solid #fff !important;
+      }
 
-        .year{
-          max-width:80px;
-          text-align:right;
-          opacity:.75;
-        }
+      #collect .td{
+        min-width:0 !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        white-space:nowrap !important;
+      }
 
-        .rating{
-          max-width:70px;
-          text-align:center;
-          font-weight:600;
-        }
+      #collect .num{
+        flex:0 0 45px !important;
+        text-align:center;
+      }
 
-      </style>
-    `);
-  }
+      #collect .title{
+        flex:1 1 auto !important;
+      }
+
+      #collect .year{
+        flex:0 0 80px !important;
+        text-align:right;
+      }
+
+      #collect .rating{
+        flex:0 0 60px !important;
+        text-align:center;
+      }
+
+    </style>
+  `);
+}
 
   // =========================
   // Init
