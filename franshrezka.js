@@ -55,13 +55,10 @@
   // Open card
   // =========================
   function openMovie(tmdbId, mediaType) {
-    const method =
-      mediaType === "tv" ? "tv" : "movie";
-
     Lampa.Activity.push({
-      url: method + "/" + tmdbId,
-      component: "full",
-      method: method
+      card: tmdbId,
+      media: mediaType,
+      source: "tmdb"
     });
   }
 
