@@ -55,10 +55,15 @@
   // Open card
   // =========================
   function openMovie(tmdbId, mediaType) {
-    Lampa.Activity.push({
-      card: tmdbId,
-      media: mediaType,
-      source: "tmdb"
+    Lampa.Api.sources.tmdb.card({
+      id: tmdbId,
+      method: mediaType
+    }).then(function (json) {
+      Lampa.Activity.push({
+        card: json,
+        component: "full",
+        page: 1
+      });
     });
   }
 
