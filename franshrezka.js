@@ -1,8 +1,6 @@
 (function () {
   "use strict";
 
-  // BDVBurik franchise plugin (JSON edition)
-
   const DATA_URL =
     "https://BDVBurik.github.io/franchises_full.json";
 
@@ -19,10 +17,23 @@
       const response = await fetch(DATA_URL);
       franchises = await response.json();
       loaded = true;
-      console.log("Franchise DB loaded:", franchises.length);
+
+      console.log(
+        "Franchise DB loaded:",
+        franchises.length
+      );
     } catch (e) {
-      console.error("DB load error", e);
+      console.error("Franchise DB error", e);
     }
+  }
+
+  // =========================
+  // Detect media type
+  // =========================
+  function detectMediaType(movie, currentMethod) {
+    if (movie.media_type) return movie.media_type;
+
+    return currentMethod === "tv" ? "tv" : "movie";
   }
 
   // =========================
@@ -41,21 +52,28 @@
   }
 
   // =========================
-  // Open movie card directly
+  // Open card
   // =========================
-  function openMovie(tmdbId) {
+  function openMovie(tmdbId, mediaType) {
+    const method =
+      mediaType === "tv" ? "tv" : "movie";
+
     Lampa.Activity.push({
-      url: "movie/" + tmdbId,
+      url: method + "/" + tmdbId,
       component: "full",
-      method: "movie"
+      method: method
     });
   }
 
   // =========================
   // Render
   // =========================
-  function renderCollection(franchise, currentTmdbId) {
-    if (!franchise || !franchise.movies?.length) return;
+  function renderCollection(
+    franchise,
+    currentTmdbId,
+    currentMethod
+  ) {
+    if (!franchise?.movies?.length) return;
 
     $(".collection").remove();
 
@@ -68,14 +86,20 @@
 
       if (isCurrent) currentIndex = index;
 
+      const mediaType = detectMediaType(
+        movie,
+        currentMethod
+      );
+
       html += `
         <div
           class="b-post__partcontent_item selector ${isCurrent ? "current focus" : ""
         }"
           data-id="${movie.tmdb_id}"
+          data-type="${mediaType}"
         >
           <span class="td num">${index + 1}</span>
-          <span class="td title">${movie.title}</span>
+          <span class="td title">${movie.title || ""}</span>
           <span class="td year">${movie.year || ""}</span>
           <span class="td rating">${movie.imdb_rating || ""}</span>
         </div>
@@ -83,33 +107,43 @@
     });
 
     const block = $(`
-      <div id="collect" class="collection selector">
+      <div id="collect" class="collection">
         ${html}
       </div>
     `);
 
     $(".full-descr__text").after(block);
 
-    // Enter
-    $("#collect .b-post__partcontent_item").on(
-      "hover:enter",
-      function () {
-        const id = $(this).data("id");
-        openMovie(id);
-      }
-    );
-
-    // Focus current
-    setTimeout(() => {
-      $("#collect .b-post__partcontent_item")
-        .removeClass("focus")
-        .eq(currentIndex)
-        .addClass("focus");
-    }, 150);
+    bindControls(currentIndex);
   }
 
   // =========================
-  // Styles
+  // Controls
+  // =========================
+  function bindControls(currentIndex) {
+    const items = $("#collect .b-post__partcontent_item");
+
+    items.off();
+
+    items.on("hover:focus", function () {
+      items.removeClass("focus");
+      $(this).addClass("focus");
+    });
+
+    items.on("hover:enter", function () {
+      const id = $(this).data("id");
+      const type = $(this).data("type");
+
+      openMovie(id, type);
+    });
+
+    setTimeout(() => {
+      items.eq(currentIndex).trigger("hover:focus");
+    }, 200);
+  }
+
+  // =========================
+  // Style
   // =========================
   function injectStyle() {
     if ($("#franchise-style").length) return;
@@ -131,15 +165,12 @@
           padding:.8em 1em;
           border-radius:.4em;
           background:rgba(255,255,255,.03);
-          transition:.15s;
-        }
-
-        .b-post__partcontent_item:hover{
-          background:rgba(255,255,255,.08);
+          transition:.2s;
         }
 
         .b-post__partcontent_item.focus{
           background:rgba(255,255,255,.18);
+          transform:scale(1.01);
         }
 
         .b-post__partcontent_item.current{
@@ -148,15 +179,15 @@
 
         .td{
           flex:1;
-          white-space:nowrap;
           overflow:hidden;
           text-overflow:ellipsis;
+          white-space:nowrap;
         }
 
         .num{
           max-width:45px;
           text-align:center;
-          opacity:.7;
+          opacity:.6;
         }
 
         .title{
@@ -187,18 +218,22 @@
     window.franchise_json_plugin = true;
 
     await loadDatabase();
-
     injectStyle();
 
     Lampa.Listener.follow("full", function (e) {
       if (e.type !== "complite") return;
 
       const tmdbId = e.data.movie.id;
+      const currentMethod = e.object.method;
 
       const franchise = findFranchise(tmdbId);
 
       if (franchise) {
-        renderCollection(franchise, tmdbId);
+        renderCollection(
+          franchise,
+          tmdbId,
+          currentMethod
+        );
       }
     });
   }
