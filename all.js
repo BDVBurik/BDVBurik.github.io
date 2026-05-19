@@ -21,7 +21,7 @@
           "https://bdvburik.github.io/rembutt.js",
           "https://bdvburik.github.io/pubtorr.js",
           "https://bdvburik.github.io/store.js",
-          "https://bdvburik.github.io/franshrezka.js",
+          //"https://bdvburik.github.io/franshrezka.js",
 
           "https://skaztv.online/js/tricks.js",
 
