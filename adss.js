@@ -1,4 +1,10 @@
 (function () {
+    //for Lampa.
+    window.lampa_settings = window.lampa_settings || {};
+    window.lampa_settings.dcma = false;
+    window.lampa_settings.disable_features = window.lampa_settings.disable_features || {};
+    window.lampa_settings.disable_features.dmca = true;
+
     function initLampaHook() {
         if (window.Lampa && Lampa.Player && Lampa.Player.play) {
             var originalPlay = Lampa.Player.play;
@@ -7,7 +13,7 @@
 
                 if (object.vast_url) delete object.vast_url;
                 if (object.vast_msg) delete object.vast_msg;
-                
+
                 return originalPlay.apply(this, arguments);
             };
         } else {
