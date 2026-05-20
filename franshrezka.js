@@ -101,7 +101,7 @@
           };
 
 
-          // Добавляем в rows компонента    
+          // Добавляем в rows компонента  
           if (e.link && e.link.rows) {
             let insertIndex = -1;
 
@@ -122,19 +122,17 @@
               insertIndex = 2;
             }
 
-            // Всегда вставляем в rows  
-            e.link.rows.splice(insertIndex, 0, ['cards', data]);
-
-            // Всегда рендерим, независимо от позиции скролла  
-            e.link.emit('createAndAppend', ['cards', data]);
-
-            // Если вставка после текущего view, обновляем скролл  
             const currentView = e.link.view || 3;
             const itemsLength = e.link.items ? e.link.items.length : 0;
 
+            // If we're inserting after the current view, we need to handle it differently  
             if (insertIndex >= itemsLength) {
-              // Принудительно вызываем обработчик скролла для рендеринга новых элементов  
-              e.link.emit('scroll', e.link.scroll.render(true).scrollTop);
+              // Just add to rows, it will be rendered on scroll  
+              e.link.rows.splice(insertIndex, 0, ['cards', data]);
+            } else {
+              // Insert and immediately render  
+              e.link.rows.splice(insertIndex, 0, ['cards', data]);
+              e.link.emit('createAndAppend', ['cards', data]);
             }
           }
 
