@@ -72,6 +72,8 @@
 
           const safe = cards.filter(c => c && c.id && (c.title || c.name));
 
+          // Находим индекс текущего фильма  
+          const currentIndex = safe.findIndex(item => String(item.id) === String(media.id));
 
           const data = {
             title: franchise.tf || "qwer",
@@ -101,7 +103,7 @@
           };
 
 
-          // Добавляем в rows компонента  
+          // Добавляем в rows компонента    
           if (e.link && e.link.rows) {
             let insertIndex = -1;
 
@@ -125,14 +127,27 @@
             const currentView = e.link.view || 3;
             const itemsLength = e.link.items ? e.link.items.length : 0;
 
-            // If we're inserting after the current view, we need to handle it differently  
+            // If we're inserting after the current view, we need to handle it differently    
             if (insertIndex >= itemsLength) {
-              // Just add to rows, it will be rendered on scroll  
+              // Just add to rows, it will be rendered on scroll    
               e.link.rows.splice(insertIndex, 0, ['cards', data]);
             } else {
-              // Insert and immediately render  
+              // Insert and immediately render    
               e.link.rows.splice(insertIndex, 0, ['cards', data]);
               e.link.emit('createAndAppend', ['cards', data]);
+
+              // Прокрутка к текущему фильму  
+              if (currentIndex !== -1) {
+                setTimeout(() => {
+                  const cardsItems = e.link.items[insertIndex];
+                  if (cardsItems && cardsItems.items && cardsItems.items[currentIndex]) {
+                    const targetElement = cardsItems.items[currentIndex].render(true);
+                    if (targetElement) {
+                      e.link.scroll.update($(targetElement), true);
+                    }
+                  }
+                }, 100);
+              }
             }
           }
 
@@ -144,4 +159,3 @@
 
   start();
 })();
-
