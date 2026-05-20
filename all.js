@@ -17,7 +17,7 @@
           "https://bdvburik.github.io/kprating.js",
           "https://bdvburik.github.io/title.js",
           "https://bdvburik.github.io/rezkacomment.js",
-          "https://bdvburik.github.io/ads.js",
+          "https://bdvburik.github.io/adss.js",
           "https://bdvburik.github.io/rembutt.js",
           "https://bdvburik.github.io/pubtorr.js",
           "https://bdvburik.github.io/store.js",
