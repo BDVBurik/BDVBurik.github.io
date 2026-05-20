@@ -122,10 +122,18 @@
               insertIndex = 2;
             }
 
-            e.link.rows.splice(insertIndex, 0, ['cards', data]);
+            const currentView = e.link.view || 3;
+            const itemsLength = e.link.items ? e.link.items.length : 0;
 
-            // Always emit createAndAppend, not just when insertIndex < view  
-            e.link.emit('createAndAppend', ['cards', data]);
+            // If we're inserting after the current view, we need to handle it differently  
+            if (insertIndex >= itemsLength) {
+              // Just add to rows, it will be rendered on scroll  
+              e.link.rows.splice(insertIndex, 0, ['cards', data]);
+            } else {
+              // Insert and immediately render  
+              e.link.rows.splice(insertIndex, 0, ['cards', data]);
+              e.link.emit('createAndAppend', ['cards', data]);
+            }
           }
 
 
