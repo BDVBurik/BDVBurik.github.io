@@ -125,11 +125,14 @@
               insertIndex = 2;
             }
 
-            // Insert the data  
+
+
             e.link.rows.splice(insertIndex, 0, ['cards', data]);
 
-            // Rebuild the component to show the new row  
-            e.link.build(e.link.rows);
+            // Если строка должна быть видима сразу (в пределах view)  
+            if (insertIndex < e.link.view) {
+              e.link.emit('createAndAppend', ['cards', data]);
+            }
           }
 
           rendering = false;
