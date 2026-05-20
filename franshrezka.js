@@ -54,10 +54,10 @@
     await loadDatabase();
 
     if (!Lampa?.Manifest || Lampa.Manifest.app_digital < 300) return;
-    let rendering = false;
+
 
     Lampa.Listener.follow("full", (e) => {
-      if (rendering) return;
+
       if (e.type !== "complite") return;
       const media = e.data.movie || e.data.tv;
 
@@ -65,22 +65,16 @@
 
       const franchise = findFranchise(media.id);
       if (franchise) {
-        rendering = true;
+
 
         loadTmdbCards(franchise, (cards) => {
-          if (!cards.length) {
-            rendering = false;
-            return;
-          }
+
 
           const safe = cards.filter(c => c && c.id && (c.title || c.name));
-          if (!safe.length) {
-            rendering = false;
-            return;
-          }
+
 
           const data = {
-            title: franchise.tf || "Коллекция",
+            title: franchise.tf || "qwer",
             results: safe.map(item => ({
               ...item,
               params: {
@@ -137,7 +131,7 @@
             }
           }
 
-          rendering = false;
+
         });
       }
     });
