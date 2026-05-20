@@ -59,9 +59,11 @@
     Lampa.Listener.follow("full", (e) => {
       if (rendering) return;
       if (e.type !== "complite") return;
-      if (!e.data || !e.data.movie) return;
+      const media = e.data.movie || e.data.tv;
 
-      const franchise = findFranchise(e.data.movie.id);
+      if (!media) return;
+
+      const franchise = findFranchise(media.id);
       if (franchise) {
         rendering = true;
 
@@ -87,7 +89,7 @@
                     Lampa.Activity.push({
                       component: "full",
                       id: item.id,
-                      method: item.type || "movie",
+                      method: item.type === "tv" ? "tv" : "movie",
                     });
                   },
                   onFocus: function () {
