@@ -106,10 +106,8 @@
 
           // Добавляем в rows компонента
           if (e.link && e.link.rows) {
-            // Find the index to insert before collection or recommendations  
             let insertIndex = -1;
 
-            // Search for collection or recommendations in existing rows  
             for (let i = 0; i < e.link.rows.length; i++) {
               const row = e.link.rows[i];
               if (Array.isArray(row) && row[0] === 'cards') {
@@ -123,16 +121,15 @@
               }
             }
 
-            // If not found, insert at index 2 (after start and description)  
             if (insertIndex === -1) {
               insertIndex = 2;
             }
 
-            // Insert at the found position  
+            // Insert the data  
             e.link.rows.splice(insertIndex, 0, ['cards', data]);
-            if (e.link.scroll) {
-              e.link.emit('scroll', e.link.scroll.render().scrollTop);
-            }
+
+            // Rebuild the component to show the new row  
+            e.link.build(e.link.rows);
           }
 
           rendering = false;
