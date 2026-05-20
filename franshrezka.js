@@ -100,7 +100,8 @@
             }
           };
 
-          // Добавляем в rows компонента
+
+          // Добавляем в rows компонента  
           if (e.link && e.link.rows) {
             let insertIndex = -1;
 
@@ -121,14 +122,10 @@
               insertIndex = 2;
             }
 
-
-
             e.link.rows.splice(insertIndex, 0, ['cards', data]);
 
-            // Если строка должна быть видима сразу (в пределах view)  
-            if (insertIndex < e.link.view) {
-              e.link.emit('createAndAppend', ['cards', data]);
-            }
+            // Always emit createAndAppend, not just when insertIndex < view  
+            e.link.emit('createAndAppend', ['cards', data]);
           }
 
 
