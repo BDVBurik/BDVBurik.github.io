@@ -8,92 +8,139 @@
 
   async function loadDatabase() {
     if (loaded) return;
-
-    try {
-      const response = await fetch(DATA_URL);
-      franchises = await response.json();
-      loaded = true;
-    } catch (e) {
-      console.error("Franchise DB error", e);
-    }
+    franchises = await (await fetch(DATA_URL)).json();
+    loaded = true;
   }
 
   function findFranchise(tmdbId) {
-    return franchises.find(f =>
-      Array.isArray(f.m) &&
-      f.m.some(m => String(m.t_id) === String(tmdbId))
-    );
-  }
-
-  function createCard(movie) {
-    // стандартная карточка Lampa
-    const card = new Lampa.Card({
-      id: movie.t_id,
-      title: movie.t,
-      name: movie.t,
-      method: movie.type || "movie",
-      card: {
-        title: movie.t
+    for (const f of franchises) {
+      for (const m of (f.m || [])) {
+        if (String(m.t_id) === String(tmdbId)) {
+          return f;
+        }
       }
-    });
-
-    return card.render();
+    }
+    return null;
   }
 
-  function renderCarousel(franchise, e) {
-    if (!franchise || !franchise.m) return;
+  function loadTmdbCards(franchise, cb) {
+    const list = (franchise.m || []).filter(x => x && x.t_id);
+    const out = [];
+    let left = list.length;
 
-    const wrap = $('<div class="tmdb-recommendations"></div>');
+    if (!left) return cb([]);
 
-    const title = $(`
-      <div class="recommend-title">
-        ${franchise.tf || "Рекомендации"}
-      </div>
-    `);
+    list.forEach(item => {
+      Lampa.Api.sources.tmdb.full(
+        { id: item.t_id, method: item.type || "movie" },
+        (data) => {
+          if (data && data.movie) {
+            const m = data.movie || data.tv || data;
+            m.source = "tmdb";
+            m.type = item.type === "tv" ? "tv" : "movie";
+            out.push(m);
+          }
 
-    const row = $('<div class="recommend-row"></div>');
-
-    franchise.m.forEach(movie => {
-      row.append(createCard(movie));
+          if (--left === 0) cb(out);
+        }
+      );
     });
-
-    wrap.append(title);
-    wrap.append(row);
-
-    // вставка как TMDB (под full info блоком)
-    const target = e.body.find(".full-details").first();
-    if (target.length) {
-      target.after(wrap);
-    } else {
-      e.body.append(wrap);
-    }
-
-    // фокус/инициализация карточек
-    Lampa.Utils?.focus && Lampa.Utils.focus(wrap);
   }
 
   async function start() {
-    if (window.franchise_json_plugin) return;
-    window.franchise_json_plugin = true;
+    if (window.franchise_cards_plugin) return;
+    window.franchise_cards_plugin = true;
 
     await loadDatabase();
 
-    Lampa.Listener.follow("full", function (e) {
-      if (!e || e.type !== "complete") return;
+    if (!Lampa?.Manifest || Lampa.Manifest.app_digital < 300) return;
+    let rendering = false;
 
-      const id =
-        e?.data?.movie?.id ||
-        e?.data?.id ||
-        null;
+    Lampa.Listener.follow("full", (e) => {
+      if (rendering) return;
+      if (e.type !== "complite") return;
+      if (!e.data || !e.data.movie) return;
 
-      const franchise = findFranchise(id);
-
+      const franchise = findFranchise(e.data.movie.id);
       if (franchise) {
-        e.body.find(".tmdb-recommendations").remove();
-        renderCarousel(franchise, e);
+        rendering = true;
+
+        loadTmdbCards(franchise, (cards) => {
+          if (!cards.length) {
+            rendering = false;
+            return;
+          }
+
+          const safe = cards.filter(c => c && c.id && (c.title || c.name));
+          if (!safe.length) {
+            rendering = false;
+            return;
+          }
+
+          const data = {
+            title: franchise.tf || "Коллекция",
+            results: safe.map(item => ({
+              ...item,
+              params: {
+                emit: {
+                  onEnter: function () {
+                    Lampa.Activity.push({
+                      component: "full",
+                      id: item.id,
+                      method: item.type || "movie",
+                    });
+                  },
+                  onFocus: function () {
+                    console.log("Focus", item);
+                  }
+                }
+              }
+            })),
+            params: {
+              module: Lampa.Maker.module("Line").toggle(
+                Lampa.Maker.module("Line").MASK.base,
+                "Icon"
+              )
+            }
+          };
+
+          // Добавляем в rows компонента
+          if (e.link && e.link.rows) {
+            // Find the index to insert before collection or recommendations  
+            let insertIndex = -1;
+
+            // Search for collection or recommendations in existing rows  
+            for (let i = 0; i < e.link.rows.length; i++) {
+              const row = e.link.rows[i];
+              if (Array.isArray(row) && row[0] === 'cards') {
+                const rowData = row[1];
+                if (rowData.title === 'Коллекция' || rowData.title === 'Рекомендации' ||
+                  rowData.title === 'Collection' || rowData.title === 'Recommendations' ||
+                  rowData.title === 'Колекція' || rowData.title === 'Рекомендації') {
+                  insertIndex = i;
+                  break;
+                }
+              }
+            }
+
+            // If not found, insert at index 2 (after start and description)  
+            if (insertIndex === -1) {
+              insertIndex = 2;
+            }
+
+            // Insert at the found position  
+            e.link.rows.splice(insertIndex, 0, ['cards', data]);
+            if (e.link.scroll) {
+              e.link.emit('scroll', e.link.scroll.render().scrollTop);
+            }
+          }
+
+          rendering = false;
+        });
       }
     });
   }
 
   start();
 })();
+
