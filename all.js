@@ -38,6 +38,7 @@
 
           "https://lampame.github.io/main/bo.js",
           "https://igorek1986.github.io/lampa-plugins/myshows.js",
+          "http://lampaua.mooo.com/remotekeyboard.js"
         ],
         function () { },
       );
