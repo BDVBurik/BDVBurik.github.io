@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const DATA_URL = "https://BDVBurik.github.io/lampa_export.json";
+  const DATA_URL = "https://BDVBurik.github.io/franchises.json";
 
   let franchises = [];
   let loaded = false;
