@@ -58,7 +58,7 @@
 
     Lampa.Listener.follow("full", (e) => {
 
-      if (e.type !== "start") return;
+      if (e.type !== "complite") return;
       const media = e.data.movie || e.data.tv;
 
       if (!media) return;
