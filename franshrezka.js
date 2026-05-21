@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const DATA_URL = "https://BDVBurik.github.io/franchises.json";
-  const STORAGE_KEY = "franchise_database";
+  const DATA_URL = "https://BDVBurik.github.io/lampa_export.json";
+  const STORAGE_KEY = "franchise_db";
   const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds  
 
   let franchises = [];
