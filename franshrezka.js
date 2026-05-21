@@ -1,42 +1,15 @@
 (function () {
   "use strict";
 
-  const DATA_URL = "https://BDVBurik.github.io/franchises.json";
+  const DATA_URL = "https://BDVBurik.github.io/lampa_export.json";
 
   let franchises = [];
   let loaded = false;
 
-  const CACHE_KEY = 'franchises_data';
-  const CACHE_LIFE = 15 * 24 * 60; // 15 days in minutes  
-
   async function loadDatabase() {
     if (loaded) return;
-
-    try {
-      // Try to load from cache first  
-      const cached = await Lampa.Cache.getData('other', CACHE_KEY, -1, true);
-
-      if (cached && Date.now() < cached.time + (CACHE_LIFE * 60 * 1000)) {
-        console.log('Franchise plugin: using cached data');
-        franchises = cached.value;
-        loaded = true;
-        return;
-      }
-
-      // Cache miss or expired, fetch from URL  
-      console.log('Franchise plugin: fetching fresh data');
-      franchises = await (await fetch(DATA_URL)).json();
-
-      // Save to cache with timestamp  
-      await Lampa.Cache.rewriteData('other', CACHE_KEY, {
-        value: franchises,
-        time: Date.now()
-      });
-
-      loaded = true;
-    } catch (error) {
-      console.error('Franchise plugin: error loading data', error);
-    }
+    franchises = await (await fetch(DATA_URL)).json();
+    loaded = true;
   }
 
   function findFranchise(tmdbId) {
@@ -85,7 +58,7 @@
 
     Lampa.Listener.follow("full", (e) => {
 
-      if (e.type !== "start") return;
+      if (e.type !== "complite") return;
       const media = e.data.movie || e.data.tv;
 
       if (!media) return;
@@ -101,7 +74,7 @@
 
 
           const data = {
-            title: "",
+            title: franchise.tf || "qwer",
             results: safe.map(item => ({
               ...item,
               params: {
