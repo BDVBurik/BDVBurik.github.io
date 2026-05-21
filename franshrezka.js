@@ -74,7 +74,7 @@
 
 
           const data = {
-            title: franchise.tf || "qwer",
+            title: "Франшиза",
             results: safe.map(item => ({
               ...item,
               params: {
