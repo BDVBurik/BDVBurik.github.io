@@ -2,14 +2,54 @@
   "use strict";
 
   const DATA_URL = "https://BDVBurik.github.io/lampa_export.json";
+  const STORAGE_KEY = "franchise_data";
+  const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds  
 
   let franchises = [];
   let loaded = false;
 
   async function loadDatabase() {
     if (loaded) return;
-    franchises = await (await fetch(DATA_URL)).json();
-    loaded = true;
+
+    try {
+      // Try to load from cache first  
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        const now = Date.now();
+
+        // Check if cache is still valid (less than 30 days old)  
+        if (data.timestamp && (now - data.timestamp < CACHE_DURATION)) {
+          franchises = data.franchises;
+          loaded = true;
+          console.log('Franchise plugin: loaded from cache');
+          return;
+        }
+      }
+
+      // Fetch fresh data  
+      const response = await fetch(DATA_URL);
+      franchises = await response.json();
+
+      // Save to cache with timestamp  
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        franchises: franchises,
+        timestamp: Date.now()
+      }));
+
+      loaded = true;
+      console.log('Franchise plugin: loaded from URL and cached');
+    } catch (error) {
+      console.error('Franchise plugin: error loading data', error);
+      // Try to use stale cache if available  
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        franchises = data.franchises || [];
+        loaded = true;
+        console.log('Franchise plugin: using stale cache');
+      }
+    }
   }
 
   function findFranchise(tmdbId) {
@@ -32,15 +72,15 @@
 
     list.forEach(item => {
       Lampa.Api.sources.tmdb.full(
-        { id: item.t_id, method: item.type || "movie" },
+        { id: item.t_id, method: "movie" },
         (data) => {
           if (data && data.movie) {
             const m = data.movie || data.tv || data;
             m.source = "tmdb";
-            m.type = item.type === "tv" ? "tv" : "movie";
+            // Determine type from the data itself  
+            m.type = data.movie ? "movie" : (data.tv ? "tv" : "movie");
             out.push(m);
           }
-
           if (--left === 0) cb(out);
         }
       );
@@ -55,26 +95,21 @@
 
     if (!Lampa?.Manifest || Lampa.Manifest.app_digital < 300) return;
 
-
     Lampa.Listener.follow("full", (e) => {
-
       if (e.type !== "complite") return;
-      const media = e.data.movie || e.data.tv;
 
+      const media = e.data.movie || e.data.tv;
       if (!media) return;
 
       const franchise = findFranchise(media.id);
       if (franchise) {
-
-
         loadTmdbCards(franchise, (cards) => {
-
-
           const safe = cards.filter(c => c && c.id && (c.title || c.name));
 
+          if (!safe.length) return;
 
           const data = {
-            title: franchise.tf || "qwer",
+            title: "Франшиза", // Generic title since tf is no longer in JSON  
             results: safe.map(item => ({
               ...item,
               params: {
@@ -100,8 +135,7 @@
             }
           };
 
-
-          // Добавляем в rows компонента  
+          // Add to component rows  
           if (e.link && e.link.rows) {
             let insertIndex = -1;
 
@@ -109,9 +143,7 @@
               const row = e.link.rows[i];
               if (Array.isArray(row) && row[0] === 'cards') {
                 const rowData = row[1];
-                if (rowData.title === 'Коллекция' || rowData.title === 'Рекомендации' ||
-                  rowData.title === 'Collection' || rowData.title === 'Recommendations' ||
-                  rowData.title === 'Колекція' || rowData.title === 'Рекомендації') {
+                if (rowData.title === 'Колекція' || rowData.title === 'Рекомендації') {
                   insertIndex = i;
                   break;
                 }
@@ -125,18 +157,13 @@
             const currentView = e.link.view || 3;
             const itemsLength = e.link.items ? e.link.items.length : 0;
 
-            // If we're inserting after the current view, we need to handle it differently  
             if (insertIndex >= itemsLength) {
-              // Just add to rows, it will be rendered on scroll  
               e.link.rows.splice(insertIndex, 0, ['cards', data]);
             } else {
-              // Insert and immediately render  
               e.link.rows.splice(insertIndex, 0, ['cards', data]);
               e.link.emit('createAndAppend', ['cards', data]);
             }
           }
-
-
         });
       }
     });
@@ -144,4 +171,3 @@
 
   start();
 })();
-
