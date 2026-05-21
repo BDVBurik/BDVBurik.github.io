@@ -58,7 +58,7 @@
 
     Lampa.Listener.follow("full", (e) => {
 
-      if (e.type !== "complite") return;
+      if (e.type !== "start") return;
       const media = e.data.movie || e.data.tv;
 
       if (!media) return;
@@ -74,7 +74,7 @@
 
 
           const data = {
-            title: "Франшиза",
+            title: "",
             results: safe.map(item => ({
               ...item,
               params: {
