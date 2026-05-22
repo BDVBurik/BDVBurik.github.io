@@ -11,6 +11,7 @@
 
           "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
+         "https://bdvburik.github.io/noshots.js",
           "https://bdvburik.github.io/ts.js",
           "https://bdvburik.github.io/labelse.js",
           "https://bdvburik.github.io/sub.js",
