@@ -254,9 +254,8 @@
                     <div class="menu-edit-list__toggle selector">
                         <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="1.89111" y="1.78369" width="21.793" height="21.793" rx="3.5" stroke="currentColor" stroke-width="3"/>
-                            <path d="M7.44873 12.9658L10.8179 16.3349L18.1269 9.02588" stroke="currentColor" stroke-width="3" class="dot" opacity="${
-                              isHidden ? 0 : 1
-                            }" stroke-linecap="round"/>
+                            <path d="M7.44873 12.9658L10.8179 16.3349L18.1269 9.02588" stroke="currentColor" stroke-width="3" class="dot" opacity="${isHidden ? 0 : 1
+        }" stroke-linecap="round"/>
                         </svg>
                     </div>
                 </div>`);
@@ -295,8 +294,8 @@
 
     const resetBtn = $(
       '<div class="selector folder-reset-button" style="margin-top:1em;padding:1em;text-align:center;">' +
-        Lampa.Lang.translate("reset_to_default") +
-        "</div>"
+      Lampa.Lang.translate("reset_to_default") +
+      "</div>"
     );
     resetBtn.on("hover:enter", function () {
       Lampa.Storage.set(STORAGE_ORDER_KEY, LANGS.slice());
@@ -330,10 +329,32 @@
     });
   }
 
-  // ===== Init plugin =====
-  if (window.appready) startPlugin();
-  else
+  // ===== Init plugin =====  
+  if (window.appready) {
+    if (typeof Lampa !== 'undefined' &&
+      Lampa.SettingsApi &&
+      Lampa.Api &&
+      Lampa.Api.sources &&
+      Lampa.Api.sources.tmdb &&
+      typeof $ !== 'undefined') {
+      startPlugin();
+    } else {
+      console.error('Title Plugin: Required Lampa APIs not available');
+    }
+  } else {
     Lampa.Listener.follow("app", (e) => {
-      if (e.type === "ready") startPlugin();
+      if (e.type === "ready") {
+        if (typeof Lampa !== 'undefined' &&
+          Lampa.SettingsApi &&
+          Lampa.Api &&
+          Lampa.Api.sources &&
+          Lampa.Api.sources.tmdb &&
+          typeof $ !== 'undefined') {
+          startPlugin();
+        } else {
+          console.error('Title Plugin: Required Lampa APIs not available');
+        }
+      }
     });
+  }
 })();
