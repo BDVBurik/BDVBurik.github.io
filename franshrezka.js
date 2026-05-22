@@ -38,7 +38,7 @@
             const m = data.movie || data.tv || data;
             m.source = "tmdb";
             m.type = item.type === "tv" ? "tv" : "movie";
-            out.push(m);
+            out.push(Lampa.Utils.addSource(m, 'tmdb')); // Use Utils.addSource  
           }
 
           if (--left === 0) cb(out);
