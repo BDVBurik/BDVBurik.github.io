@@ -138,11 +138,13 @@
           const data = await new Promise((res, rej) => {
             Lampa.Api.sources.tmdb.get(
               `${type}/${card.id}?append_to_response=translations`,
-              {},
-              res,
-              rej
-            );
+              {}, resolve, reject);
+          }).then(function (data) {
+            // обработка данных  
+          }).catch(function (e) {
+            logError("Failed to fetch TMDB data", e);
           });
+
           const tr = data.translations?.translations || [];
           const translitData = tr.find((t) =>
             ["Transliteration", "romaji"].includes(t.type)
