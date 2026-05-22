@@ -56,7 +56,9 @@
 
     await loadDatabase();
 
-    if (!Lampa?.Manifest || Lampa.Manifest.app_digital < 300) return;
+    if (!Lampa?.Manifest?.app_digital || Lampa.Manifest.app_digital < 300) return;
+    if (!Lampa.Listener || !Lampa.Api) return;
+
 
 
     Lampa.Listener.follow("full", (e) => {
@@ -106,35 +108,22 @@
 
           // Добавляем в rows компонента  
           if (e.link && e.link.rows) {
-            let insertIndex = -1;
-
-            for (let i = 0; i < e.link.rows.length; i++) {
-              const row = e.link.rows[i];
-              if (Array.isArray(row) && row[0] === 'cards') {
-                const rowData = row[1];
-                if (rowData.title === 'Коллекция' || rowData.title === 'Рекомендации' ||
-                  rowData.title === 'Collection' || rowData.title === 'Recommendations' ||
-                  rowData.title === 'Колекція' || rowData.title === 'Рекомендації') {
-                  insertIndex = i;
-                  break;
-                }
-              }
-            }
+            let insertIndex = e.link.rows.findIndex(row => {
+              if (!Array.isArray(row) || row[0] !== 'cards') return false;
+              const rowData = row[1];
+              const title = rowData.title;
+              return title === Lampa.Lang.translate('title_collection') ||
+                title === Lampa.Lang.translate('title_recomendations');
+            });
 
             if (insertIndex === -1) {
               insertIndex = 2;
             }
 
-            const currentView = e.link.view || 3;
-            const itemsLength = e.link.items ? e.link.items.length : 0;
+            e.link.rows.splice(insertIndex, 0, ['cards', data]);
 
-            // If we're inserting after the current view, we need to handle it differently  
-            if (insertIndex >= itemsLength) {
-              // Just add to rows, it will be rendered on scroll  
-              e.link.rows.splice(insertIndex, 0, ['cards', data]);
-            } else {
-              // Insert and immediately render  
-              e.link.rows.splice(insertIndex, 0, ['cards', data]);
+            // Only emit if the row is already visible  
+            if (insertIndex < (e.link.items?.length || 0)) {
               e.link.emit('createAndAppend', ['cards', data]);
             }
           }
