@@ -101,148 +101,114 @@
     const CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
     let titleCache = Lampa.Storage.get("title_cache") || {};
 
-    async function showTitles(card) {
-      const orig = card.original_title || card.original_name;
-      const alt = safeGet(card, 'alternative_titles.titles') || safeGet(card, 'alternative_titles.results') || [];
+    function showTitles(card) {
+      try {
+        var orig = card.original_title || card.original_name;
+        var altTitles = card.alternative_titles || {};
+        var alt = altTitles.titles || altTitles.results || [];
 
-      function countryFlag(code) {
-        if (!code) return "";
+        function countryFlag(code) {
+          if (!code) return '';
+          return ' <img src="https://flagcdn.com/' + code.toLowerCase() + '.svg"'
+            + ' style="width:1.15em;height:auto;vertical-align:inherit;" alt="' + code.toUpperCase() + '">';
+        }
 
-        let ref =
-          document.querySelector('div[style*="font-size"]') || document.body;
+        var TRANSLIT_TYPES = ['Transliteration', 'romaji', 'Romanization', 'Latynization',
+          'pinyin', 'kana', 'romaji_japanese', 'romaji_korean', 'romaji_chinese', 'latinization'];
 
-        let fontSize = parseFloat(getComputedStyle(ref).fontSize);
+        var translitObj = alt.find(function (t) { return TRANSLIT_TYPES.indexOf(t.type) !== -1; });
+        var translit = (translitObj && (translitObj.title || (translitObj.data && (translitObj.data.title || translitObj.data.name)))) || '';
 
-        return `
-        <img 
-            src="https://flagcdn.com/${code.toLowerCase()}.svg"
-            style="
-                width:1.15em;
-                height:auto;
-                vertical-align:inherit;                
-            "
-            alt="${code.toUpperCase()}"
-        >
-    `;
-      }
+        var ru = '', en = '', uk = '', be = '';
+        var now = Date.now();
+        var cache = titleCache[card.id];
 
-      let translitObj = alt.find((t) =>
-        [
-          "Transliteration",
-          "romaji",
-          "Romanization",
-          "Latynization",
-          "pinyin",
-          "kana",
-          "romaji_japanese",
-          "romaji_korean",
-          "romaji_chinese",
-          "latinization",
-        ].includes(t.type)
-      );
-      let translit =
-        translitObj?.title ||
-        translitObj?.data?.title ||
-        translitObj?.data?.name ||
-        "";
-      let ru = "";
-      let en = "";
-      let uk = "";
-      let be = "";
-      const now = Date.now();
-      const cache = titleCache[card.id];
-      if (cache && now - cache.timestamp < CACHE_TTL) {
-        en = cache.en;
-        uk = cache.uk;
-        be = cache.be;
-        ru = cache.ru;
-        translit ||= cache.tl;
-      }
+        if (cache && now - cache.timestamp < CACHE_TTL) {
+          en = cache.en || '';
+          uk = cache.uk || '';
+          be = cache.be || '';
+          ru = cache.ru || '';
+          translit = translit || cache.tl || '';
+          console.log('[TitlePlugin] cache hit for id:', card.id);
+        }
 
-      if (!ru || !en || !translit || !uk || !be) {
-        try {
-          const type = card.first_air_date ? "tv" : "movie";
-          const data = await new Promise((res, rej) => {
-            Lampa.Api.sources.tmdb.get(
-              `${type}/${card.id}?append_to_response=translations`,
-              {}, resolve, reject);
-          }).then(function (data) {
-            // обработка данных  
-          }).catch(function (e) {
-            logError("Failed to fetch TMDB data", e);
+        function findLang(list, codes) {
+          var t = list.find(function (t) { return codes.indexOf(t.iso_3166_1) !== -1 || codes.indexOf(t.iso_639_1) !== -1; });
+          return t && t.data && (t.data.title || t.data.name) || '';
+        }
+
+        function applyAndRender(tr) {
+          var translitData = tr.find(function (t) { return ['Transliteration', 'romaji'].indexOf(t.type) !== -1; });
+          if (translitData) translit = (translitData.title || (translitData.data && (translitData.data.title || translitData.data.name))) || translit;
+
+          en = en || findLang(tr, ['US', 'en']);
+          uk = uk || findLang(tr, ['UA', 'uk']);
+          be = be || findLang(tr, ['BY', 'be']);
+          ru = ru || findLang(tr, ['RU', 'ru']);
+
+          // fallback из alternative_titles  
+          en = en || (alt.find(function (t) { return t.iso_3166_1 === 'US'; }) || {}).title || '';
+          uk = uk || (alt.find(function (t) { return t.iso_3166_1 === 'UA'; }) || {}).title || '';
+          be = be || (alt.find(function (t) { return t.iso_3166_1 === 'BY'; }) || {}).title || '';
+          ru = ru || (alt.find(function (t) { return t.iso_3166_1 === 'RU'; }) || {}).title || '';
+
+          titleCache[card.id] = { ru: ru, en: en, tl: translit, uk: uk, be: be, timestamp: now };
+          try { Lampa.Storage.set('title_cache', titleCache); } catch (e) { console.error('[TitlePlugin] storage error:', e); }
+
+          renderTitles();
+        }
+
+        function renderTitles() {
+          var active = Lampa.Activity.active();
+          if (!active || !active.activity) {
+            console.warn('[TitlePlugin] no active activity');
+            return;
+          }
+          var render = active.activity.render();
+          if (!render) { console.warn('[TitlePlugin] render is null'); return; }
+
+          $('.original_title', render).remove();
+
+          var showOrder = Lampa.Storage.get(STORAGE_ORDER_KEY, LANGS.slice());
+          var hiddenLangs = Lampa.Storage.get(STORAGE_HIDDEN_KEY, []);
+          var originCountry = (card.origin_country || [])[0] || '';
+          var lines = ['<div style="font-size:1.25em;">' + orig + ' ' + countryFlag(originCountry) + '</div>'];
+          var langFlags = { ru: 'RU', en: 'US', uk: 'UA', be: 'BY' };
+          var langVals = { en: en, uk: uk, be: be, ru: ru };
+
+          showOrder.forEach(function (lang) {
+            if (hiddenLangs.indexOf(lang) !== -1) return;
+            var val = lang === 'tl' ? translit : langVals[lang];
+            if (val) lines.push('<div style="font-size:1.25em;">' + val + ' ' + countryFlag(langFlags[lang]) + '</div>');
           });
 
-          const tr = safeGet(data, 'translations.translations') || [];
-          const translitData = tr.find((t) =>
-            ["Transliteration", "romaji"].includes(t.type)
+          $('.full-start-new__title', render).after(
+            '<div class="original_title" style="margin-bottom:7px;text-align:right;"><div>'
+            + lines.join('') + '</div></div>'
           );
-          translit =
-            translitData?.title ||
-            translitData?.data?.title ||
-            translitData?.data?.name ||
-            translit;
-          // Универсальная функция для поиска нужного языка/страны
-          function findLang(list, codes) {
-            const t = list.find(
-              (t) => codes.includes(t.iso_3166_1) || codes.includes(t.iso_639_1)
-            );
-            return t?.data?.title || t?.data?.name;
-          }
-
-          // Использование
-
-          en ||= findLang(tr, ["US", "en"]);
-          uk ||= findLang(tr, ["UA", "uk"]);
-          be ||= findLang(tr, ["BY", "be"]);
-          ru ||= findLang(tr, ["RU", "ru"]);
-
-          titleCache[card.id] = {
-            ru,
-            en,
-            tl: translit,
-            uk,
-            be,
-            timestamp: now,
-          };
-          Lampa.Storage.set("title_cache", titleCache);
-        } catch (e) {
-          console.error(e);
         }
-        en ||= alt.find((t) => t.iso_3166_1 === "US")?.title;
-        uk ||= alt.find((t) => t.iso_3166_1 === "UA")?.title;
-        be ||= alt.find((t) => t.iso_3166_1 === "BY")?.title;
-        ru ||= alt.find((t) => t.iso_3166_1 === "RU")?.title;
-      }
 
-      const render = Lampa.Activity.active().activity.render();
-      if (!render) return;
-      $(".original_title", render).remove();
-
-      let showOrder = Lampa.Storage.get(STORAGE_ORDER_KEY, LANGS.slice());
-      let hiddenLangs = Lampa.Storage.get(STORAGE_HIDDEN_KEY, []);
-      const lines = [
-        `<div style="font-size:1.25em;">${orig}  ${countryFlag(
-          card.origin_country[0]
-        )}</div>`,
-      ];
-
-      showOrder.forEach((lang) => {
-        if (hiddenLangs.includes(lang)) return;
-        const val = lang === "tl" ? translit : { en, uk, be, ru }[lang];
-        if (val)
-          lines.push(
-            `<div style="font-size:1.25em;">${val} ${countryFlag(
-              { ru: "RU", en: "US", uk: "UA", be: "BY" }[lang]
-            )}
-            </div>`
+        if (!ru || !en || !translit || !uk || !be) {
+          var type = card.first_air_date ? 'tv' : 'movie';
+          console.log('[TitlePlugin] fetching translations for', type, card.id);
+          Lampa.Api.sources.tmdb.get(
+            type + '/' + card.id + '?append_to_response=translations',
+            {},
+            function (data) {
+              var tr = (data.translations && data.translations.translations) || [];
+              applyAndRender(tr);
+            },
+            function (e) {
+              console.error('[TitlePlugin] tmdb error:', e);
+              applyAndRender([]);
+            }
           );
-      });
-
-      $(".full-start-new__title", render).after(
-        `<div class="original_title" style="margin-bottom:7px;text-align:right;"><div>${lines.join(
-          ""
-        )}</div></div>`
-      );
+        } else {
+          renderTitles();
+        }
+      } catch (e) {
+        console.error('[TitlePlugin] showTitles crash:', e.message, e.stack);
+      }
     }
 
     // ===== Listener =====
