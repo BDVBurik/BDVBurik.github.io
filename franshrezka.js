@@ -25,29 +25,37 @@
 
   function loadTmdbCards(franchise, cb) {
     const list = (franchise.m || []).filter(x => x && x.t_id);
-    const out = [];
-    let left = list.length;
 
-    if (!left) return cb([]);
+    if (!list.length) return cb([]);
 
-    list.forEach(item => {
-      Lampa.Api.sources.tmdb.full(
-        { id: item.t_id, method: item.type || "movie" },
-        (data) => {
-          if (data && data.movie) {
-            const m = data.movie || data.tv || data;
-            m.source = "tmdb";
-            m.type = item.type === "tv" ? "tv" : "movie";
-            out.push(Lampa.Utils.addSource(m, 'tmdb')); // Use Utils.addSource  
+    const promises = list.map((item, index) => {
+      return new Promise((resolve) => {
+        Lampa.Api.sources.tmdb.full(
+          { id: item.t_id, method: item.type || "movie" },
+          (data) => {
+            if (data && data.movie) {
+              const m = data.movie || data.tv || data;
+              m.source = "tmdb";
+              m.type = item.type === "tv" ? "tv" : "movie";
+              resolve({ index, card: Lampa.Utils.addSource(m, 'tmdb') });
+            } else {
+              resolve({ index, card: null });
+            }
+          },
+          (error) => {
+            console.error('Failed to load TMDB data:', error);
+            resolve({ index, card: null });
           }
+        );
+      });
+    });
 
-          if (--left === 0) cb(out);
-        },
-        (error) => { // Add error callback  
-          console.error('Failed to load TMDB data:', error);
-          if (--left === 0) cb(out);
-        }
-      );
+    Promise.all(promises).then(results => {
+      const out = results
+        .sort((a, b) => a.index - b.index) // Sort by original index  
+        .map(r => r.card)
+        .filter(c => c != null);
+      cb(out);
     });
   }
   async function start() {
