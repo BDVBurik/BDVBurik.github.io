@@ -1,6 +1,35 @@
 (function () {
   "use strict";
+  // ===== Logging Helper =====  
+  function log(message, data) {
+    console.log("[Title Plugin]", message, data || "");
+  }
 
+  function logError(message, error) {
+    console.error("[Title Plugin]", message, error || "");
+  }
+
+  // ===== Safe Property Access =====  
+  function safeGet(obj, path, defaultValue) {
+    try {
+      return path.split('.').reduce((acc, part) => acc && acc[part], obj) || defaultValue;
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+
+  // ===== Version Check =====  
+  function checkCompatibility() {
+    if (!window.Lampa) {
+      logError("Lampa not found");
+      return false;
+    }
+    if (!Lampa.Lang || !Lampa.Storage) {
+      logError("Required APIs not available");
+      return false;
+    }
+    return true;
+  }
   // ===== Локалізація =====
   Lampa.Lang.add({
     title_plugin: {
@@ -74,10 +103,8 @@
 
     async function showTitles(card) {
       const orig = card.original_title || card.original_name;
-      const alt =
-        card.alternative_titles?.titles ||
-        card.alternative_titles?.results ||
-        [];
+      const alt = safeGet(card, 'alternative_titles.titles') || safeGet(card, 'alternative_titles.results') || [];
+
       function countryFlag(code) {
         if (!code) return "";
 
@@ -145,7 +172,7 @@
             logError("Failed to fetch TMDB data", e);
           });
 
-          const tr = data.translations?.translations || [];
+          const tr = safeGet(data, 'translations.translations') || [];
           const translitData = tr.find((t) =>
             ["Transliteration", "romaji"].includes(t.type)
           );
