@@ -42,11 +42,14 @@
           }
 
           if (--left === 0) cb(out);
+        },
+        (error) => { // Add error callback  
+          console.error('Failed to load TMDB data:', error);
+          if (--left === 0) cb(out);
         }
       );
     });
   }
-
   async function start() {
     if (window.franchise_cards_plugin) return;
     window.franchise_cards_plugin = true;
