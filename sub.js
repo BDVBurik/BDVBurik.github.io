@@ -1,13 +1,14 @@
 (function () {
-  const DEBUG = true;
+  const DEBUG = false;
 
   function log(...args) {
     if (DEBUG) console.log('[Wyzie Subs]', ...args);
   }
 
   const cache = {};
+  const network = new Lampa.Reguest(); // Используем Lampa.Reguest  
 
-  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ua']) {
+  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ru']) {
     log('fetchSubs called:', { tmdbId, season, episode, languages });
     const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}`;
     if (cache[key]) {
@@ -24,13 +25,24 @@
           : `https://sub.wyzie.io/search?id=${tmdbId}&language=${lang}&key=${API_KEY}`;
 
         log('Fetching URL:', url);
-        const r = await fetch(url);
-        const j = await r.json();
-        log('API response for', lang, ':', j);
 
-        const subs = Array.isArray(j) ? j : [];
-        log('Subtitles found for', lang, ':', subs.length);
-        allSubs.push(...subs);
+        // Используем Lampa.Reguest вместо fetch  
+        const osSubs = await new Promise((resolve, reject) => {
+          network.silent(url, (data) => {
+            log('API response for', lang, ':', data);
+            const subs = Array.isArray(data) ? data : [];
+            log('Subtitles found for', lang, ':', subs.length);
+            resolve(subs);
+          }, (e) => {
+            log('Error fetching subtitles for', lang, ':', e);
+            reject(e);
+          }, false, {
+            dataType: 'json',
+            timeout: 10000
+          });
+        });
+
+        allSubs.push(...osSubs);
       } catch (e) {
         log('Error fetching subtitles for', lang, ':', e);
       }
@@ -40,13 +52,10 @@
   }
 
   const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";
-
-  // Хранилище для загруженных субтитров  
   let loadedSubs = null;
 
   log('Plugin initialized, setting up listeners');
   try {
-    // Для внешних плееров - пытаемся добавить в data (синхронно, если уже загружены)  
     Lampa.Player.listener.follow("create", ({ data }) => {
       log('Player create event fired');
 
@@ -61,7 +70,6 @@
       }
     });
 
-    // Для внутреннего плеера - устанавливаем через API  
     Lampa.Player.listener.follow("start", async () => {
       log('Player start event fired');
 
@@ -87,11 +95,11 @@
       }
 
       try {
-        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ua']);
+        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ru']);
         log('Wyzie Subtitles received:', osSubs);
 
         const filtered = osSubs
-          .filter((s) => s.url && (s.language === 'en' || s.language === 'ua'))
+          .filter((s) => s.url && (s.language === 'en' || s.language === 'ru'))
           .map((s, i) => ({
             index: i,
             label: s.display || s.language,
@@ -106,10 +114,8 @@
           return;
         }
 
-        // Сохраняем в кэш для будущих запусков  
         loadedSubs = filtered;
 
-        // Для внутреннего плеера устанавливаем напрямую  
         const current = (playdata?.subtitles || []).map((s) => ({
           label: s.label,
           url: s.url,
