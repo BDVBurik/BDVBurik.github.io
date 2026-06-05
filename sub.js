@@ -41,10 +41,29 @@
 
   const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";
 
-  log('Plugin initialized, setting up listener');
+  // Хранилище для загруженных субтитров  
+  let loadedSubs = null;
+
+  log('Plugin initialized, setting up listeners');
   try {
-    Lampa.Player.listener.follow("create", async ({ data }) => {
+    // Для внешних плееров - пытаемся добавить в data (синхронно, если уже загружены)  
+    Lampa.Player.listener.follow("create", ({ data }) => {
       log('Player create event fired');
+
+      if (loadedSubs) {
+        data.subtitles = data.subtitles || [];
+        loadedSubs.forEach((s) => {
+          if (!data.subtitles.find((x) => x.url === s.url)) {
+            data.subtitles.push(s);
+          }
+        });
+        log('Subtitles added to data from cache:', data.subtitles);
+      }
+    });
+
+    // Для внутреннего плеера - устанавливаем через API  
+    Lampa.Player.listener.follow("start", async () => {
+      log('Player start event fired');
 
       const activity = Lampa.Activity.active?.();
       const movie = activity?.movie;
@@ -56,8 +75,9 @@
 
       const tmdbId = movie.id || movie.tmdb_id;
       const isSeries = !!movie.first_air_date;
-      const season = isSeries ? data.season : undefined;
-      const episode = isSeries ? data.episode : undefined;
+      const playdata = Lampa.Player.playdata?.();
+      const season = isSeries ? playdata?.season : undefined;
+      const episode = isSeries ? playdata?.episode : undefined;
 
       log('Media info:', { tmdbId, isSeries, season, episode });
 
@@ -86,21 +106,38 @@
           return;
         }
 
-        data.subtitles = data.subtitles || [];
+        // Сохраняем в кэш для будущих запусков  
+        loadedSubs = filtered;
+
+        // Для внутреннего плеера устанавливаем напрямую  
+        const current = (playdata?.subtitles || []).map((s) => ({
+          label: s.label,
+          url: s.url,
+          lang: s.lang || "",
+        }));
+
+        const all = [...current];
         filtered.forEach((s) => {
-          if (!data.subtitles.find((x) => x.url === s.url)) {
-            data.subtitles.push(s);
+          if (!all.find((x) => x.url === s.url)) {
+            all.push(s);
           }
         });
 
-        log('Subtitles added to data:', data.subtitles);
+        const idx = all.findIndex((s) => s.lang === 'en');
+
+        try {
+          Lampa.Player.subtitles(all, idx === -1 ? 0 : idx);
+          log('Subtitles set successfully');
+        } catch (e) {
+          log('Error setting subtitles:', e);
+        }
       } catch (e) {
         log('Error fetching or setting subtitles:', e);
       }
     });
 
-    log('Listener attached successfully');
+    log('Listeners attached successfully');
   } catch (e) {
-    log('Error attaching listener:', e);
+    log('Error attaching listeners:', e);
   }
 })();
