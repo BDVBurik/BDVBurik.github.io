@@ -1,35 +1,38 @@
 (function () {  
   //BDVBuriлk.github.io  
-  //OST plugin for Lampa  
+  //Wyzie Subtitles plugin for Lampa  
   //2026  
   const DEBUG = true; // Переменная дебаг - установите в false для отключения логов  
+  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";  
     
   function log(...args) {  
-    if (DEBUG) console.log('[OST Plugin]', ...args);  
+    if (DEBUG) console.log('[Wyzie Subs]', ...args);  
   }  
     
-  const OSV3 = "https://opensubtitles-v3.strem.io/",  
-    cache = {};  
+  const cache = {};  
       
-  async function fetchSubs(imdb, season, episode) {  
-    log('fetchSubs called:', { imdb, season, episode });  
-    const key = `${imdb}_${season || 0}_${episode || 0}`;  
+  async function fetchSubs(tmdbId, season, episode) {  
+    log('fetchSubs called:', { tmdbId, season, episode });  
+    const key = `${tmdbId}_${season || 0}_${episode || 0}`;  
     if (cache[key]) {  
       log('Returning cached subtitles for key:', key);  
       return cache[key];  
     }  
     try {  
-      const url =  
-        season && episode  
-          ? `${OSV3}subtitles/series/${imdb}:${season}:${episode}.json`  
-          : `${OSV3}subtitles/movie/${imdb}.json`;  
+      // Для сериалов добавляем season и episode в запрос  
+      const url = season && episode   
+        ? `https://sub.wyzie.io/search?id=${tmdbId}&season=${season}&episode=${episode}&language=en&key=${API_KEY}`  
+        : `https://sub.wyzie.io/search?id=${tmdbId}&language=en&key=${API_KEY}`;  
+        
       log('Fetching URL:', url);  
-      const r = await fetch(url),  
-        j = await r.json();  
+      const r = await fetch(url);  
+      const j = await r.json();  
       log('API response:', j);  
-      const subs = j.subtitles || [];  
-      log('Subtitles found:', subs.length);  
-      return (cache[key] = subs);  
+        
+      // Адаптируем под структуру ответа Wyzie API  
+      const subs = j.subtitles || j || [];  
+      log('Subtitles found:', Array.isArray(subs) ? subs.length : 1);  
+      return (cache[key] = Array.isArray(subs) ? subs : [subs]);  
     } catch (e) {  
       log('Error fetching subtitles:', e);  
       return [];  
@@ -51,22 +54,29 @@
       return;  
     }  
       
-    const imdb = movie.imdb_id,  
+    // Используем tmdb_id вместо imdb_id  
+    const tmdbId = movie.id || movie.tmdb_id,  
       isSeries = !!movie.first_air_date,  
       season = isSeries ? playdata.season : undefined,  
       episode = isSeries ? playdata.episode : undefined;  
       
-    log('Media info:', { imdb, isSeries, season, episode });  
+    log('Media info:', { tmdbId, isSeries, season, episode });  
       
-    const osSubs = await fetchSubs(imdb, season, episode);  
-    log('OS Subtitles received:', osSubs);  
+    if (!tmdbId) {  
+      log('No TMDB ID found, aborting');  
+      return;  
+    }  
       
+    const osSubs = await fetchSubs(tmdbId, season, episode);  
+    log('Wyzie Subtitles received:', osSubs);  
+      
+    // Фильтруем и адаптируем под формат Lampa  
     const filtered = osSubs  
-      .filter((s) => (s.lang === "eng" || s.lang === "rus") && s.url)  
+      .filter((s) => s.url)  
       .map((s) => ({  
-        label: s.lang === "eng" ? "eng" : "rus",  
+        label: s.lang || s.language || 'en',  
         url: s.url,  
-        lang: s.lang,  
+        lang: s.lang || s.language || 'en',  
       }));  
       
     log('Filtered subtitles:', filtered);  
@@ -91,7 +101,7 @@
       return;  
     }  
       
-    const idx = all.findIndex((s) => s.lang === "eng");  
+    const idx = all.findIndex((s) => s.lang === 'en');  
     log('Setting subtitles, index:', idx === -1 ? 0 : idx);  
       
     try {  
