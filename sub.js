@@ -87,11 +87,11 @@
       }
 
       try {
-        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ru']);
+        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ua']);
         log('Wyzie Subtitles received:', osSubs);
 
         const filtered = osSubs
-          .filter((s) => s.url && (s.language === 'en' || s.language === 'ru'))
+          .filter((s) => s.url && (s.language === 'en' || s.language === 'ua'))
           .map((s, i) => ({
             index: i,
             label: s.display || s.language,
