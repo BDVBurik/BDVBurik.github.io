@@ -1,5 +1,5 @@
 (function () {
-  const DEBUG = false;
+  const DEBUG = true;
 
   function log(...args) {
     if (DEBUG) console.log('[Wyzie Subs]', ...args);
@@ -7,7 +7,7 @@
 
   const cache = {};
 
-  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ru']) {
+  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ua']) {
     log('fetchSubs called:', { tmdbId, season, episode, languages });
     const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}`;
     if (cache[key]) {
