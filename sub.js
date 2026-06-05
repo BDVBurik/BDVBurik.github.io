@@ -1,16 +1,37 @@
 (function () {
-  const DEBUG = true; // Включаем отладку для разработки
+  const DEBUG = true;
 
   function log(...args) {
     if (DEBUG) console.log('[Wyzie Subs]', ...args);
   }
 
   const cache = {};
-  const network = new Lampa.Reguest();  // Используем Lampa.Reguest  
+  const network = new Lampa.Reguest();
+  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";
+
+  // Ключ для хранения в Storage  
+  const STORAGE_KEY = 'wyzie_subs_cache';
+
+  // Получить субтитры из кэша Storage  
+  function getStoredSubs(tmdbId) {
+    const stored = Lampa.Storage.get(STORAGE_KEY, '{}');
+    const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored;
+    return parsed[tmdbId] || null;
+  }
+
+  // Сохранить субтитры в Storage  
+  function setStoredSubs(tmdbId, subs) {
+    const stored = Lampa.Storage.get(STORAGE_KEY, '{}');
+    const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored;
+    parsed[tmdbId] = subs;
+    Lampa.Storage.set(STORAGE_KEY, parsed);
+  }
 
   async function fetchSubs(tmdbId, season, episode, languages = ['en', 'uk']) {
     log('fetchSubs called:', { tmdbId, season, episode, languages });
     const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}`;
+
+    // Проверяем оперативный кэш  
     if (cache[key]) {
       log('Returning cached subtitles for key:', key);
       return cache[key];
@@ -26,7 +47,6 @@
 
         log('Fetching URL:', url);
 
-        // Используем Lampa.Reguest вместо fetch  
         const osSubs = await new Promise((resolve, reject) => {
           network.silent(url, (data) => {
             log('API response for', lang, ':', data);
@@ -51,53 +71,12 @@
     return (cache[key] = allSubs);
   }
 
-  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";
-  let loadedSubs =  null;
+  let loadedSubs = null;
 
   log('Plugin initialized, setting up listeners');
   try {
-    Lampa.Player.listener.follow("create", ({ data }) => {
+    Lampa.Player.listener.follow("create", async ({ data }) => {
       log('Player create event fired');
-
-      // ТЕСТ: Добавляем фиктивные субтитры для проверки  
-      const testSubs = [
-        {
-          index: 0,
-          label: "Test English",
-          url: "http://example.com/test_en.srt",
-          lang: "en"
-        },
-        {
-          index: 1,
-          label: "Test Ukrainian",
-          url: "http://example.com/test_uk.srt",
-          lang: "uk"
-        }
-      ];
-
-      data.subtitles = data.subtitles || [];
-
-      // Сначала добавляем тестовые  
-      testSubs.forEach((s) => {
-        if (!data.subtitles.find((x) => x.url === s.url)) {
-          data.subtitles.push(s);
-        }
-      });
-
-      // Затем реальные из кэша (если есть)  
-      if (loadedSubs) {
-        loadedSubs.forEach((s) => {
-          if (!data.subtitles.find((x) => x.url === s.url)) {
-            data.subtitles.push(s);
-          }
-        });
-      }
-
-      log('Subtitles added to data (with test):', data.subtitles);
-    });
-
-    Lampa.Player.listener.follow("start", async () => {
-      log('Player start event fired');
 
       const activity = Lampa.Activity.active?.();
       const movie = activity?.movie;
@@ -120,28 +99,59 @@
         return;
       }
 
-      try {
-        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'uk']);
-        log('Wyzie Subtitles received:', osSubs);
+      // Сначала пробуем получить из Storage кэша  
+      const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
+      let storedSubs = getStoredSubs(storageKey);
 
-        const filtered = osSubs
-          .filter((s) => s.url && (s.language === 'en' || s.language === 'uk'))
-          .map((s, i) => ({
-            index: i,
-            label: s.display || s.language,
-            url: s.url,
-            lang: s.language,
-          }));
+      if (storedSubs) {
+        log('Loaded subtitles from Storage:', storedSubs);
+        loadedSubs = storedSubs;
+      } else {
+        // Если нет в Storage, загружаем  
+        try {
+          const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'uk']);
+          log('Wyzie Subtitles received:', osSubs);
 
-        log('Filtered subtitles:', filtered);
+          const filtered = osSubs
+            .filter((s) => s.url && (s.language === 'en' || s.language === 'uk'))
+            .map((s, i) => ({
+              index: i,
+              label: s.display || s.language,
+              url: s.url,
+              lang: s.language,
+            }));
 
-        if (!filtered.length) {
-          log('No subtitles available, aborting');
-          return;
+          log('Filtered subtitles:', filtered);
+
+          if (filtered.length) {
+            loadedSubs = filtered;
+            // Сохраняем в Storage  
+            setStoredSubs(storageKey, filtered);
+            log('Subtitles saved to Storage');
+          }
+        } catch (e) {
+          log('Error fetching subtitles:', e);
         }
+      }
 
-        loadedSubs = filtered;
+      // Добавляем в data.subtitles  
+      if (loadedSubs) {
+        data.subtitles = data.subtitles || [];
+        loadedSubs.forEach((s) => {
+          if (!data.subtitles.find((x) => x.url === s.url)) {
+            data.subtitles.push(s);
+          }
+        });
+        log('Subtitles added to data:', data.subtitles);
+      }
+    });
 
+    Lampa.Player.listener.follow("start", async () => {
+      log('Player start event fired');
+
+      // Для внутреннего плеера устанавливаем субтитры  
+      if (loadedSubs) {
+        const playdata = Lampa.Player.playdata?.();
         const current = (playdata?.subtitles || []).map((s) => ({
           label: s.label,
           url: s.url,
@@ -149,7 +159,7 @@
         }));
 
         const all = [...current];
-        filtered.forEach((s) => {
+        loadedSubs.forEach((s) => {
           if (!all.find((x) => x.url === s.url)) {
             all.push(s);
           }
@@ -163,8 +173,6 @@
         } catch (e) {
           log('Error setting subtitles:', e);
         }
-      } catch (e) {
-        log('Error fetching or setting subtitles:', e);
       }
     });
 
