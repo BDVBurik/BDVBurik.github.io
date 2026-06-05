@@ -111,27 +111,25 @@
     }  
   }  
   
-  // Добавляем настройки  
-  function initSettings() {  
-    Lampa.SettingsApi.addComponent({  
-      component: 'wyzie_subs',  
-      icon: `<svg height="36" viewBox="0 0 38 36" fill="none" xmlns="http://www.w3.org/2000/svg">  
-        <rect x="2" y="8" width="34" height="21" rx="3" stroke="white" stroke-width="3"/>  
-        <line x1="13.0925" y1="2.34874" x2="16.3487" y2="6.90754" stroke="white" stroke-width="3" stroke-linecap="round"/>  
-        <line x1="9.5" y1="34.5" x2="29.5" y2="34.5" stroke="white" stroke-width="3" stroke-linecap="round"/>  
-      </svg>`,  
-      name: 'Wyzie Subs'  
-    })  
-  
-    Lampa.SettingsApi.addParam({  
-      component: 'wyzie_subs',  
-      param: {  
-        type: 'button'  
-      },  
-      field: {  
-        name: 'Смещение субтитров'  
-      },  
-      onChange: () => {  
+  // Добавляем кнопку смещения субтитров в панель плеера  
+  function addSubShiftButton() {  
+    Lampa.PlayerPanel.listener.follow('render', () => {  
+      const panel = $('.player-panel')  
+        
+      if (panel.find('.player-panel__subshift').length) return  
+        
+      const button = $(`  
+        <div class="player-panel__subshift button selector">  
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">  
+            <path d="M12 2L12 22M12 2L6 8M12 2L18 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>  
+            <path d="M12 22L6 16M12 22L18 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>  
+          </svg>  
+        </div>  
+      `)  
+        
+      panel.find('.player-panel__center').append(button)  
+        
+      button.on('hover:enter', () => {  
         const shiftOptions = [-25,-24,-23,-22,-21,-20,-19,-18,-17,-16,-15,-14,-13,-12,-11,-10, -9,-8,-7,-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14,15,16,17,18,19,20,21,22,23,24,25]  
           
         const items = shiftOptions.map(i => ({  
@@ -146,21 +144,20 @@
           onSelect: (b) => {  
             Lampa.Storage.set('player_subs_shift_time', b.value)  
             Lampa.PlayerVideo.applySubsSettings()  
-            Lampa.Noty.show('Смещение установлено: ' + b.value + ' сек.')  
+            Lampa.Noty.show('Смещение: ' + b.value + ' сек.')  
           }  
         })  
-      }  
+      })  
     })  
   }  
   
   log('Plugin initialized, setting up listener');  
   try {  
-    // Инициализируем настройки  
     if (window.appready) {  
-      initSettings()  
+      addSubShiftButton()  
     } else {  
       Lampa.Listener.follow('app', function (e) {  
-        if (e.type == 'ready') initSettings()  
+        if (e.type == 'ready') addSubShiftButton()  
       })  
     }  
   
