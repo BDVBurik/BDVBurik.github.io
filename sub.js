@@ -1,16 +1,13 @@
 (function () {  
-  //BDVBuriлk.github.io  
-  //Wyzie Subtitles plugin for Lampa  
-  //2026  
   const DEBUG = false;  
-    
     
   function log(...args) {  
     if (DEBUG) console.log('[Wyzie Subs]', ...args);  
   }  
     
   const cache = {};  
-      
+  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";  
+    
   async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ru']) {  
     log('fetchSubs called:', { tmdbId, season, episode, languages });  
     const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}`;  
@@ -32,7 +29,6 @@
         const j = await r.json();  
         log('API response for', lang, ':', j);  
           
-        // Ответ приходит сразу как массив  
         const subs = Array.isArray(j) ? j : [];  
         log('Subtitles found for', lang, ':', subs.length);  
         allSubs.push(...subs);  
@@ -74,7 +70,6 @@
     const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ru']);  
     log('Wyzie Subtitles received:', osSubs);  
       
-    // Фильтруем и адаптируем под формат Lampa  
     const filtered = osSubs  
       .filter((s) => s.url && (s.language === 'en' || s.language === 'ru'))  
       .map((s) => ({  
@@ -115,9 +110,60 @@
       log('Error setting subtitles:', e);  
     }  
   }  
-  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";  
+  
+  // Добавляем настройки  
+  function initSettings() {  
+    Lampa.SettingsApi.addComponent({  
+      component: 'wyzie_subs',  
+      icon: `<svg height="36" viewBox="0 0 38 36" fill="none" xmlns="http://www.w3.org/2000/svg">  
+        <rect x="2" y="8" width="34" height="21" rx="3" stroke="white" stroke-width="3"/>  
+        <line x1="13.0925" y1="2.34874" x2="16.3487" y2="6.90754" stroke="white" stroke-width="3" stroke-linecap="round"/>  
+        <line x1="9.5" y1="34.5" x2="29.5" y2="34.5" stroke="white" stroke-width="3" stroke-linecap="round"/>  
+      </svg>`,  
+      name: 'Wyzie Subs'  
+    })  
+  
+    Lampa.SettingsApi.addParam({  
+      component: 'wyzie_subs',  
+      param: {  
+        type: 'button'  
+      },  
+      field: {  
+        name: 'Смещение субтитров'  
+      },  
+      onChange: () => {  
+        const shiftOptions = [-120, -90, -60, -45, -30, -20, -15, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 90, 120]  
+          
+        const items = shiftOptions.map(i => ({  
+          title: (i > 0 ? '+' : '') + i + ' сек.',  
+          value: i,  
+          selected: Lampa.Storage.get('player_subs_shift_time', '0') == i  
+        }))  
+  
+        Lampa.Select.show({  
+          title: 'Смещение субтитров',  
+          items: items,  
+          onSelect: (b) => {  
+            Lampa.Storage.set('player_subs_shift_time', b.value)  
+            Lampa.PlayerVideo.applySubsSettings()  
+            Lampa.Noty.show('Смещение установлено: ' + b.value + ' сек.')  
+          }  
+        })  
+      }  
+    })  
+  }  
+  
   log('Plugin initialized, setting up listener');  
   try {  
+    // Инициализируем настройки  
+    if (window.appready) {  
+      initSettings()  
+    } else {  
+      Lampa.Listener.follow('app', function (e) {  
+        if (e.type == 'ready') initSettings()  
+      })  
+    }  
+  
     Lampa.Player.listener.follow("start", () => {  
       log('Player start event fired');  
       setTimeout(setupSubs, 500);  
