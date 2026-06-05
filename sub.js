@@ -59,15 +59,41 @@
     Lampa.Player.listener.follow("create", ({ data }) => {
       log('Player create event fired');
 
+      // ТЕСТ: Добавляем фиктивные субтитры для проверки  
+      const testSubs = [
+        {
+          index: 0,
+          label: "Test English",
+          url: "http://example.com/test_en.srt",
+          lang: "en"
+        },
+        {
+          index: 1,
+          label: "Test Ukrainian",
+          url: "http://example.com/test_uk.srt",
+          lang: "uk"
+        }
+      ];
+
+      data.subtitles = data.subtitles || [];
+
+      // Сначала добавляем тестовые  
+      testSubs.forEach((s) => {
+        if (!data.subtitles.find((x) => x.url === s.url)) {
+          data.subtitles.push(s);
+        }
+      });
+
+      // Затем реальные из кэша (если есть)  
       if (loadedSubs) {
-        data.subtitles = data.subtitles || [];
         loadedSubs.forEach((s) => {
           if (!data.subtitles.find((x) => x.url === s.url)) {
             data.subtitles.push(s);
           }
         });
-        log('Subtitles added to data from cache:', data.subtitles);
       }
+
+      log('Subtitles added to data (with test):', data.subtitles);
     });
 
     Lampa.Player.listener.follow("start", async () => {
