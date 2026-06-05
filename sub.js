@@ -2,8 +2,8 @@
   //BDVBuriлk.github.io  
   //Wyzie Subtitles plugin for Lampa  
   //2026  
-  const DEBUG = true;  
-  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";  
+  const DEBUG = false;  
+    
     
   function log(...args) {  
     if (DEBUG) console.log('[Wyzie Subs]', ...args);  
@@ -115,7 +115,7 @@
       log('Error setting subtitles:', e);  
     }  
   }  
-    
+  const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";  
   log('Plugin initialized, setting up listener');  
   try {  
     Lampa.Player.listener.follow("start", () => {  
