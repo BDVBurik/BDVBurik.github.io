@@ -1,5 +1,5 @@
 (function () {
-  const DEBUG = false;
+  const DEBUG = true;
 
   function log(...args) {
     if (DEBUG) console.log('[Wyzie Subs]', ...args);
@@ -8,7 +8,7 @@
   const cache = {};
   const network = new Lampa.Reguest(); // Используем Lampa.Reguest  
 
-  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'ru']) {
+  async function fetchSubs(tmdbId, season, episode, languages = ['en', 'uk']) {
     log('fetchSubs called:', { tmdbId, season, episode, languages });
     const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}`;
     if (cache[key]) {
@@ -95,11 +95,11 @@
       }
 
       try {
-        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'ru']);
+        const osSubs = await fetchSubs(tmdbId, season, episode, ['en', 'uk']);
         log('Wyzie Subtitles received:', osSubs);
 
         const filtered = osSubs
-          .filter((s) => s.url && (s.language === 'en' || s.language === 'ru'))
+          .filter((s) => s.url && (s.language === 'en' || s.language === 'uk'))
           .map((s, i) => ({
             index: i,
             label: s.display || s.language,
