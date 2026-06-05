@@ -1,12 +1,12 @@
 (function () {
-  const DEBUG = true;
+  const DEBUG = true; // Включаем отладку для разработки
 
   function log(...args) {
     if (DEBUG) console.log('[Wyzie Subs]', ...args);
   }
 
   const cache = {};
-  const network = new Lampa.Reguest(); // Используем Lampa.Reguest  
+  const network = new Lampa.Reguest();  // Используем Lampa.Reguest  
 
   async function fetchSubs(tmdbId, season, episode, languages = ['en', 'uk']) {
     log('fetchSubs called:', { tmdbId, season, episode, languages });
@@ -52,7 +52,7 @@
   }
 
   const API_KEY = "wyzie-9cy5uc876vzjt3cc9qh7kostpsanyn3w";
-  let loadedSubs = null;
+  let loadedSubs =  null;
 
   log('Plugin initialized, setting up listeners');
   try {
