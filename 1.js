@@ -115,7 +115,8 @@
           const filtered = osSubs
             .filter((s) => s.url && (s.language === 'en' || s.language === 'uk'))
             .map((s, i) => ({
-              index: i,
+              //index: i,
+              method: "link",
               label: s.display || s.language,
               url: s.url,
               lang: s.language,
