@@ -133,7 +133,7 @@
           log('Error fetching subtitles:', e);
         }
       }
-
+      log('Current data:', data);
       // Добавляем в data.subtitles
       if (loadedSubs) {
         data.subtitles = data.subtitles || [];
@@ -142,8 +142,8 @@
             data.subtitles.push(s);
           }
         });
-        log('Adding subtitles to playlist items');
-        log('Current playlist:', data.playlist);
+       
+
         // Also add to playlist items for external players  
         if (data.playlist && Array.isArray(data.playlist)) {
 
