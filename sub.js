@@ -142,8 +142,21 @@
             data.subtitles.push(s);
           }
         });
-        log('Subtitles added to data:', data.subtitles);
-      }
+
+        // Also add to playlist items for external players  
+        if (data.playlist && Array.isArray(data.playlist)) {
+          data.playlist.forEach((item) => {
+            item.subtitles = item.subtitles || [];
+            loadedSubs.forEach((s) => {
+              if (!item.subtitles.find((x) => x.url === s.url)) {
+                item.subtitles.push(s);
+              }
+            });
+          });
+        }
+
+        log('Subtitles added to data and playlist:', data.subtitles);
+      }  
     });
 
     Lampa.Player.listener.follow("start", async () => {
