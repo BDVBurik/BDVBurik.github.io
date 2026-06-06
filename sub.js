@@ -115,7 +115,8 @@
           const filtered = osSubs
             .filter((s) => s.url && (s.language === 'en' || s.language === 'uk'))
             .map((s, i) => ({
-              index: i,
+              //index: i,
+              method: "link",
               label: s.display || s.language,
               url: s.url,
               lang: s.language,
@@ -133,20 +134,18 @@
           log('Error fetching subtitles:', e);
         }
       }
-      log('Current data:', data);
-      // Добавляем в data.subtitles
+
+      // Добавляем в data.subtitles  
       if (loadedSubs) {
-        data.subtitles = data.subtitles || [];
+        data.subtitles_call = data.subtitles || [];
         loadedSubs.forEach((s) => {
           if (!data.subtitles.find((x) => x.url === s.url)) {
             data.subtitles.push(s);
           }
         });
-       
 
         // Also add to playlist items for external players  
         if (data.playlist && Array.isArray(data.playlist)) {
-
           data.playlist.forEach((item) => {
             item.subtitles = item.subtitles || [];
             loadedSubs.forEach((s) => {
@@ -159,7 +158,7 @@
 
         log('Subtitles added to data and playlist:', data.subtitles);
       }
-    });  
+    });
 
     Lampa.Player.listener.follow("start", async () => {
       log('Player start event fired');
