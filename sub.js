@@ -134,7 +134,7 @@
         }
       }
 
-      // Добавляем в data.subtitles  
+      // Добавляем в data.subtitles
       if (loadedSubs) {
         data.subtitles = data.subtitles || [];
         loadedSubs.forEach((s) => {
@@ -156,8 +156,8 @@
         }
 
         log('Subtitles added to data and playlist:', data.subtitles);
-      }  
-    });
+      }
+    });  
 
     Lampa.Player.listener.follow("start", async () => {
       log('Player start event fired');
