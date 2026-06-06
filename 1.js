@@ -136,7 +136,7 @@
 
       // Добавляем в data.subtitles  
       if (loadedSubs) {
-        data.subtitles = data.subtitles || [];
+        data.subtitles_call = data.subtitles || [];
         loadedSubs.forEach((s) => {
           if (!data.subtitles.find((x) => x.url === s.url)) {
             data.subtitles.push(s);
