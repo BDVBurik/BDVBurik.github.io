@@ -142,11 +142,11 @@
             data.subtitles.push(s);
           }
         });
-
+        log('Adding subtitles to playlist items');
+        log('Current playlist:', data.playlist);
         // Also add to playlist items for external players  
         if (data.playlist && Array.isArray(data.playlist)) {
-          log('Adding subtitles to playlist items');
-          log('Current playlist:', data.playlist);
+
           data.playlist.forEach((item) => {
             item.subtitles = item.subtitles || [];
             loadedSubs.forEach((s) => {
