@@ -218,10 +218,49 @@
     //  Per-domain sync modules
     // ----------------------------------------------------------------------
 
-    // Bookmarks (replaces bookmark.js)
-    //
-    // На сервер уходят только id списков favorite — без дублирования карточек TMDB.
-    // При pull локальные полные карточки сохраняются, если уже есть.
+    // Bookmarks + history via /bookmark/list (favorite.history, favorite.card, …).
+    // Списки — id; favorite.card — полные объекты (без них история на другом устройстве пустая).
+    var FAVORITE_BOOKMARK_KEYS = ['like', 'wath', 'book', 'look', 'viewed', 'scheduled', 'continued', 'thrown'];
+    var FAVORITE_HISTORY_KEY = 'history';
+
+    function favoriteSyncOpts() {
+        return { bookmarks: pref('bookmarks'), history: pref('history') };
+    }
+
+    function favoriteCategoryEnabled(where, opts) {
+        opts = opts || favoriteSyncOpts();
+        if (where === FAVORITE_HISTORY_KEY) return opts.history;
+        return opts.bookmarks;
+    }
+
+    function favoriteSyncEnabled(opts) {
+        opts = opts || favoriteSyncOpts();
+        return opts.bookmarks || opts.history;
+    }
+
+    function favoriteIdsInLists(fav) {
+        var ids = {};
+        function addList(list) {
+            if (!Array.isArray(list)) return;
+            list.forEach(function (item) {
+                var id = favoriteItemId(item);
+                if (id != null) ids[id] = true;
+            });
+        }
+        addList(fav[FAVORITE_HISTORY_KEY]);
+        FAVORITE_BOOKMARK_KEYS.forEach(function (k) { addList(fav[k]); });
+        return ids;
+    }
+
+    function filterFavoriteCards(fav) {
+        if (!fav || !Array.isArray(fav.card)) return fav;
+        var need = favoriteIdsInLists(fav);
+        fav.card = fav.card.filter(function (item) {
+            var id = favoriteItemId(item);
+            return id != null && need[id];
+        });
+        return fav;
+    }
 
     function favoriteItemId(item) {
         if (item == null || item === '') return null;
@@ -236,12 +275,16 @@
             (item.title || item.name || item.poster_path || item.img);
     }
 
-    function compactFavoriteForServer(fav) {
+    function compactFavoriteForServer(fav, opts) {
+        opts = opts || { bookmarks: true, history: true };
         if (!fav || typeof fav !== 'object') return {};
+        fav = filterFavoriteCards(JSON.parse(JSON.stringify(fav)));
         var out = {};
         Object.keys(fav).forEach(function (k) {
             var v = fav[k];
             if (!Array.isArray(v)) return;
+            if (k === FAVORITE_HISTORY_KEY && !opts.history) return;
+            if (FAVORITE_BOOKMARK_KEYS.indexOf(k) !== -1 && !opts.bookmarks) return;
             // Lampa resolves history/bookmarks via favorite.card — bare ids are invisible.
             if (k === 'card') {
                 var cards = [];
@@ -264,11 +307,14 @@
         return out;
     }
 
-    function mergeFavoriteFromServer(local, remote) {
+    function mergeFavoriteFromServer(local, remote, opts) {
+        opts = opts || { bookmarks: true, history: true };
         if (!remote || typeof remote !== 'object') return local;
         var fav = local && typeof local === 'object' ? local : {};
         Object.keys(remote).forEach(function (k) {
             if (k === 'success' || k === 'dbInNotInitialization') return;
+            if (k === FAVORITE_HISTORY_KEY && !opts.history) return;
+            if (FAVORITE_BOOKMARK_KEYS.indexOf(k) !== -1 && !opts.bookmarks) return;
             var remoteList = remote[k];
             if (!Array.isArray(remoteList)) return;
             if (k === 'card') {
@@ -298,11 +344,35 @@
                 return localMap[id] || item;
             });
         });
-        return fav;
+        return filterFavoriteCards(fav);
+    }
+
+    function mergeFavoriteForPush(local, remote, opts) {
+        var fav = local && typeof local === 'object' ? JSON.parse(JSON.stringify(local)) : {};
+        remote = remote && typeof remote === 'object' ? remote : {};
+        if (!opts.history && Array.isArray(remote[FAVORITE_HISTORY_KEY])) {
+            fav[FAVORITE_HISTORY_KEY] = remote[FAVORITE_HISTORY_KEY];
+        }
+        if (!opts.bookmarks) {
+            FAVORITE_BOOKMARK_KEYS.forEach(function (k) {
+                if (Array.isArray(remote[k])) fav[k] = remote[k];
+            });
+        }
+        var cardMap = {};
+        [fav, remote].forEach(function (src) {
+            (Array.isArray(src.card) ? src.card : []).forEach(function (item) {
+                var id = favoriteItemId(item);
+                if (id == null) return;
+                if (isFavoriteCardObject(item)) cardMap[id] = item;
+                else if (!cardMap[id]) cardMap[id] = item;
+            });
+        });
+        fav.card = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
+        return filterFavoriteCards(fav);
     }
 
     var Bookmarks = {
-        enabled: function () { return pref('bookmarks') || pref('history'); },
+        enabled: function () { return favoriteSyncEnabled(); },
         bound: false,
         pushDebounce: 0,
         applying: false,
@@ -323,17 +393,17 @@
             var fav = Lampa.Favorite;
             if (!fav || !fav.listener) return;
             fav.listener.follow('add', function (e) {
-                if (!self.enabled() || self.applying) return;
+                if (self.applying || !favoriteCategoryEnabled(e.where || '')) return;
                 if (e.card && e.card.received) return;
                 self.schedulePush();
             });
             fav.listener.follow('added', function (e) {
-                if (!self.enabled() || self.applying) return;
+                if (self.applying || !favoriteCategoryEnabled(e.where || '')) return;
                 if (e.card && e.card.received) return;
                 self.schedulePush();
             });
             fav.listener.follow('remove', function (e) {
-                if (!self.enabled() || self.applying) return;
+                if (self.applying || !favoriteCategoryEnabled(e.where || '')) return;
                 if (e.card && e.card.received) return;
                 self.schedulePush();
             });
@@ -356,12 +426,27 @@
         },
 
         pushFull: function () {
-            if (!this.enabled() || this.applying) return;
-            httpJSON('POST', '/bookmark/set', compactFavoriteForServer(this.readLocal()));
+            var self = this;
+            var opts = favoriteSyncOpts();
+            if (!favoriteSyncEnabled(opts) || this.applying) return;
+            var local = this.readLocal();
+            if (opts.bookmarks && opts.history) {
+                httpJSON('POST', '/bookmark/set', compactFavoriteForServer(local, opts));
+                return;
+            }
+            httpJSON('GET', '/bookmark/list', null, function (json) {
+                var merged = mergeFavoriteForPush(local, json || {}, opts);
+                httpJSON('POST', '/bookmark/set', compactFavoriteForServer(merged, {
+                    bookmarks: true,
+                    history: true,
+                }));
+            });
         },
 
         pull: function () {
             var self = this;
+            var opts = favoriteSyncOpts();
+            if (!favoriteSyncEnabled(opts)) return;
             httpJSON('GET', '/bookmark/list', null, function (json) {
                 if (!json || json.dbInNotInitialization) {
                     self.pushFull();
@@ -371,14 +456,15 @@
                     return k !== 'success' && k !== 'dbInNotInitialization' &&
                         Array.isArray(json[k]) && json[k].length;
                 });
-                if (hasData) self.applyServerSet(json);
+                if (hasData) self.applyServerSet(json, opts);
                 else self.pushFull();
             });
         },
 
-        applyServerSet: function (data) {
+        applyServerSet: function (data, opts) {
             if (!data) return;
-            var fav = mergeFavoriteFromServer(this.readLocal(), data);
+            opts = opts || favoriteSyncOpts();
+            var fav = mergeFavoriteFromServer(this.readLocal(), data, opts);
             this.applying = true;
             try {
                 Lampa.Storage.set('favorite', fav, true);
@@ -568,10 +654,6 @@
         };
     }
 
-    var ViewHistory = makeBlobSync('history', 'sync_view', [
-        'online_view', 'online_last_balanser', 'online_watched_last',
-        'recomends_list', 'recomends_list_history',
-    ], 'history');
     var Torrents = makeBlobSync('torrents', 'sync_torrents', [
         'torrents_view', 'torrents_filter_data',
     ], 'torrents');
@@ -670,9 +752,8 @@
     function pullAll() {
         dbg('pullAll');
         if (Bookmarks.enabled()) Bookmarks.pull();
+        else dbg('pull skip', 'bookmarks/history', 'disabled');
         if (Timecodes.enabled()) Timecodes.pullForCurrent();
-        if (ViewHistory.enabled()) ViewHistory.pull();
-        else dbg('pull skip', 'history', 'disabled');
         if (Torrents.enabled()) Torrents.pull();
         if (SearchHistory.enabled()) SearchHistory.pull();
         if (PluginsList.enabled()) PluginsList.pull();
@@ -681,9 +762,7 @@
     function pushAll() {
         dbg('pushAll');
         if (Bookmarks.enabled()) Bookmarks.pushFull();
-        else dbg('push skip', 'bookmarks', 'disabled');
-        if (ViewHistory.enabled()) ViewHistory.flush();
-        else dbg('push skip', 'history', 'disabled');
+        else dbg('push skip', 'bookmarks/history', 'disabled');
         if (Torrents.enabled()) Torrents.flush();
         if (SearchHistory.enabled()) SearchHistory.flush();
         if (PluginsList.enabled()) PluginsList.flush();
@@ -942,7 +1021,6 @@
 
         Bookmarks.bind();
         Timecodes.bind();
-        ViewHistory.bind();
         Torrents.bind();
         SearchHistory.bind();
         PluginsList.bind();
