@@ -1,3 +1,4 @@
+//"https://igorek1986.github.io/lampa-plugins/myshows.js"
 (function () {
     'use strict';
 
