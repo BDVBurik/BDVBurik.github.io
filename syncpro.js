@@ -33,6 +33,7 @@ function loadLang() {
         syncpro_action_backup_save:  { ru: 'Создать бэкап на сервере', en: 'Save backup to server', uk: 'Створити бекап' },
         syncpro_action_backup_load:  { ru: 'Восстановить из бэкапа', en: 'Restore backup', uk: 'Відновити з бекапу' },
         syncpro_action_force_pull:   { ru: 'Подтянуть данные сейчас', en: 'Pull all data now', uk: 'Завантажити зараз' },
+        syncpro_action_force_push:   { ru: 'Отправить данные на сервер', en: 'Push all data to server', uk: 'Відправити на сервер' },
 
         syncpro_open_domains:        { ru: 'Что синхронизировать', en: 'What to sync', uk: 'Що синхронізувати' },
         syncpro_open_actions:        { ru: 'Действия', en: 'Actions', uk: 'Дії' },
@@ -40,7 +41,8 @@ function loadLang() {
         syncpro_back:                { ru: 'Назад', en: 'Back', uk: 'Назад' },
 
         syncpro_msg_pulled:          { ru: 'Данные подтянуты', en: 'Data pulled', uk: 'Дані завантажено' },
-        syncpro_msg_backup_ok:       { ru: 'Бэкап сохранён', en: 'Backup saved', uk: 'Бекап збережено' },
+        syncpro_msg_pushed:          { ru: 'Данные отправлены на сервер', en: 'Data pushed to server', uk: 'Дані відправлено' },
+        syncpro_msg_backup_ok:       { ru: 'Бэкап сохранён (+ синх-данные отправлены)', en: 'Backup saved (+ sync data pushed)', uk: 'Бекап збережено' },
         syncpro_msg_backup_restored: { ru: 'Бэкап восстановлен, перезагрузка…', en: 'Restored, reloading…', uk: 'Відновлено, перезавантаження…' },
 
         syncpro_err_generic:         { ru: 'Ошибка ({code})', en: 'Error ({code})', uk: 'Помилка ({code})' },
@@ -638,6 +640,17 @@ function pullAll() {
     if (PluginsList.enabled()) PluginsList.pull();
 }
 
+function pushAll() {
+    dbg('pushAll');
+    if (Bookmarks.enabled()) Bookmarks.pushFull();
+    else dbg('push skip', 'bookmarks', 'disabled');
+    if (ViewHistory.enabled()) ViewHistory.flush();
+    else dbg('push skip', 'history', 'disabled');
+    if (Torrents.enabled()) Torrents.flush();
+    if (SearchHistory.enabled()) SearchHistory.flush();
+    if (PluginsList.enabled()) PluginsList.flush();
+}
+
 function runInitialSync() {
     if (!getServerAccessToken()) {
         dbg('pullAll skip', 'no token');
@@ -723,6 +736,17 @@ function openDomainsSheet() {
 function openActionsSheet() {
     var items = [
         {
+            title: Lampa.Lang.translate('syncpro_action_force_push'),
+            action: function () {
+                Lampa.Loading.start();
+                pushAll();
+                setTimeout(function () {
+                    Lampa.Loading.stop();
+                    Lampa.Noty.show(Lampa.Lang.translate('syncpro_msg_pushed'));
+                }, 1500);
+            },
+        },
+        {
             title: Lampa.Lang.translate('syncpro_action_force_pull'),
             action: function () {
                 Lampa.Loading.start();
@@ -739,6 +763,7 @@ function openActionsSheet() {
                 Lampa.Loading.start();
                 FullBackup.save(
                     function () {
+                        pushAll();
                         Lampa.Loading.stop();
                         Lampa.Noty.show(Lampa.Lang.translate('syncpro_msg_backup_ok'));
                     },
