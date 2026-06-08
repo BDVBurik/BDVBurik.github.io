@@ -8,7 +8,7 @@
 
       Lampa.Utils.putScriptAsync(
         ["http://lampalampa.free.nf/uacoments.js",
-          "https://bdvburik.github.io/syncpro.js", //сінхолнізація
+          //"https://bdvburik.github.io/syncpro.js", //сінхолнізація
           "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
          "https://bdvburik.github.io/noshots.js",
