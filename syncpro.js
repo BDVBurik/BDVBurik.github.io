@@ -218,8 +218,8 @@
     //  Per-domain sync modules
     // ----------------------------------------------------------------------
 
-    // Bookmarks + history via /bookmark/list (favorite.history, favorite.card, …).
-    // Списки — id; favorite.card — полные объекты (без них история на другом устройстве пустая).
+    // Bookmarks + history via /bookmark/list — только id[] (как CUB).
+    // favorite.card — локальный кэш TMDB, по сети не гоняем.
     var FAVORITE_BOOKMARK_KEYS = ['like', 'wath', 'book', 'look', 'viewed', 'scheduled', 'continued', 'thrown'];
     var FAVORITE_HISTORY_KEY = 'history';
 
@@ -238,7 +238,8 @@
         return opts.bookmarks || opts.history;
     }
 
-    function favoriteIdsInLists(fav) {
+    function favoriteIdsInLists(fav, opts) {
+        opts = opts || favoriteSyncOpts();
         var ids = {};
         function addList(list) {
             if (!Array.isArray(list)) return;
@@ -247,8 +248,10 @@
                 if (id != null) ids[id] = true;
             });
         }
-        addList(fav[FAVORITE_HISTORY_KEY]);
-        FAVORITE_BOOKMARK_KEYS.forEach(function (k) { addList(fav[k]); });
+        if (opts.history) addList(fav[FAVORITE_HISTORY_KEY]);
+        if (opts.bookmarks) {
+            FAVORITE_BOOKMARK_KEYS.forEach(function (k) { addList(fav[k]); });
+        }
         return ids;
     }
 
@@ -296,8 +299,8 @@
         return filterFavoriteCards(fav);
     }
 
-    function missingFavoriteCardIds(fav) {
-        var need = favoriteIdsInLists(fav);
+    function missingFavoriteCardIds(fav, opts) {
+        var need = favoriteIdsInLists(fav, opts);
         var cardMap = favoriteCardMap(fav);
         return Object.keys(need).filter(function (id) {
             var n = parseInt(id, 10);
@@ -306,34 +309,80 @@
         }).map(function (id) { return parseInt(id, 10); });
     }
 
-    function fetchFavoriteCardById(id, cb) {
-        if (!Lampa.Api || typeof Lampa.Api.full !== 'function') { if (cb) cb(null); return; }
-        function tryMethod(method, onFail) {
-            Lampa.Api.full({ id: id, method: method, card: { id: id } }, function (response) {
-                var card = response && (response.movie || response.tv || response);
-                if (card && card.id != null && Lampa.Utils && Lampa.Utils.clearCard) {
-                    card = Lampa.Utils.clearCard(card);
-                }
-                if (card && card.id != null && (card.title || card.name)) { if (cb) cb(card); return; }
-                if (onFail) onFail();
-            }, onFail || function () { if (cb) cb(null); });
-        }
-        tryMethod('movie', function () { tryMethod('tv'); });
+    function listToIds(list) {
+        var ids = [];
+        if (!Array.isArray(list)) return ids;
+        list.forEach(function (item) {
+            var id = favoriteItemId(item);
+            if (id != null && ids.indexOf(id) === -1) ids.push(id);
+        });
+        return ids;
     }
 
-    function hydrateMissingFavoriteCards(fav, cb) {
-        var missing = missingFavoriteCardIds(fav);
+    function absorbLegacyCardsFromLists(fav, cardMap) {
+        function scan(list) {
+            if (!Array.isArray(list)) return;
+            list.forEach(function (item) {
+                if (!isFavoriteCardObject(item)) return;
+                var id = favoriteItemId(item);
+                if (id != null) cardMap[id] = item;
+            });
+        }
+        scan(fav[FAVORITE_HISTORY_KEY]);
+        FAVORITE_BOOKMARK_KEYS.forEach(function (k) { scan(fav[k]); });
+        if (Array.isArray(fav.card)) scan(fav.card);
+    }
+
+    function fetchFavoriteCardById(id, cb) {
+        var done = false;
+        function finish(card) {
+            if (done) return;
+            done = true;
+            if (cb) cb(card || null);
+        }
+        setTimeout(function () { finish(null); }, 12000);
+
+        var tmdb = Lampa.Api && Lampa.Api.sources && Lampa.Api.sources.tmdb;
+        if (!tmdb || typeof tmdb.get !== 'function') { finish(null); return; }
+
+        function tryGet(method, onFail) {
+            tmdb.get(method + '/' + id, {}, function (data) {
+                if (!data || data.success === false || !data.id) {
+                    if (onFail) onFail();
+                    else finish(null);
+                    return;
+                }
+                var card = data;
+                if (Lampa.Utils && Lampa.Utils.clearCard) card = Lampa.Utils.clearCard(card);
+                if (card && card.id != null && (card.title || card.name)) finish(card);
+                else if (onFail) onFail();
+                else finish(null);
+            }, onFail || function () { finish(null); });
+        }
+        tryGet('movie', function () { tryGet('tv'); });
+    }
+
+    function hydrateMissingFavoriteCards(fav, opts, cb, onProgress) {
+        var missing = missingFavoriteCardIds(fav, opts);
         if (!missing.length) { if (cb) cb(fav); return; }
         dbg('hydrate cards', missing.length);
         var cardMap = favoriteCardMap(fav);
         var idx = 0;
         var active = 0;
-        var parallel = 4;
+        var parallel = 2;
+        var fetched = 0;
+        var favRef = fav;
+
+        function snapshot() {
+            favRef.card = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
+            return normalizeFavoriteForLocal(JSON.parse(JSON.stringify(favRef)));
+        }
 
         function next() {
             if (idx >= missing.length && active === 0) {
-                fav.card = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
-                if (cb) cb(normalizeFavoriteForLocal(fav));
+                var finalFav = snapshot();
+                dbg('hydrate done', 'cards=', (finalFav.card || []).length, 'of', missing.length);
+                if (cb) cb(finalFav);
                 return;
             }
             while (active < parallel && idx < missing.length) {
@@ -341,7 +390,11 @@
                     active++;
                     fetchFavoriteCardById(id, function (card) {
                         active--;
+                        fetched++;
                         if (card && card.id != null) cardMap[card.id] = card;
+                        if (onProgress && (fetched % 25 === 0 || fetched === missing.length)) {
+                            onProgress(snapshot());
+                        }
                         next();
                     });
                 })(missing[idx++]);
@@ -366,43 +419,14 @@
     function compactFavoriteForServer(fav, opts) {
         opts = opts || { bookmarks: true, history: true };
         if (!fav || typeof fav !== 'object') return {};
-        fav = filterFavoriteCards(JSON.parse(JSON.stringify(fav)));
         var out = {};
         Object.keys(fav).forEach(function (k) {
             var v = fav[k];
             if (!Array.isArray(v)) return;
+            if (k === 'card') return;
             if (k === FAVORITE_HISTORY_KEY && !opts.history) return;
             if (FAVORITE_BOOKMARK_KEYS.indexOf(k) !== -1 && !opts.bookmarks) return;
-            if (k === FAVORITE_HISTORY_KEY) {
-                var histCards = favoriteCardMap(fav);
-                absorbHistoryCards(fav, histCards);
-                var histOut = [];
-                v.forEach(function (item) {
-                    var id = favoriteItemId(item);
-                    if (id == null || histOut.some(function (e) { return favoriteItemId(e) === id; })) return;
-                    histOut.push(histCards[id] || id);
-                });
-                out[k] = histOut;
-                return;
-            }
-            // Lampa resolves history/bookmarks via favorite.card — bare ids are invisible.
-            if (k === 'card') {
-                var cards = [];
-                v.forEach(function (item) {
-                    if (!isFavoriteCardObject(item)) return;
-                    var id = favoriteItemId(item);
-                    if (id == null || cards.some(function (c) { return favoriteItemId(c) === id; })) return;
-                    cards.push(item);
-                });
-                out[k] = cards;
-                return;
-            }
-            var ids = [];
-            v.forEach(function (item) {
-                var id = favoriteItemId(item);
-                if (id != null && ids.indexOf(id) === -1) ids.push(id);
-            });
-            out[k] = ids;
+            out[k] = listToIds(v);
         });
         return out;
     }
@@ -411,52 +435,17 @@
         opts = opts || { bookmarks: true, history: true };
         if (!remote || typeof remote !== 'object') return local;
         var fav = local && typeof local === 'object' ? local : {};
+        var cardMap = favoriteCardMap(fav);
+        absorbLegacyCardsFromLists(remote, cardMap);
         Object.keys(remote).forEach(function (k) {
-            if (k === 'success' || k === 'dbInNotInitialization') return;
+            if (k === 'success' || k === 'dbInNotInitialization' || k === 'card') return;
             if (k === FAVORITE_HISTORY_KEY && !opts.history) return;
             if (FAVORITE_BOOKMARK_KEYS.indexOf(k) !== -1 && !opts.bookmarks) return;
             var remoteList = remote[k];
             if (!Array.isArray(remoteList)) return;
-            if (k === 'card') {
-                var cardMap = {};
-                (Array.isArray(fav[k]) ? fav[k] : []).forEach(function (item) {
-                    var id = favoriteItemId(item);
-                    if (id != null) cardMap[id] = item;
-                });
-                remoteList.forEach(function (item) {
-                    var id = favoriteItemId(item);
-                    if (id == null) return;
-                    var localCard = cardMap[id];
-                    if (isFavoriteCardObject(item)) cardMap[id] = item;
-                    else if (!localCard) cardMap[id] = item;
-                });
-                fav[k] = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
-                return;
-            }
-            if (k === FAVORITE_HISTORY_KEY) {
-                var histCardMap = favoriteCardMap(fav);
-                var histIds = [];
-                remoteList.forEach(function (item) {
-                    var id = favoriteItemId(item);
-                    if (id == null) return;
-                    if (histIds.indexOf(id) === -1) histIds.push(id);
-                    if (isFavoriteCardObject(item)) histCardMap[id] = item;
-                });
-                fav[k] = histIds;
-                fav.card = Object.keys(histCardMap).map(function (id) { return histCardMap[id]; });
-                return;
-            }
-            var localMap = {};
-            (Array.isArray(fav[k]) ? fav[k] : []).forEach(function (item) {
-                var id = favoriteItemId(item);
-                if (id != null) localMap[id] = item;
-            });
-            fav[k] = remoteList.map(function (item) {
-                var id = favoriteItemId(item);
-                if (id == null) return item;
-                return localMap[id] || item;
-            });
+            fav[k] = listToIds(remoteList);
         });
+        fav.card = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
         return normalizeFavoriteForLocal(fav);
     }
 
@@ -464,26 +453,14 @@
         var fav = local && typeof local === 'object' ? JSON.parse(JSON.stringify(local)) : {};
         remote = remote && typeof remote === 'object' ? remote : {};
         if (!opts.history && Array.isArray(remote[FAVORITE_HISTORY_KEY])) {
-            fav[FAVORITE_HISTORY_KEY] = remote[FAVORITE_HISTORY_KEY];
+            fav[FAVORITE_HISTORY_KEY] = listToIds(remote[FAVORITE_HISTORY_KEY]);
         }
         if (!opts.bookmarks) {
             FAVORITE_BOOKMARK_KEYS.forEach(function (k) {
-                if (Array.isArray(remote[k])) fav[k] = remote[k];
+                if (Array.isArray(remote[k])) fav[k] = listToIds(remote[k]);
             });
         }
-        var cardMap = favoriteCardMap(fav);
-        absorbHistoryCards(fav, cardMap);
-        absorbHistoryCards(remote, cardMap);
-        [fav, remote].forEach(function (src) {
-            (Array.isArray(src.card) ? src.card : []).forEach(function (item) {
-                var id = favoriteItemId(item);
-                if (id == null) return;
-                if (isFavoriteCardObject(item)) cardMap[id] = item;
-                else if (!cardMap[id]) cardMap[id] = item;
-            });
-        });
-        fav.card = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
-        return normalizeFavoriteForLocal(fav);
+        return fav;
     }
 
     var Bookmarks = {
@@ -581,15 +558,15 @@
             var self = this;
             opts = opts || favoriteSyncOpts();
             var fav = normalizeFavoriteForLocal(mergeFavoriteFromServer(this.readLocal(), data, opts));
-            var missing = missingFavoriteCardIds(fav).length;
+            var missing = missingFavoriteCardIds(fav, opts).length;
             dbg('apply favorite', 'history ids=', (fav.history || []).length, 'cards=', (fav.card || []).length, 'missing=', missing);
-            if (!missing) {
-                self.writeFavoriteLocal(fav);
-                return;
-            }
-            hydrateMissingFavoriteCards(fav, function (hydrated) {
-                dbg('hydrate done', 'cards=', (hydrated.card || []).length);
+            self.writeFavoriteLocal(fav);
+            if (!missing) return;
+            hydrateMissingFavoriteCards(fav, opts, function (hydrated) {
                 self.writeFavoriteLocal(hydrated);
+            }, function (partial) {
+                dbg('hydrate progress', 'cards=', (partial.card || []).length);
+                self.writeFavoriteLocal(partial);
             });
         },
 
