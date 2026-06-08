@@ -1147,7 +1147,7 @@
     function start() {
         loadLang();
         buildSettings();
-
+        console.log(' SyncPro: started v0.0.0.1');
         Bookmarks.bind();
         Timecodes.bind();
         Torrents.bind();
