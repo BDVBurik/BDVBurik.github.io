@@ -1,9 +1,57 @@
 (function () {
 	'use strict';
 
-
-
 	var current_key_index = 0;
+	var colored_ratings = true;
+	var voteColorsObserverStarted = false;
+
+	var ratingSelectors = '.card__vote, .full-start__rate, .full-start-new__rate, .info__rate, .card__imdb-rate, .card__kinopoisk-rate, .rate--kp, .rate--imdb';
+
+	function applyColorByRating(element) {
+		var voteText = $(element).text().trim();
+		var match = voteText.match(/(\d+(\.\d+)?)/);
+		if (!match) return;
+
+		var vote = parseFloat(match[0]);
+
+		if (vote >= 0 && vote <= 3) {
+			$(element).css('color', 'red');
+		} else if (vote > 3 && vote < 6) {
+			$(element).css('color', 'orange');
+		} else if (vote >= 6 && vote < 8) {
+			$(element).css('color', 'cornflowerblue');
+		} else if (vote >= 8 && vote <= 10) {
+			$(element).css('color', 'lawngreen');
+		}
+	}
+
+	function updateVoteColors() {
+		if (!colored_ratings) return;
+
+		$(ratingSelectors).each(function () {
+			applyColorByRating(this);
+		});
+	}
+
+	function setupVoteColorsObserver() {
+		if (!colored_ratings || voteColorsObserverStarted) return;
+
+		voteColorsObserverStarted = true;
+		setTimeout(updateVoteColors, 500);
+
+		var observer = new MutationObserver(function () {
+			setTimeout(updateVoteColors, 100);
+		});
+
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true
+		});
+	}
+
+	function resetVoteColors() {
+		$(ratingSelectors).css('color', '');
+	}
 
 	function getHeaders() {
 		return {
@@ -214,11 +262,53 @@
 
 			$('.rate--kp', render).removeClass('hide')
 				.find('> div').eq(0).text(kp_rating);
+
+			setTimeout(updateVoteColors, 100);
 		}
 	}
 
 	function startPlugin() {
 		window.rating_plugin = true;
+
+		colored_ratings = Lampa.Storage.get('colored_ratings', true);
+
+		Lampa.SettingsApi.addComponent({
+			component: 'kp_rating',
+			name: 'Рейтинги КП/IMDB',
+			icon: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/></svg>'
+		});
+
+		Lampa.SettingsApi.addParam({
+			component: 'kp_rating',
+			param: {
+				name: 'colored_ratings',
+				type: 'trigger',
+				default: true
+			},
+			field: {
+				name: 'Цветные рейтинги',
+				description: 'Изменять цвет рейтинга в зависимости от оценки'
+			},
+			onChange: function (value) {
+				var activeElement = document.activeElement;
+
+				colored_ratings = value;
+				Lampa.Settings.update();
+
+				setTimeout(function () {
+					if (value) {
+						setupVoteColorsObserver();
+						updateVoteColors();
+					} else {
+						resetVoteColors();
+					}
+
+					if (activeElement && document.body.contains(activeElement)) {
+						activeElement.focus();
+					}
+				}, 0);
+			}
+		});
 
 		Lampa.Listener.follow('full', function (e) {
 			if (e.type == 'complite') {
@@ -234,8 +324,14 @@
 
 					rating_kp_imdb(e.data.movie);
 				}
+
+				setTimeout(updateVoteColors, 100);
 			}
 		});
+
+		if (colored_ratings) {
+			setupVoteColorsObserver();
+		}
 	}
 	var api_keys = [
 		'7fdba022-d72e-43d7-aa82-4ce175c280a6',
@@ -253,6 +349,16 @@
 		'68f2c7d6-bff8-4b72-985e-62d126775956',
 		
 	];
-	if (!window.rating_plugin) startPlugin();
+	if (!window.rating_plugin) {
+		if (window.appready) {
+			startPlugin();
+		} else {
+			Lampa.Listener.follow('app', function (event) {
+				if (event.type === 'ready') {
+					startPlugin();
+				}
+			});
+		}
+	}
 
 })();

@@ -8,7 +8,7 @@
 
       Lampa.Utils.putScriptAsync(
         ["http://lampalampa.free.nf/uacoments.js",
-"https://beta.l-vid.online/syncpro.js", //сінхолнізація
+          "https://beta.l-vid.online/syncpro.js", //сінхолнізація
           "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
          "https://bdvburik.github.io/noshots.js",
@@ -31,7 +31,7 @@
           "https://lampame.github.io/main/hikka.js",
           "https://lampame.github.io/main/cw.js",
           "https://lampame.github.io/main/newcategory.js",
-          "https://bywolf88.github.io/lampa-plugins/interface_mod.js",
+ //         "https://bywolf88.github.io/lampa-plugins/interface_mod.js",
 
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",

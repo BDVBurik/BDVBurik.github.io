@@ -30,7 +30,7 @@
         .find('[data-component="pirate_store"]')
         .on("hover:enter", function () {
           Lampa.Extensions.show({
-            store: "https://lampaua.mooo.com/extensions",
+            store: "http://lampaua.mooo.com/extensions",
             with_installed: true,
           });
         });
