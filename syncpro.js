@@ -231,12 +231,29 @@
         return null;
     }
 
+    function isFavoriteCardObject(item) {
+        return item && typeof item === 'object' && item.id != null &&
+            (item.title || item.name || item.poster_path || item.img);
+    }
+
     function compactFavoriteForServer(fav) {
         if (!fav || typeof fav !== 'object') return {};
         var out = {};
         Object.keys(fav).forEach(function (k) {
             var v = fav[k];
             if (!Array.isArray(v)) return;
+            // Lampa resolves history/bookmarks via favorite.card — bare ids are invisible.
+            if (k === 'card') {
+                var cards = [];
+                v.forEach(function (item) {
+                    if (!isFavoriteCardObject(item)) return;
+                    var id = favoriteItemId(item);
+                    if (id == null || cards.some(function (c) { return favoriteItemId(c) === id; })) return;
+                    cards.push(item);
+                });
+                out[k] = cards;
+                return;
+            }
             var ids = [];
             v.forEach(function (item) {
                 var id = favoriteItemId(item);
@@ -254,6 +271,22 @@
             if (k === 'success' || k === 'dbInNotInitialization') return;
             var remoteList = remote[k];
             if (!Array.isArray(remoteList)) return;
+            if (k === 'card') {
+                var cardMap = {};
+                (Array.isArray(fav[k]) ? fav[k] : []).forEach(function (item) {
+                    var id = favoriteItemId(item);
+                    if (id != null) cardMap[id] = item;
+                });
+                remoteList.forEach(function (item) {
+                    var id = favoriteItemId(item);
+                    if (id == null) return;
+                    var localCard = cardMap[id];
+                    if (isFavoriteCardObject(item)) cardMap[id] = item;
+                    else if (!localCard) cardMap[id] = item;
+                });
+                fav[k] = Object.keys(cardMap).map(function (id) { return cardMap[id]; });
+                return;
+            }
             var localMap = {};
             (Array.isArray(fav[k]) ? fav[k] : []).forEach(function (item) {
                 var id = favoriteItemId(item);
@@ -262,14 +295,14 @@
             fav[k] = remoteList.map(function (item) {
                 var id = favoriteItemId(item);
                 if (id == null) return item;
-                return localMap[id] || id;
+                return localMap[id] || item;
             });
         });
         return fav;
     }
 
     var Bookmarks = {
-        enabled: function () { return pref('bookmarks'); },
+        enabled: function () { return pref('bookmarks') || pref('history'); },
         bound: false,
         pushDebounce: 0,
         applying: false,
@@ -352,6 +385,11 @@
             } catch (e) {
                 try { localStorage.setItem('favorite', JSON.stringify(fav)); } catch (e2) { /* quota */ }
             }
+            try {
+                if (Lampa.Favorite && typeof Lampa.Favorite.read === 'function') {
+                    Lampa.Favorite.read(true);
+                }
+            } catch (e) { /* ignore */ }
             this.applying = false;
             try {
                 Lampa.Listener.send('state:changed', { target: 'favorite', reason: 'syncpro' });
