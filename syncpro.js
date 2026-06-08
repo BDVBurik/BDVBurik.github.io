@@ -61,13 +61,6 @@ function loadLang() {
         syncpro_status_checking:     { ru: 'Проверка…', en: 'Checking…', uk: 'Перевірка…' },
         syncpro_err_access_denied:   { ru: 'Неверный ключ доступа к серверу', en: 'Invalid server access key', uk: 'Невірний ключ доступу' },
         syncpro_err_access_missing:  { ru: 'Укажите ключ доступа в настройках SyncPro', en: 'Set the server access key in SyncPro settings', uk: 'Вкажіть ключ доступу в налаштуваннях SyncPro' },
-
-        syncpro_debug:               { ru: 'Журнал в консоль', en: 'Log to console', uk: 'Журнал у консоль' },
-        syncpro_debug_hint:            { ru: 'Пишет запросы в DevTools / logcat', en: 'Writes requests to DevTools / logcat', uk: 'Пише запити в консоль' },
-        syncpro_open_log:              { ru: 'Журнал запросов', en: 'Request log', uk: 'Журнал запитів' },
-        syncpro_log_empty:             { ru: 'Пока пусто — сделайте «Подтянуть данные»', en: 'Empty — try Pull all data now', uk: 'Порожньо' },
-        syncpro_log_clear:             { ru: 'Очистить журнал', en: 'Clear log', uk: 'Очистити журнал' },
-        syncpro_log_check:             { ru: 'Проверить ключ', en: 'Test access key', uk: 'Перевірити ключ' },
     });
 }
 
@@ -130,66 +123,20 @@ function getServerAccessToken() {
     return '';
 }
 
-// ----------------------------------------------------------------------
-//  Debug log — ring buffer + optional console output
-// ----------------------------------------------------------------------
+// Временный дебаг — потом поставить false или удалить
+var DEBUG = true;
 
-var LOG_MAX = 50;
-var logLines = [];
-var lastSyncError = '';
-
-function debugEnabled() {
-    return pref('debug', true);
+function dbg() {
+    if (!DEBUG) return;
+    var args = ['[SyncPro]'];
+    for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+    try { console.log.apply(console, args); } catch (e) { /* ignore */ }
 }
 
-function maskToken(t) {
-    if (!t) return 'нет';
-    t = String(t);
-    if (t.length <= 4) return t.length + ' симв.';
-    return t.length + ' симв. (' + t.slice(0, 2) + '…' + t.slice(-2) + ')';
-}
-
-function summarizeResponse(parsed, rawText, status) {
-    if (status === 0) return 'нет сети / CORS';
-    if (parsed && parsed.error) return status + ' → ' + parsed.error;
-    if (parsed && parsed.success === false) return status + ' → ' + (parsed.msg || parsed.error || 'fail');
-    if (parsed && parsed.authenticated) return status + ' → ok';
-    if (parsed && parsed.success === true) return status + ' → ok';
-    if (parsed) {
-        var s = JSON.stringify(parsed);
-        if (s.length > 100) return status + ' → ' + s.slice(0, 100) + '…';
-        return status + ' → ' + s;
-    }
-    if (rawText) {
-        var t = String(rawText);
-        if (t.length > 80) return status + ' → ' + t.slice(0, 80) + '…';
-        return status + ' → ' + t;
-    }
-    return String(status);
-}
-
-function syncLog(msg) {
-    var ts = new Date();
-    var stamp = ('0' + ts.getHours()).slice(-2) + ':' +
-        ('0' + ts.getMinutes()).slice(-2) + ':' +
-        ('0' + ts.getSeconds()).slice(-2);
-    var line = stamp + ' ' + msg;
-    logLines.push(line);
-    if (logLines.length > LOG_MAX) logLines.shift();
-    if (debugEnabled()) {
-        try { console.log('[SyncPro]', msg); } catch (e) { /* ignore */ }
-    }
-    repaintSyncStatus();
-}
-
-function logHttpDone(method, path, xhr, started, parsed) {
-    var ms = Date.now() - (started || Date.now());
-    var summary = summarizeResponse(parsed, xhr.responseText, xhr.status);
-    var arrow = (xhr.status >= 200 && xhr.status < 300) ? '←' : '✗';
-    syncLog(arrow + ' ' + method + ' ' + path + ' ' + summary + ' (' + ms + 'ms)');
-    if (xhr.status < 200 || xhr.status >= 300 || (parsed && parsed.error)) {
-        lastSyncError = summary;
-    }
+function dbgResponse(method, path, xhr) {
+    var body = xhr.responseText;
+    try { body = body ? JSON.parse(body) : null; } catch (e) { /* raw text */ }
+    dbg('←', method, path, xhr.status, body);
 }
 
 function applySyncAuthHeaders(xhr) {
@@ -200,14 +147,11 @@ function applySyncAuthHeaders(xhr) {
 function httpJSON(method, path, body, cb, errCb) {
     try {
         if (!getServerAccessToken()) {
-            syncLog('✗ ' + method + ' ' + path + ' — ключ не задан');
-            lastSyncError = 'ключ не задан';
+            dbg('✗', method, path, 'no token');
             if (errCb) errCb({ error: 'access_missing' }, 0);
             return;
         }
-        var started = Date.now();
-        syncLog('→ ' + method + ' ' + path + ' ключ=' + maskToken(getServerAccessToken()) +
-            (body ? ' body=' + JSON.stringify(body).slice(0, 120) : ''));
+        dbg('→', method, url(path), body || null);
         var xhr = new XMLHttpRequest();
         xhr.open(method, url(path), true);
         xhr.withCredentials = true;
@@ -217,20 +161,16 @@ function httpJSON(method, path, body, cb, errCb) {
             if (xhr.readyState !== 4) return;
             var parsed = null;
             try { parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch (e) { /* ignore */ }
-            logHttpDone(method, path, xhr, started, parsed);
+            dbgResponse(method, path, xhr);
             if (xhr.status >= 200 && xhr.status < 300) {
                 if (cb) cb(parsed, xhr.status);
             } else {
                 if (errCb) errCb(parsed, xhr.status);
             }
         };
-        xhr.onerror = function () {
-            logHttpDone(method, path, { status: 0, responseText: '' }, started, null);
-            if (errCb) errCb(null, 0);
-        };
         xhr.send(body ? JSON.stringify(body) : null);
     } catch (e) {
-        syncLog('✗ ' + method + ' ' + path + ' exception: ' + (e && e.message || e));
+        dbg('✗', method, path, e);
         if (errCb) errCb(null, 0);
     }
 }
@@ -244,13 +184,9 @@ var syncStatusItem = null;
 
 function syncStatusLine() {
     if (!getServerAccessToken()) return Lampa.Lang.translate('syncpro_status_no_key');
-    var base;
-    if (syncState === 'ok') base = Lampa.Lang.translate('syncpro_status_ok');
-    else if (syncState === 'fail') base = Lampa.Lang.translate('syncpro_status_fail');
-    else base = Lampa.Lang.translate('syncpro_status_checking');
-    if (syncState === 'fail' && lastSyncError) base += ' • ' + lastSyncError;
-    else if (syncState === 'ok') base += ' • ключ ' + maskToken(getServerAccessToken());
-    return base;
+    if (syncState === 'ok') return Lampa.Lang.translate('syncpro_status_ok');
+    if (syncState === 'fail') return Lampa.Lang.translate('syncpro_status_fail');
+    return Lampa.Lang.translate('syncpro_status_checking');
 }
 
 function repaintSyncStatus() {
@@ -263,24 +199,18 @@ function repaintSyncStatus() {
 function refreshSyncStatus(cb) {
     if (!getServerAccessToken()) {
         syncState = 'missing';
-        lastSyncError = '';
-        syncLog('ключ не задан в настройках');
         repaintSyncStatus();
         if (cb) cb(syncState);
         return;
     }
     syncState = 'checking';
-    lastSyncError = '';
     repaintSyncStatus();
-    syncLog('проверка ключа…');
     httpJSON('GET', '/api/profile/me', null, function (j) {
         syncState = (j && j.authenticated) ? 'ok' : 'fail';
-        if (syncState === 'fail') lastSyncError = 'нет authenticated в ответе';
         repaintSyncStatus();
         if (cb) cb(syncState);
-    }, function (parsed, status) {
+    }, function () {
         syncState = 'fail';
-        lastSyncError = summarizeResponse(parsed, null, status);
         repaintSyncStatus();
         if (cb) cb(syncState);
     });
@@ -426,14 +356,9 @@ var Timecodes = {
         var id = e && e.data && e.data.hash;
         var payload = e && e.data && e.data.road;
         if (!id || !payload) return;
-        if (!getServerAccessToken()) {
-            syncLog('✗ POST /timecode/add — ключ не задан');
-            return;
-        }
         var u = '/timecode/add?card_id=' + encodeURIComponent(this.cardID());
         var form = 'id=' + encodeURIComponent(id) + '&data=' + encodeURIComponent(JSON.stringify(payload));
-        var started = Date.now();
-        syncLog('→ POST ' + u + ' ключ=' + maskToken(getServerAccessToken()));
+        dbg('→', 'POST', url(u), form);
         var xhr = new XMLHttpRequest();
         xhr.open('POST', url(u), true);
         xhr.withCredentials = true;
@@ -441,9 +366,7 @@ var Timecodes = {
         applySyncAuthHeaders(xhr);
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
-            var parsed = null;
-            try { parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch (ex) { /* ignore */ }
-            logHttpDone('POST', u, xhr, started, parsed);
+            dbgResponse('POST', u, xhr);
         };
         xhr.send(form);
     },
@@ -506,21 +429,14 @@ function makeBlobSync(domainPref, storagePath, lsKeys) {
                 } catch (e) { /* ignore */ }
             });
             var body = JSON.stringify(bundle);
-            if (!getServerAccessToken()) {
-                syncLog('✗ POST /storage/set?path=' + storagePath + ' — ключ не задан');
-                return;
-            }
-            var started = Date.now();
-            syncLog('→ POST /storage/set?path=' + storagePath + ' (' + body.length + 'b) ключ=' + maskToken(getServerAccessToken()));
+            dbg('→', 'POST', url('/storage/set?path=' + storagePath), body.length + ' bytes');
             var xhr = new XMLHttpRequest();
             xhr.open('POST', url('/storage/set?path=' + storagePath), true);
             xhr.withCredentials = true;
             applySyncAuthHeaders(xhr);
             xhr.onreadystatechange = function () {
                 if (xhr.readyState !== 4) return;
-                var parsed = null;
-                try { parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch (ex) { /* ignore */ }
-                logHttpDone('POST', '/storage/set?path=' + storagePath, xhr, started, parsed);
+                dbgResponse('POST', '/storage/set?path=' + storagePath, xhr);
             };
             xhr.send(body);
         },
@@ -596,13 +512,7 @@ var FullBackup = {
             }
         } catch (e) { /* ignore */ }
         var body = JSON.stringify(dump);
-        if (!getServerAccessToken()) {
-            syncLog('✗ POST /storage/set?path=backup — ключ не задан');
-            if (onFail) onFail('access_missing');
-            return;
-        }
-        var started = Date.now();
-        syncLog('→ POST /storage/set?path=backup (' + body.length + 'b) ключ=' + maskToken(getServerAccessToken()));
+        dbg('→', 'POST', url('/storage/set?path=backup'), body.length + ' bytes');
         var xhr = new XMLHttpRequest();
         xhr.open('POST', url('/storage/set?path=backup'), true);
         xhr.withCredentials = true;
@@ -612,19 +522,18 @@ var FullBackup = {
         // intercept JSON bodies for inspection and choke on long dumps).
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
+            dbgResponse('POST', '/storage/set?path=backup', xhr);
             // Storage handler returns 200 even on logical errors (with
             // {"success":false, "msg":"<slug>"}). Distinguish the cases so
             // the toast can show *what* went wrong instead of the
             // un-actionable "Error (200)".
             var slug = '';
             var ok = false;
-            var parsed = null;
             try {
-                parsed = JSON.parse(xhr.responseText || '{}');
-                ok = !!parsed.success;
-                if (!ok) slug = parsed.msg || parsed.error || '';
+                var j = JSON.parse(xhr.responseText || '{}');
+                ok = !!j.success;
+                if (!ok) slug = j.msg || j.error || '';
             } catch (e) { /* response not JSON */ }
-            logHttpDone('POST', '/storage/set?path=backup', xhr, started, parsed);
             if (ok) { if (onDone) onDone(); return; }
             // 413 Payload Too Large doesn't reach our handler — it's
             // emitted by the reverse proxy (nginx default
@@ -708,7 +617,6 @@ function bindWS() {
 // ----------------------------------------------------------------------
 
 function pullAll() {
-    syncLog('pullAll — закладки=' + Bookmarks.enabled() + ' таймкоды=' + Timecodes.enabled());
     if (Bookmarks.enabled()) Bookmarks.pull();
     if (Timecodes.enabled()) Timecodes.pullForCurrent();
     if (ViewHistory.enabled()) ViewHistory.pull();
@@ -791,47 +699,8 @@ function openDomainsSheet() {
     openSheet(Lampa.Lang.translate('syncpro_open_domains'), items);
 }
 
-function openLogSheet() {
-    var items = logLines.slice().reverse().map(function (line) {
-        return { title: line.length > 90 ? line.slice(0, 90) + '…' : line, subtitle: line.length > 90 ? line : '' };
-    });
-    if (!items.length) {
-        items.push({ title: Lampa.Lang.translate('syncpro_log_empty') });
-    }
-    items.push({
-        title: Lampa.Lang.translate('syncpro_log_check'),
-        action: function () {
-            refreshSyncStatus(function () { openLogSheet(); });
-        },
-    });
-    items.push({
-        title: Lampa.Lang.translate('syncpro_log_clear'),
-        action: function () {
-            logLines = [];
-            lastSyncError = '';
-            syncLog('журнал очищен');
-            openLogSheet();
-        },
-    });
-    openSheet(Lampa.Lang.translate('syncpro_open_log'), items);
-}
-
 function openActionsSheet() {
     var items = [
-        {
-            title: Lampa.Lang.translate('syncpro_open_log'),
-            subtitle: logLines.length ? String(logLines.length) + ' записей' : '',
-            action: openLogSheet,
-        },
-        {
-            title: Lampa.Lang.translate('syncpro_log_check'),
-            action: function () {
-                refreshSyncStatus(function (st) {
-                    Lampa.Noty.show(syncStatusLine());
-                    openActionsSheet();
-                });
-            },
-        },
         {
             title: Lampa.Lang.translate('syncpro_action_force_pull'),
             action: function () {
@@ -923,26 +792,9 @@ function buildSettings() {
         onChange: function (value) {
             Lampa.Storage.set('syncpro_access_token', value || '');
             Lampa.Settings.update();
-            syncLog('ключ изменён: ' + maskToken(value));
             refreshSyncStatus(function () {
                 if (getServerAccessToken()) pullAll();
             });
-        },
-    });
-
-    Lampa.SettingsApi.addParam({
-        component: 'syncpro',
-        param: {
-            name: 'syncpro_debug',
-            type: 'checkbox',
-            default: true,
-        },
-        field: {
-            name: Lampa.Lang.translate('syncpro_debug'),
-            description: Lampa.Lang.translate('syncpro_debug_hint'),
-        },
-        onChange: function () {
-            syncLog('консольный лог: ' + (debugEnabled() ? 'вкл' : 'выкл'));
         },
     });
 
@@ -1003,7 +855,6 @@ function whenReady(callback) {
 function start() {
     loadLang();
     buildSettings();
-    syncLog('SyncPro старт, host=' + HOST);
     refreshSyncStatus();
 
     Bookmarks.bind();
