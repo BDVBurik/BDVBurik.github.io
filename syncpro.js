@@ -99,11 +99,7 @@ function pref(domain, def) {
 }
 
 function url(path) {
-    var u = HOST + path;
-    if (window.lwsEvent && window.lwsEvent.connectionId) {
-        u = Lampa.Utils.addUrlComponent(u, 'connectionId=' + encodeURIComponent(window.lwsEvent.connectionId));
-    }
-    return u;
+    return HOST + path;
 }
 
 // ----------------------------------------------------------------------
@@ -224,6 +220,17 @@ function refreshSyncStatus(cb) {
 var Bookmarks = {
     enabled: function () { return pref('bookmarks'); },
     bound: false,
+    pushDebounce: 0,
+    applying: false,
+
+    readLocal: function () {
+        var fav = {};
+        try {
+            fav = Lampa.Storage.get('favorite', '{}');
+            if (typeof fav === 'string') fav = JSON.parse(fav);
+        } catch (e) { fav = {}; }
+        return fav && typeof fav === 'object' ? fav : {};
+    },
 
     bind: function () {
         if (this.bound) return;
@@ -232,19 +239,19 @@ var Bookmarks = {
         var fav = Lampa.Favorite;
         if (!fav || !fav.listener) return;
         fav.listener.follow('add', function (e) {
-            if (!self.enabled()) return;
+            if (!self.enabled() || self.applying) return;
             if (e.card && e.card.received) return;
-            self.sendAdd(e);
+            self.schedulePush();
         });
         fav.listener.follow('added', function (e) {
-            if (!self.enabled()) return;
+            if (!self.enabled() || self.applying) return;
             if (e.card && e.card.received) return;
-            self.sendAdded(e);
+            self.schedulePush();
         });
         fav.listener.follow('remove', function (e) {
-            if (!self.enabled()) return;
+            if (!self.enabled() || self.applying) return;
             if (e.card && e.card.received) return;
-            self.sendRemove(e);
+            self.schedulePush();
         });
         Lampa.Listener.follow('lampac', function (e) {
             if (e.name === 'bookmark_pullFromServer' && self.enabled()) self.pull();
@@ -253,77 +260,56 @@ var Bookmarks = {
                 httpJSON('POST', '/bookmark/set', e.value);
             }
         });
-        // Periodic refresh on tab visibility (devices that sleep miss WS pushes).
-        var lastFocus = Date.now();
         document.addEventListener('visibilitychange', function () {
-            if (Date.now() - lastFocus > 10 * 60 * 1000 && self.enabled()) self.pull();
-            lastFocus = Date.now();
+            if (!document.hidden && self.enabled()) self.pull();
         });
     },
 
-    sanitize: function (card) {
-        if (!card) return null;
-        if (Lampa.Utils.clearCard) return Lampa.Utils.clearCard(Lampa.Arrays.clone(card));
-        return card;
+    schedulePush: function () {
+        var self = this;
+        if (self.pushDebounce) clearTimeout(self.pushDebounce);
+        self.pushDebounce = setTimeout(function () { self.pushFull(); }, 1500);
     },
 
-    sendAdd: function (e) {
-        var id = e && e.card && typeof e.card.id !== 'undefined' ? e.card.id : null;
-        if (id === null) return;
-        httpJSON('POST', '/bookmark/add', {
-            where: e.where || '',
-            method: e.method || 'card',
-            card_id: id,
-            id: id,
-            card: this.sanitize(e.card),
-        });
-    },
-    sendAdded: function (e) {
-        var id = e && e.card && typeof e.card.id !== 'undefined' ? e.card.id : null;
-        if (id === null) return;
-        httpJSON('POST', '/bookmark/added', {
-            where: e.where || '',
-            method: e.method || 'card',
-            card_id: id,
-            id: id,
-            card: this.sanitize(e.card),
-        });
-    },
-    sendRemove: function (e) {
-        var id = (e && e.card && typeof e.card.id !== 'undefined' ? e.card.id : (e && e.id));
-        if (typeof id === 'undefined' || id === null) return;
-        httpJSON('POST', '/bookmark/remove', {
-            where: e.where || '',
-            method: e.method || 'card',
-            card_id: id,
-            id: id,
-            card: this.sanitize(e.card),
-        });
+    pushFull: function () {
+        if (!this.enabled() || this.applying) return;
+        var fav = this.readLocal();
+        httpJSON('POST', '/bookmark/set', fav);
     },
 
     pull: function () {
         var self = this;
         httpJSON('GET', '/bookmark/list', null, function (json) {
-            if (!json || json.dbInNotInitialization) return;
-            self.applyServerSet(json);
+            if (!json || json.dbInNotInitialization) {
+                self.pushFull();
+                return;
+            }
+            var hasData = Object.keys(json).some(function (k) {
+                return k !== 'success' && k !== 'dbInNotInitialization' &&
+                    Array.isArray(json[k]) && json[k].length;
+            });
+            if (hasData) self.applyServerSet(json);
+            else self.pushFull();
         });
     },
 
     applyServerSet: function (data) {
-        // data is { card: [...], history: [...], like: [...], ... }.
-        // Translate into the localStorage 'favorite' shape used by Lampa.
         if (!data) return;
-        var fav = {};
-        try {
-            var raw = localStorage.getItem('favorite');
-            fav = raw ? (JSON.parse(raw) || {}) : {};
-        } catch (e) { fav = {}; }
-
+        var fav = this.readLocal();
         Object.keys(data).forEach(function (k) {
             if (k === 'success' || k === 'dbInNotInitialization') return;
             fav[k] = data[k];
         });
-        try { localStorage.setItem('favorite', JSON.stringify(fav)); } catch (e) { /* quota */ }
+        this.applying = true;
+        try {
+            Lampa.Storage.set('favorite', fav, true);
+        } catch (e) {
+            try { localStorage.setItem('favorite', JSON.stringify(fav)); } catch (e2) { /* quota */ }
+        }
+        this.applying = false;
+        try {
+            Lampa.Listener.send('state:changed', { target: 'favorite', reason: 'syncpro' });
+        } catch (e) { /* ignore */ }
     },
 };
 
@@ -570,51 +556,18 @@ var FullBackup = {
 };
 
 // ----------------------------------------------------------------------
-//  WS bridge — listen to lwsEvent for cross-device pushes
-// ----------------------------------------------------------------------
-
-function bindWS() {
-    document.addEventListener('lwsEvent', function (ev) {
-        if (!ev || !ev.detail) return;
-        var name = ev.detail.name;
-        var data = ev.detail.data;
-
-        if (name === 'bookmark' && Bookmarks.enabled()) {
-            try {
-                var ob = JSON.parse(data);
-                if (ob.type === 'set' && ob.data) {
-                    Bookmarks.applyServerSet(ob.data);
-                } else if ((ob.type === 'add' || ob.type === 'remove') && Lampa.Favorite) {
-                    var rows = Array.isArray(ob.data) ? ob.data : [ob.data];
-                    rows.forEach(function (item) {
-                        if (item && item.card) {
-                            item.card.received = true;
-                            Lampa.Favorite[ob.type](item.where, item.card);
-                        }
-                    });
-                }
-            } catch (e) { /* malformed payload — ignore */ }
-        } else if (name === 'timecode' && Timecodes.enabled()) {
-            // Push the new timecode into the local cache without forcing a
-            // full /timecode/all roundtrip — that would amplify NWS traffic.
-            try {
-                var t = JSON.parse(data);
-                if (!t || !t.card_id || !t.id) return;
-                var account = Lampa.Storage.get('account', '{}');
-                var fname = 'file_view' + (account.profile ? '_' + account.profile.id : '');
-                var viewed = Lampa.Storage.cache(fname, 10000, {});
-                try {
-                    viewed[t.id] = JSON.parse(t.data);
-                    Lampa.Storage.set(fname, viewed, true);
-                } catch (e) { /* invalid timecode payload */ }
-            } catch (e) { /* ignore */ }
-        }
-    });
-}
-
-// ----------------------------------------------------------------------
 //  Pull everything that's enabled — used on app load / manual "Pull now"
 // ----------------------------------------------------------------------
+
+var periodicPullTimer = null;
+
+function startPeriodicPull() {
+    if (periodicPullTimer) return;
+    periodicPullTimer = setInterval(function () {
+        if (!getServerAccessToken()) return;
+        pullAll();
+    }, 45000);
+}
 
 function pullAll() {
     if (Bookmarks.enabled()) Bookmarks.pull();
@@ -864,7 +817,7 @@ function start() {
     SearchHistory.bind();
     PluginsList.bind();
 
-    bindWS();
+    startPeriodicPull();
 
     Lampa.Listener.follow('app', function (e) {
         if (e.type === 'ready') {
@@ -873,16 +826,6 @@ function start() {
             });
         }
     });
-
-    // The WS hub lives in invc-ws.js (already loaded by /sync.js). When the
-    // server admin disables sync.js, ensure we still attempt to load it so
-    // syncpro's WS bridge has events to listen to. Safe to call twice —
-    // putScript de-dupes.
-    if (Lampa.Utils && Lampa.Utils.putScript) {
-        try {
-            Lampa.Utils.putScript([url('/invc-ws.js')], function () {}, function () {});
-        } catch (e) { /* not all Lampa builds expose putScript */ }
-    }
 }
 
 whenReady(start);
