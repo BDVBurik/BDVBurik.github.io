@@ -382,11 +382,12 @@ var Timecodes = {
 // Generic localStorage-blob sync — for view history, torrents, search history,
 // installed plugins. Each blob is one /storage/{set,get} path. We push on
 // localStorage change events (Lampa.Storage.listener) and pull on app load.
-function makeBlobSync(domainPref, storagePath, lsKeys) {
+function makeBlobSync(domainPref, storagePath, lsKeys, label) {
     return {
         enabled: function () { return pref(domainPref); },
         bound: false,
         debounce: 0,
+        logName: label || storagePath,
         bind: function () {
             if (this.bound) return;
             this.bound = true;
@@ -405,17 +406,28 @@ function makeBlobSync(domainPref, storagePath, lsKeys) {
             self.debounce = setTimeout(function () { self.flush(); }, 1500);
         },
         flush: function () {
-            // Bundle all lsKeys into one JSON object so we make one /storage
-            // request per domain, not one per key.
+            var self = this;
+            if (!self.enabled()) return;
             var bundle = {};
             lsKeys.forEach(function (k) {
                 try {
-                    var v = localStorage.getItem(k);
+                    var v = null;
+                    if (Lampa.Storage && Lampa.Storage.get) {
+                        var got = Lampa.Storage.get(k, null);
+                        if (got !== null && typeof got !== 'undefined') {
+                            v = typeof got === 'string' ? got : JSON.stringify(got);
+                        }
+                    }
+                    if (v === null) v = localStorage.getItem(k);
                     if (v !== null) bundle[k] = v;
                 } catch (e) { /* ignore */ }
             });
+            if (!Object.keys(bundle).length) {
+                dbg('push skip', self.logName, 'local empty');
+                return;
+            }
             var body = JSON.stringify(bundle);
-            dbg('→', 'POST', url('/storage/set?path=' + storagePath), body.length + ' bytes');
+            dbg('→', 'POST', '/storage/set?path=' + storagePath, self.logName, body.length + ' bytes');
             var xhr = new XMLHttpRequest();
             xhr.open('POST', url('/storage/set?path=' + storagePath), true);
             xhr.withCredentials = true;
@@ -428,22 +440,24 @@ function makeBlobSync(domainPref, storagePath, lsKeys) {
         },
         pull: function () {
             var self = this;
+            if (!self.enabled()) {
+                dbg('pull skip', self.logName, 'disabled');
+                return;
+            }
+            dbg('pull', self.logName, 'GET /storage/get?path=' + storagePath);
             httpJSON('GET', '/storage/get?path=' + storagePath, null, function (j) {
-                if (!j || !j.data) return;
+                if (!j || !j.data) {
+                    dbg('pull', self.logName, 'server empty → push local');
+                    self.flush();
+                    return;
+                }
                 try {
                     var bundle = JSON.parse(j.data);
+                    var applied = 0;
                     Object.keys(bundle).forEach(function (k) {
                         if (lsKeys.indexOf(k) === -1) return;
                         var raw = bundle[k];
                         if (typeof raw !== 'string') return;
-                        // We persist values as the raw JSON-stringified
-                        // strings that Lampa.Storage wrote into
-                        // localStorage. To make Lampa SEE the pulled
-                        // data, we must go through Storage.set so the
-                        // in-memory `readed[]` cache is updated as well.
-                        // localStorage.setItem alone leaves the cache
-                        // stale and Storage.get keeps returning the old
-                        // value (this was the "history doesn't sync" bug).
                         var parsed = raw;
                         try {
                             var c = raw.charAt(0);
@@ -451,17 +465,20 @@ function makeBlobSync(domainPref, storagePath, lsKeys) {
                             else if (raw === 'true' || raw === 'false') parsed = (raw === 'true');
                         } catch (e) { /* not JSON — write as string */ }
                         try {
-                            // nolisten=true — otherwise this triggers
-                            // our own change-listener and starts a
-                            // push-pull bounce loop.
                             if (Lampa && Lampa.Storage && typeof Lampa.Storage.set === 'function') {
                                 Lampa.Storage.set(k, parsed, true);
                             } else {
                                 localStorage.setItem(k, raw);
                             }
+                            applied++;
                         } catch (e) { /* quota or strange Lampa shape */ }
                     });
-                } catch (e) { /* corrupt blob — ignore */ }
+                    dbg('pull', self.logName, 'ok, keys=' + applied);
+                } catch (e) {
+                    dbg('pull', self.logName, 'parse error', e);
+                }
+            }, function (parsed, status) {
+                dbg('pull', self.logName, 'fail', status, parsed);
             });
         },
     };
@@ -470,19 +487,16 @@ function makeBlobSync(domainPref, storagePath, lsKeys) {
 var ViewHistory = makeBlobSync('history', 'sync_view', [
     'online_view', 'online_last_balanser', 'online_watched_last',
     'recomends_list', 'recomends_list_history',
-]);
+], 'history');
 var Torrents = makeBlobSync('torrents', 'sync_torrents', [
     'torrents_view', 'torrents_filter_data',
-]);
+], 'torrents');
 var SearchHistory = makeBlobSync('search', 'search_history', [
-    // Lampa's main app stores recent searches under these keys depending on
-    // version. We sync both — whichever the current app uses, the other
-    // is harmless dead data.
     'search_recent', 'search_history',
-]);
+], 'search');
 var PluginsList = makeBlobSync('plugins', 'sync_plugins', [
     'plugins',
-]);
+], 'plugins');
 
 // Full backup: dump/restore the entire localStorage. Manual, not on a timer.
 var FullBackup = {
@@ -570,12 +584,22 @@ function startPeriodicPull() {
 }
 
 function pullAll() {
+    dbg('pullAll');
     if (Bookmarks.enabled()) Bookmarks.pull();
     if (Timecodes.enabled()) Timecodes.pullForCurrent();
     if (ViewHistory.enabled()) ViewHistory.pull();
+    else dbg('pull skip', 'history', 'disabled');
     if (Torrents.enabled()) Torrents.pull();
     if (SearchHistory.enabled()) SearchHistory.pull();
     if (PluginsList.enabled()) PluginsList.pull();
+}
+
+function runInitialSync() {
+    if (!getServerAccessToken()) {
+        dbg('pullAll skip', 'no token');
+        return;
+    }
+    pullAll();
 }
 
 // ----------------------------------------------------------------------
@@ -808,7 +832,6 @@ function whenReady(callback) {
 function start() {
     loadLang();
     buildSettings();
-    refreshSyncStatus();
 
     Bookmarks.bind();
     Timecodes.bind();
@@ -819,12 +842,12 @@ function start() {
 
     startPeriodicPull();
 
+    refreshSyncStatus(function () {
+        runInitialSync();
+    });
+
     Lampa.Listener.follow('app', function (e) {
-        if (e.type === 'ready') {
-            refreshSyncStatus(function () {
-                if (getServerAccessToken()) pullAll();
-            });
-        }
+        if (e.type === 'ready') runInitialSync();
     });
 }
 
