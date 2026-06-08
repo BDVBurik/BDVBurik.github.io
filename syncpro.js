@@ -331,6 +331,23 @@ var Bookmarks = {
         return mergeFavoriteSources(fromLs, fromSt);
     },
 
+    readHistoryFromFavorite: function () {
+        try {
+            if (Lampa.Favorite && typeof Lampa.Favorite.get === 'function') {
+                var list = Lampa.Favorite.get({ type: 'history' });
+                if (Array.isArray(list)) return list;
+            }
+        } catch (e) { /* ignore */ }
+        return [];
+    },
+
+    buildPayloadForServer: function () {
+        var fav = this.readLocal();
+        var history = this.readHistoryFromFavorite();
+        if (history.length) fav.history = history;
+        return compactFavoriteForServer(fav);
+    },
+
     bind: function () {
         if (this.bound) return;
         this.bound = true;
@@ -356,7 +373,7 @@ var Bookmarks = {
             if (e.name === 'bookmark_pullFromServer' && self.enabled()) self.pull();
             else if (e.name === 'bookmark_set' && self.enabled()) {
                 self.applyServerSet(e.value);
-                httpJSON('POST', '/bookmark/set', compactFavoriteForServer(e.value));
+                httpJSON('POST', '/bookmark/set', self.buildPayloadForServer());
             }
         });
         document.addEventListener('visibilitychange', function () {
@@ -372,9 +389,9 @@ var Bookmarks = {
 
     pushFull: function () {
         if (!this.enabled() || this.applying) return;
-        var fav = this.readLocal();
-        var compact = compactFavoriteForServer(fav);
-        dbg('push bookmarks local:', favoriteListCounts(fav));
+        var historyN = this.readHistoryFromFavorite().length;
+        dbg('Favorite.get history:', historyN);
+        var compact = this.buildPayloadForServer();
         dbg('push bookmarks server:', favoriteListCounts(compact));
         httpJSON('POST', '/bookmark/set', compact);
     },
