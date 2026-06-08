@@ -10,7 +10,7 @@
 if (window.lampac_syncpro_plugin) return;
 window.lampac_syncpro_plugin = true;
 
-var HOST = 'https://syncpro-dev.bdvburik.workers.dev';
+var HOST = 'https://syncpro-dev.bdvburik1workers.dev';
 
 // ----------------------------------------------------------------------
 //  i18n
