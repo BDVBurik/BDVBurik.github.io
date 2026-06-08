@@ -252,6 +252,16 @@
         return ids;
     }
 
+    function filterFavoriteCards(fav) {
+        if (!fav || !Array.isArray(fav.card)) return fav;
+        var need = favoriteIdsInLists(fav);
+        fav.card = fav.card.filter(function (item) {
+            var id = favoriteItemId(item);
+            return id != null && need[id];
+        });
+        return fav;
+    }
+
     function favoriteCardMap(fav) {
         var map = {};
         (Array.isArray(fav && fav.card) ? fav.card : []).forEach(function (item) {
