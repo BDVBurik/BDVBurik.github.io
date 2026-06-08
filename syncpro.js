@@ -217,6 +217,55 @@ function refreshSyncStatus(cb) {
 // ----------------------------------------------------------------------
 
 // Bookmarks (replaces bookmark.js)
+//
+// На сервер уходят только id списков favorite — без дублирования карточек TMDB.
+// При pull локальные полные карточки сохраняются, если уже есть.
+
+function favoriteItemId(item) {
+    if (item == null || item === '') return null;
+    if (typeof item === 'number' && !isNaN(item)) return item;
+    if (typeof item === 'string' && /^\d+$/.test(item)) return parseInt(item, 10);
+    if (typeof item === 'object' && item.id != null) return item.id;
+    return null;
+}
+
+function compactFavoriteForServer(fav) {
+    if (!fav || typeof fav !== 'object') return {};
+    var out = {};
+    Object.keys(fav).forEach(function (k) {
+        var v = fav[k];
+        if (!Array.isArray(v)) return;
+        var ids = [];
+        v.forEach(function (item) {
+            var id = favoriteItemId(item);
+            if (id != null && ids.indexOf(id) === -1) ids.push(id);
+        });
+        out[k] = ids;
+    });
+    return out;
+}
+
+function mergeFavoriteFromServer(local, remote) {
+    if (!remote || typeof remote !== 'object') return local;
+    var fav = local && typeof local === 'object' ? local : {};
+    Object.keys(remote).forEach(function (k) {
+        if (k === 'success' || k === 'dbInNotInitialization') return;
+        var remoteList = remote[k];
+        if (!Array.isArray(remoteList)) return;
+        var localMap = {};
+        (Array.isArray(fav[k]) ? fav[k] : []).forEach(function (item) {
+            var id = favoriteItemId(item);
+            if (id != null) localMap[id] = item;
+        });
+        fav[k] = remoteList.map(function (item) {
+            var id = favoriteItemId(item);
+            if (id == null) return item;
+            return localMap[id] || id;
+        });
+    });
+    return fav;
+}
+
 var Bookmarks = {
     enabled: function () { return pref('bookmarks'); },
     bound: false,
@@ -257,7 +306,7 @@ var Bookmarks = {
             if (e.name === 'bookmark_pullFromServer' && self.enabled()) self.pull();
             else if (e.name === 'bookmark_set' && self.enabled()) {
                 self.applyServerSet(e.value);
-                httpJSON('POST', '/bookmark/set', e.value);
+                httpJSON('POST', '/bookmark/set', compactFavoriteForServer(e.value));
             }
         });
         document.addEventListener('visibilitychange', function () {
@@ -273,8 +322,7 @@ var Bookmarks = {
 
     pushFull: function () {
         if (!this.enabled() || this.applying) return;
-        var fav = this.readLocal();
-        httpJSON('POST', '/bookmark/set', fav);
+        httpJSON('POST', '/bookmark/set', compactFavoriteForServer(this.readLocal()));
     },
 
     pull: function () {
@@ -295,11 +343,7 @@ var Bookmarks = {
 
     applyServerSet: function (data) {
         if (!data) return;
-        var fav = this.readLocal();
-        Object.keys(data).forEach(function (k) {
-            if (k === 'success' || k === 'dbInNotInitialization') return;
-            fav[k] = data[k];
-        });
+        var fav = mergeFavoriteFromServer(this.readLocal(), data);
         this.applying = true;
         try {
             Lampa.Storage.set('favorite', fav, true);
