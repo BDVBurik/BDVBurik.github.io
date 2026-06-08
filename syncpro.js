@@ -227,8 +227,51 @@ function favoriteItemId(item) {
     if (item == null || item === '') return null;
     if (typeof item === 'number' && !isNaN(item)) return item;
     if (typeof item === 'string' && /^\d+$/.test(item)) return parseInt(item, 10);
-    if (typeof item === 'object' && item.id != null) return item.id;
+    if (typeof item === 'string') return item;
+    if (typeof item === 'object') {
+        if (item.id != null) return item.id;
+        if (item.card_id != null) return item.card_id;
+        if (item.hash) return item.hash;
+    }
     return null;
+}
+
+function favoriteListCounts(fav) {
+    var parts = [];
+    if (!fav || typeof fav !== 'object') return 'empty';
+    Object.keys(fav).forEach(function (k) {
+        if (!Array.isArray(fav[k])) return;
+        if (fav[k].length) parts.push(k + '=' + fav[k].length);
+    });
+    return parts.length ? parts.join(', ') : 'all lists empty';
+}
+
+function mergeFavoriteSources(a, b) {
+    var out = {};
+    var keys = {};
+    Object.keys(a || {}).forEach(function (k) { keys[k] = 1; });
+    Object.keys(b || {}).forEach(function (k) { keys[k] = 1; });
+    Object.keys(keys).forEach(function (k) {
+        var la = Array.isArray(a && a[k]) ? a[k] : null;
+        var lb = Array.isArray(b && b[k]) ? b[k] : null;
+        if (!la && !lb) {
+            if (b && b[k] !== undefined) out[k] = b[k];
+            else if (a && a[k] !== undefined) out[k] = a[k];
+            return;
+        }
+        var map = {};
+        var order = [];
+        function add(item) {
+            var id = favoriteItemId(item);
+            var key = id != null ? String(id) : 'x:' + JSON.stringify(item);
+            if (!map[key]) order.push(key);
+            map[key] = item;
+        }
+        (la || []).forEach(add);
+        (lb || []).forEach(add);
+        out[k] = order.map(function (key) { return map[key]; });
+    });
+    return out;
 }
 
 function compactFavoriteForServer(fav) {
@@ -275,12 +318,17 @@ var Bookmarks = {
     applying: false,
 
     readLocal: function () {
-        var fav = {};
+        var fromLs = {};
+        var fromSt = {};
         try {
-            fav = Lampa.Storage.get('favorite', '{}');
-            if (typeof fav === 'string') fav = JSON.parse(fav);
-        } catch (e) { fav = {}; }
-        return fav && typeof fav === 'object' ? fav : {};
+            var raw = localStorage.getItem('favorite');
+            if (raw) fromLs = JSON.parse(raw) || {};
+        } catch (e) { /* ignore */ }
+        try {
+            fromSt = Lampa.Storage.get('favorite', '{}');
+            if (typeof fromSt === 'string') fromSt = JSON.parse(fromSt);
+        } catch (e) { fromSt = {}; }
+        return mergeFavoriteSources(fromLs, fromSt);
     },
 
     bind: function () {
@@ -324,7 +372,11 @@ var Bookmarks = {
 
     pushFull: function () {
         if (!this.enabled() || this.applying) return;
-        httpJSON('POST', '/bookmark/set', compactFavoriteForServer(this.readLocal()));
+        var fav = this.readLocal();
+        var compact = compactFavoriteForServer(fav);
+        dbg('push bookmarks local:', favoriteListCounts(fav));
+        dbg('push bookmarks server:', favoriteListCounts(compact));
+        httpJSON('POST', '/bookmark/set', compact);
     },
 
     pull: function () {
@@ -471,6 +523,14 @@ function makeBlobSync(domainPref, storagePath, lsKeys, label) {
             if (!Object.keys(bundle).length) {
                 dbg('push skip', self.logName, 'local empty');
                 return;
+            }
+            dbg('push', self.logName, 'keys:', Object.keys(bundle).join(', '));
+            if (bundle.online_view) {
+                try {
+                    var ov = JSON.parse(bundle.online_view);
+                    var n = ov && typeof ov === 'object' ? Object.keys(ov).length : 0;
+                    dbg('push', self.logName, 'online_view entries:', n);
+                } catch (e) { /* ignore */ }
             }
             var body = JSON.stringify(bundle);
             dbg('→', 'POST', '/storage/set?path=' + storagePath, self.logName, body.length + ' bytes');
