@@ -16,7 +16,6 @@
 
   // === НАСТРОЙКИ ПЛАГИНА ===
   var CONFIG = {
-    tmdbApiKey: "27489d4d8c9dbd0f2b3e89f68821de34",
     cacheTime: 12 * 60 * 60 * 1000,
     enabled: true,
     language: "uk",
@@ -418,52 +417,24 @@
         return resolve(cache[tmdbId].data);
       }
 
-      if (!CONFIG.tmdbApiKey || CONFIG.tmdbApiKey === "ваш_tmdb_api_key_тут") {
-        return reject(
-          new Error("Пожалуйста, вставьте корректный TMDB API ключ")
-        );
-      }
-
-      // Используем глобальный currentLanguage вместо вызова getAppLanguage()
-      var url =
-        "https://api.themoviedb.org/3/tv/" +
-        tmdbId +
-        "?api_key=" +
-        CONFIG.tmdbApiKey +
-        "&language=" +
-        currentLanguage;
-
-      // Используем XMLHttpRequest вместо fetch для совместимости со старыми устройствами
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", url, true);
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            try {
-              var data = JSON.parse(xhr.responseText);
-              if (data.success === false) {
-                reject(new Error(data.status_message));
-                return;
-              }
-
-              cache[tmdbId] = {
-                data: data,
-                timestamp: Date.now(),
-              };
-              localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
-              resolve(data);
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            reject(new Error("HTTP error " + xhr.status));
+      Lampa.Api.sources.tmdb.get(
+        "tv/" + tmdbId,
+        {},
+        function (data) {
+          if (data.success === false) {
+            reject(new Error(data.status_message));
+            return;
           }
-        }
-      };
-      xhr.onerror = function () {
-        reject(new Error("Network error"));
-      };
-      xhr.send();
+
+          cache[tmdbId] = {
+            data: data,
+            timestamp: Date.now(),
+          };
+          localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
+          resolve(data);
+        },
+        reject
+      );
     });
   }
 
