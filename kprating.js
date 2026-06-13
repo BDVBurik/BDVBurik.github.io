@@ -1,9 +1,20 @@
 (function () {
 	'use strict';
 
-	var current_key_index = 0;
 	var colored_ratings = true;
 	var voteColorsObserverStarted = false;
+	var api_keys = window.kinopoisk_api_keys || [];
+	var current_key_index = 0;
+
+	if (api_keys.length) {
+		if (typeof window.getKinopoiskKey === "function") {
+			var startKey = window.getKinopoiskKey();
+			var startIndex = api_keys.indexOf(startKey);
+			current_key_index = startIndex >= 0 ? startIndex : 0;
+		} else {
+			current_key_index = Math.floor(Math.random() * api_keys.length);
+		}
+	}
 
 	var ratingSelectors = '.card__vote, .full-start__rate, .full-start-new__rate, .info__rate, .card__imdb-rate, .card__kinopoisk-rate, .rate--kp, .rate--imdb';
 
@@ -333,22 +344,6 @@
 			setupVoteColorsObserver();
 		}
 	}
-	var api_keys = [
-		'7fdba022-d72e-43d7-aa82-4ce175c280a6',
-		'1e6a0dbf-a4e1-4045-aa4a-dadee214c91d',
-		'f8565f16-e10a-49b1-a260-b3a6dc819f57',
-		"4a7ba7f7-31b6-4df3-8308-827ce7c1deb0",
-		"465e660a-218c-4f1b-b072-ac7daa1b6e81",
-		'ef840680-cb45-46e0-848f-784d70170480',
-		'74d66e28-29f3-4523-b221-913844bb5813', 
-		'404dc583-7efc-4c93-8f21-a782f977b9e7',
-		"beabaadb-89b1-4b9d-959d-c264c55e1773",
-		"674fefd1-4dbd-4f7a-9d43-46b076f3a618",
-		'f98a5461-d00d-4929-9a5c-e441318daba7',
-		'c20595a1-3d8c-4cbd-92eb-fd7b0fa75c67',
-		'68f2c7d6-bff8-4b72-985e-62d126775956',
-		
-	];
 	if (!window.rating_plugin) {
 		if (window.appready) {
 			startPlugin();

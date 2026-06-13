@@ -286,8 +286,24 @@
     function matchStrings(str1, str2) { return typeof str1 === 'string' && typeof str2 === 'string' && normalizeString(str1) === normalizeString(str2); }
     function containsString(str1, str2) { return typeof str1 === 'string' && typeof str2 === 'string' && normalizeString(str1).indexOf(normalizeString(str2)) !== -1; }
 
-    function getKpApiKey() { var k = Lampa.Storage.get('rating_kp_api_key', '') || Lampa.Storage.get('source_api_key', ''); return String(k || '').trim(); }
-    function canUseKinopoiskApi() { return getKpApiKey().length > 0; }
+    function getStoredKpApiKey() {
+        var k = Lampa.Storage.get('rating_kp_api_key', '') || Lampa.Storage.get('source_api_key', '');
+        return String(k || '').trim();
+    }
+    function getRandomKpApiKey() {
+        if (typeof window.getKinopoiskKey === 'function') return window.getKinopoiskKey();
+        var keys = window.kinopoisk_api_keys;
+        if (keys && keys.length) return keys[Math.floor(Math.random() * keys.length)];
+        return '';
+    }
+    function getKpApiKey() {
+        var manualKey = getStoredKpApiKey();
+        if (manualKey) return manualKey;
+        return getRandomKpApiKey();
+    }
+    function canUseKinopoiskApi() {
+        return getStoredKpApiKey().length > 0 || !!(window.kinopoisk_api_keys && window.kinopoisk_api_keys.length);
+    }
     function getKpHeaders() { var k = getKpApiKey(); if (!k) return {}; return { 'X-API-KEY': k }; }
     function cacheEmptyKpRating(itemId) { return ratingCache.set('kp_rating', itemId, { kp: 0, imdb: 0 }); }
     var pendingKpCallbacks = {};
@@ -1976,7 +1992,17 @@
             modal.append($('<div class="comodal__section">API</div>'));
             modal.append($('<div class="comodal__note">API-ключ можно получить на сайте</div>'));
             modal.append($('<div class="comodal__note"><a class="comodal__link" href="https://kinopoiskapiunofficial.tech/" target="_blank" rel="noopener noreferrer">kinopoiskapiunofficial.tech</a></div>'));
-            function kpApiKeyRowText() { var k = String(Lampa.Storage.get('rating_kp_api_key', '') || Lampa.Storage.get('source_api_key', '') || '').trim(); if (!k) return 'не задан'; if (k.length <= 10) return 'указан: ' + k; return 'указан: ' + k.slice(0, 4) + '...' + k.slice(-4); }
+            modal.append($('<div class="comodal__note">Если ключ не задан, используется случайный из пула</div>'));
+            function kpApiKeyRowText() {
+                var k = getStoredKpApiKey();
+                if (!k) {
+                    return (window.kinopoisk_api_keys && window.kinopoisk_api_keys.length)
+                        ? 'авто (пул ключей)'
+                        : 'не задан';
+                }
+                if (k.length <= 10) return 'указан: ' + k;
+                return 'указан: ' + k.slice(0, 4) + '...' + k.slice(-4);
+            }
             var rowKpKey = makeRow('API-ключ КиноПоиск', kpApiKeyRowText(), function (rowEl, valEl) {
                 if (typeof Lampa.Input !== 'undefined' && typeof Lampa.Input.edit === 'function') {
                     closeModalSafe();
@@ -1988,6 +2014,7 @@
             rowKpKey.updateVal(kpApiKeyRowText());
             modal.append(rowKpKey.row);
 
+            modal.append($('<div class="comodal__divider"></div>'));
             function resetAllToDefault() {
                 Lampa.Storage.set('rating_source', 'all'); Lampa.Storage.set('animated_reactions', 'false'); setColoredRatingsPoster(false);
                 Lampa.Storage.set('rating_colored_windows', 'false'); Lampa.Storage.set('rating_position', 'bottom');
