@@ -407,6 +407,12 @@
     return contentTypeBadge;
   }
 
+  var CACHE_VERSION = 2;
+  var CACHE_KEY = "seasonBadgeCache";
+  var CACHE_VERSION_KEY = "seasonBadgeCacheVersion";
+  var CACHE_MAX_RAW_SIZE = 400000;
+  var cachePersistDisabled = false;
+
   function slimTmdbData(data) {
     if (!data) return null;
 
@@ -475,8 +481,10 @@
   }
 
   function saveSeasonBadgeCache(cache) {
+    if (cachePersistDisabled) return;
+
     try {
-      localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
     } catch (e) {
       if (!e || (e.name !== "QuotaExceededError" && e.code !== 22)) return;
 
@@ -491,27 +499,72 @@
       }
 
       try {
-        localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
       } catch (e2) {
         try {
-          localStorage.removeItem("seasonBadgeCache");
+          localStorage.removeItem(CACHE_KEY);
         } catch (e3) {
           /* quota */
         }
+        cachePersistDisabled = true;
       }
     }
   }
 
-  var cache = JSON.parse(localStorage.getItem("seasonBadgeCache") || "{}");
-  var cacheKeys = Object.keys(cache);
-  for (var ci = 0; ci < cacheKeys.length; ci++) {
-    var entry = cache[cacheKeys[ci]];
-    if (entry && entry.data) {
-      entry.data = slimTmdbData(entry.data);
+  function loadSeasonBadgeCache() {
+    try {
+      var storedVersion = parseInt(
+        localStorage.getItem(CACHE_VERSION_KEY) || "0",
+        10
+      );
+
+      if (storedVersion !== CACHE_VERSION) {
+        try {
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.setItem(CACHE_VERSION_KEY, String(CACHE_VERSION));
+        } catch (e) {
+          cachePersistDisabled = true;
+        }
+        return {};
+      }
+
+      var raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return {};
+
+      if (raw.length > CACHE_MAX_RAW_SIZE) {
+        try {
+          localStorage.removeItem(CACHE_KEY);
+        } catch (e2) {
+          cachePersistDisabled = true;
+        }
+        return {};
+      }
+
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return {};
+
+      var keys = Object.keys(parsed);
+      for (var ci = 0; ci < keys.length; ci++) {
+        var entry = parsed[keys[ci]];
+        if (entry && entry.data) {
+          entry.data = slimTmdbData(entry.data);
+        }
+      }
+
+      pruneCache(parsed);
+      saveSeasonBadgeCache(parsed);
+      return parsed;
+    } catch (e) {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+      } catch (e3) {
+        cachePersistDisabled = true;
+      }
+      return {};
     }
   }
-  pruneCache(cache);
-  saveSeasonBadgeCache(cache);
+
+  var cache = loadSeasonBadgeCache();
 
   function fetchSeriesData(tmdbId) {
     return new Promise(function (resolve, reject) {
