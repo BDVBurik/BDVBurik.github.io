@@ -15,6 +15,7 @@
           "https://bdvburik.github.io/ts.js",
           //"https://bdvburik.github.io/labelse.js",
           //"https://bdvburik.github.io/sub.js",
+          "https://bdvburik.github.io/card_overlay.js",
           "https://bdvburik.github.io/kprating.js",
           "https://bdvburik.github.io/title.js",
           "https://bdvburik.github.io/rezkacomment.js",
@@ -32,7 +33,6 @@
           "https://lampame.github.io/main/hikka.js",
           "https://lampame.github.io/main/cw.js",
           "https://lampame.github.io/main/newcategory.js",
-          //"https://bywolf88.github.io/lampa-plugins/interface_mod.js",
 
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
