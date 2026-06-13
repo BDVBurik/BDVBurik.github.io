@@ -17,6 +17,7 @@
   // === НАСТРОЙКИ ПЛАГИНА ===
   var CONFIG = {
     cacheTime: 12 * 60 * 60 * 1000,
+    maxCacheEntries: 200,
     enabled: true,
     language: "uk",
   };
@@ -406,7 +407,111 @@
     return contentTypeBadge;
   }
 
+  function slimTmdbData(data) {
+    if (!data) return null;
+
+    var slim = {
+      status: data.status,
+      seasons: [],
+      last_episode_to_air: null,
+      next_episode_to_air: null,
+    };
+
+    if (data.seasons) {
+      for (var i = 0; i < data.seasons.length; i++) {
+        var season = data.seasons[i];
+        slim.seasons.push({
+          season_number: season.season_number,
+          episode_count: season.episode_count,
+        });
+      }
+    }
+
+    if (data.last_episode_to_air) {
+      slim.last_episode_to_air = {
+        season_number: data.last_episode_to_air.season_number,
+        episode_number: data.last_episode_to_air.episode_number,
+      };
+    }
+
+    if (data.next_episode_to_air && data.next_episode_to_air.air_date) {
+      slim.next_episode_to_air = {
+        air_date: data.next_episode_to_air.air_date,
+      };
+    }
+
+    return slim;
+  }
+
+  function pruneCache(cache, maxEntries) {
+    maxEntries = maxEntries || CONFIG.maxCacheEntries;
+    var now = Date.now();
+    var keys = Object.keys(cache);
+
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      if (
+        !cache[key] ||
+        !cache[key].timestamp ||
+        now - cache[key].timestamp >= CONFIG.cacheTime
+      ) {
+        delete cache[key];
+      }
+    }
+
+    keys = Object.keys(cache);
+    if (keys.length <= maxEntries) return cache;
+
+    keys.sort(function (a, b) {
+      return (cache[a].timestamp || 0) - (cache[b].timestamp || 0);
+    });
+
+    var toRemove = keys.length - maxEntries;
+    for (var j = 0; j < toRemove; j++) {
+      delete cache[keys[j]];
+    }
+
+    return cache;
+  }
+
+  function saveSeasonBadgeCache(cache) {
+    try {
+      localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
+    } catch (e) {
+      if (!e || (e.name !== "QuotaExceededError" && e.code !== 22)) return;
+
+      var keys = Object.keys(cache);
+      keys.sort(function (a, b) {
+        return (cache[a].timestamp || 0) - (cache[b].timestamp || 0);
+      });
+
+      var keep = Math.max(10, Math.floor(keys.length / 2));
+      for (var i = 0; i < keys.length - keep; i++) {
+        delete cache[keys[i]];
+      }
+
+      try {
+        localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
+      } catch (e2) {
+        try {
+          localStorage.removeItem("seasonBadgeCache");
+        } catch (e3) {
+          /* quota */
+        }
+      }
+    }
+  }
+
   var cache = JSON.parse(localStorage.getItem("seasonBadgeCache") || "{}");
+  var cacheKeys = Object.keys(cache);
+  for (var ci = 0; ci < cacheKeys.length; ci++) {
+    var entry = cache[cacheKeys[ci]];
+    if (entry && entry.data) {
+      entry.data = slimTmdbData(entry.data);
+    }
+  }
+  pruneCache(cache);
+  saveSeasonBadgeCache(cache);
 
   function fetchSeriesData(tmdbId) {
     return new Promise(function (resolve, reject) {
@@ -427,11 +532,12 @@
           }
 
           cache[tmdbId] = {
-            data: data,
+            data: slimTmdbData(data),
             timestamp: Date.now(),
           };
-          localStorage.setItem("seasonBadgeCache", JSON.stringify(cache));
-          resolve(data);
+          pruneCache(cache);
+          saveSeasonBadgeCache(cache);
+          resolve(cache[tmdbId].data);
         },
         reject
       );
