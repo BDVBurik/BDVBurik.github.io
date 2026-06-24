@@ -11,8 +11,28 @@
 
   // OpenSubtitles через Wyzie (source=charlie)
   const SOURCE = 'charlie';
-  const STORAGE_KEY = 'opensubtitles_subs_cache';
+  const STORAGE_KEY = 'opensubtitles_subs_cache_v2';
   const MAX_SUBS = 15;
+
+  function toExternalUrl(s) {
+    if (!s.url) return '';
+
+    if (/\.srt(\?|$|#)/i.test(s.url)) return s.url;
+
+    const fileName = (s.fileName || `${s.id || 'subtitle'}.srt`).replace(/[^\w.\-()\[\] ]+/g, '_');
+    const safeName = /\.srt$/i.test(fileName) ? fileName : `${fileName}.srt`;
+
+    if (/opensubtitles\.org/i.test(s.url)) {
+      return `${s.url.replace(/\/$/, '')}.srt`;
+    }
+
+    if (/sub\.wyzie\.io/i.test(s.url)) {
+      const sep = s.url.includes('?') ? '&' : '?';
+      return `${s.url}${sep}format=srt`;
+    }
+
+    return `${s.url.replace(/\/$/, '')}/${encodeURIComponent(safeName)}`;
+  }
 
   let loadedSubs = null;
 
@@ -50,13 +70,19 @@
     return osSubs
       .filter((s) => s.url && s.language === 'en' && s.format === 'srt')
       .slice(0, MAX_SUBS)
-      .map((s) => ({
-        method: 'link',
-        label: s.release || s.display || 'English',
-        url: s.url,
-        lang: 'en',
-        language: 'en',
-      }));
+      .map((s) => {
+        const fileName = s.fileName || `${s.id || 'subtitle'}.srt`;
+        const url = toExternalUrl(s);
+
+        return {
+          method: 'link',
+          label: s.release || s.display || 'English',
+          url: url,
+          lang: 'en',
+          language: 'en',
+          filename: /\.srt$/i.test(fileName) ? fileName : `${fileName}.srt`,
+        };
+      });
   }
 
   async function fetchSubs(tmdbId, season, episode) {
