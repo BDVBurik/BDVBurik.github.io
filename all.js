@@ -14,7 +14,7 @@
          "https://bdvburik.github.io/noshots.js",
           "https://bdvburik.github.io/ts.js",
           //"https://bdvburik.github.io/labelse.js",
-          "https://bdvburik.github.io/sub.js",
+          "https://bdvburik.github.io/sub_os.js",
           "https://bdvburik.github.io/keys/kinopoisk.js",
           "https://bdvburik.github.io/card_overlay.js",
           "https://bdvburik.github.io/kprating.js",
