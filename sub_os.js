@@ -12,29 +12,63 @@
   // OpenSubtitles через Wyzie (source=charlie)
   const SOURCE = 'charlie';
   const STORAGE_KEY = 'opensubtitles_subs_cache';
+  const MAX_SUBS = 15;
 
-  function getStoredSubs(tmdbId) {
+  let loadedSubs = null;
+
+  function getStoredSubs(key) {
     const stored = Lampa.Storage.get(STORAGE_KEY, '{}');
     const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored;
-    return parsed[tmdbId] || null;
+    return parsed[key] || null;
   }
 
-  function setStoredSubs(tmdbId, subs) {
+  function setStoredSubs(key, subs) {
     const stored = Lampa.Storage.get(STORAGE_KEY, '{}');
     const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored;
-    parsed[tmdbId] = subs;
+    parsed[key] = subs;
     Lampa.Storage.set(STORAGE_KEY, parsed);
   }
 
-  async function fetchSubs(tmdbId, season, episode, languages = ['en']) {
-    log('fetchSubs called:', { tmdbId, season, episode, languages, source: SOURCE });
-    const key = `${tmdbId}_${season || 0}_${episode || 0}_${languages.join(',')}_${SOURCE}`;
+  function getMediaContext() {
+    const activity = Lampa.Activity.active?.();
+    const movie = activity?.movie;
+    if (!activity || !movie) return null;
+
+    const tmdbId = movie.id || movie.tmdb_id;
+    if (!tmdbId) return null;
+
+    const isSeries = !!movie.first_air_date;
+    const playdata = Lampa.Player.playdata?.();
+    const season = isSeries ? playdata?.season : undefined;
+    const episode = isSeries ? playdata?.episode : undefined;
+    const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
+
+    return { tmdbId, season, episode, storageKey };
+  }
+
+  function mapSubs(osSubs) {
+    return osSubs
+      .filter((s) => s.url && s.language === 'en' && s.format === 'srt')
+      .slice(0, MAX_SUBS)
+      .map((s) => ({
+        method: 'link',
+        label: s.release || s.display || 'English',
+        url: s.url,
+        lang: 'en',
+        language: 'en',
+      }));
+  }
+
+  async function fetchSubs(tmdbId, season, episode) {
+    log('fetchSubs called:', { tmdbId, season, episode, source: SOURCE });
+    const key = `${tmdbId}_${season || 0}_${episode || 0}_en_${SOURCE}`;
 
     if (cache[key]) {
       log('Returning cached subtitles for key:', key);
       return cache[key];
     }
 
+    const languages = ['en'];
     const allSubs = [];
 
     for (const lang of languages) {
@@ -47,7 +81,6 @@
 
         const osSubs = await new Promise((resolve, reject) => {
           network.silent(base, (data) => {
-            log('API response for', lang, ':', data);
             const subs = Array.isArray(data) ? data : [];
             log('Subtitles found for', lang, ':', subs.length);
             resolve(subs);
@@ -66,91 +99,112 @@
       }
     }
 
-    return (cache[key] = allSubs);
+    return (cache[key] = mapSubs(allSubs));
   }
 
-  let loadedSubs = null;
+  async function loadSubs(ctx) {
+    const stored = getStoredSubs(ctx.storageKey);
+    if (stored) return stored;
+
+    const subs = await fetchSubs(ctx.tmdbId, ctx.season, ctx.episode);
+    if (subs.length) setStoredSubs(ctx.storageKey, subs);
+    return subs;
+  }
+
+  function applySubs(data, subs) {
+    if (!subs?.length) return;
+
+    data.subtitles = data.subtitles || [];
+    data.subtitles_call = data.subtitles_call || data.subtitles.slice();
+
+    subs.forEach((s) => {
+      if (!data.subtitles.find((x) => x.url === s.url)) {
+        data.subtitles.push(s);
+      }
+    });
+
+    const currentUrl = data.url;
+
+    if (data.playlist && Array.isArray(data.playlist)) {
+      data.playlist.forEach((item) => {
+        item.subtitles = item.subtitles || [];
+        if (currentUrl && item.url && item.url !== currentUrl) return;
+        subs.forEach((s) => {
+          if (!item.subtitles.find((x) => x.url === s.url)) {
+            item.subtitles.push(s);
+          }
+        });
+      });
+    }
+
+    log('Subtitles applied:', subs.length, 'root:', data.subtitles.length);
+  }
+
+  function prefetchSubs(ctx) {
+    if (!ctx || getStoredSubs(ctx.storageKey)) return;
+
+    loadSubs(ctx).catch((e) => {
+      log('Prefetch error:', e);
+    });
+  }
 
   log('Plugin initialized, setting up listeners');
 
   try {
-    Lampa.Player.listener.follow('create', async ({ data }) => {
+    Lampa.Listener.follow('full', (e) => {
+      if (e.type !== 'complite' || !e.data?.movie) return;
+
+      const movie = e.data.movie;
+      const tmdbId = movie.id || movie.tmdb_id;
+      if (!tmdbId || movie.first_air_date) return;
+
+      prefetchSubs({
+        tmdbId,
+        storageKey: `${tmdbId}_0_0`,
+      });
+    });
+
+    Lampa.Player.listener.follow('create', async ({ data, abort }) => {
+      if (data.__sub_os_done) {
+        data.__sub_os_done = false;
+        return;
+      }
+
       log('Player create event fired');
 
-      const activity = Lampa.Activity.active?.();
-      const movie = activity?.movie;
-
-      if (!activity || !movie) {
+      const ctx = getMediaContext();
+      if (!ctx) {
         log('Missing required data, aborting');
         return;
       }
 
-      const tmdbId = movie.id || movie.tmdb_id;
-      const isSeries = !!movie.first_air_date;
-      const playdata = Lampa.Player.playdata?.();
-      const season = isSeries ? playdata?.season : undefined;
-      const episode = isSeries ? playdata?.episode : undefined;
+      log('Media info:', ctx);
 
-      log('Media info:', { tmdbId, isSeries, season, episode });
+      let subs = getStoredSubs(ctx.storageKey);
 
-      if (!tmdbId) {
-        log('No TMDB ID found, aborting');
-        return;
-      }
+      if (!subs?.length) {
+        log('Subtitles not cached, delaying playback for external player');
+        abort();
 
-      const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
-      let storedSubs = getStoredSubs(storageKey);
-
-      if (storedSubs) {
-        log('Loaded subtitles from Storage:', storedSubs);
-        loadedSubs = storedSubs;
-      } else {
         try {
-          const osSubs = await fetchSubs(tmdbId, season, episode, ['en']);
-          log('OpenSubtitles received:', osSubs);
-
-          const filtered = osSubs
-            .filter((s) => s.url && s.language === 'en' && s.format === 'srt')
-            .map((s) => ({
-              method: 'link',
-              label: s.release || s.display || s.language,
-              url: s.url,
-              lang: s.language,
-            }));
-
-          log('Filtered subtitles:', filtered);
-
-          if (filtered.length) {
-            loadedSubs = filtered;
-            setStoredSubs(storageKey, filtered);
-            log('Subtitles saved to Storage');
-          }
+          subs = await loadSubs(ctx);
         } catch (e) {
           log('Error fetching subtitles:', e);
         }
-      }
 
-      if (loadedSubs) {
-        data.subtitles_call = data.subtitles || [];
-        loadedSubs.forEach((s) => {
-          if (!data.subtitles.find((x) => x.url === s.url)) {
-            data.subtitles.push(s);
-          }
-        });
+        data.__sub_os_done = true;
 
-        if (data.playlist && Array.isArray(data.playlist)) {
-          data.playlist.forEach((item) => {
-            item.subtitles = item.subtitles || [];
-            loadedSubs.forEach((s) => {
-              if (!item.subtitles.find((x) => x.url === s.url)) {
-                item.subtitles.push(s);
-              }
-            });
-          });
+        if (subs?.length) {
+          loadedSubs = subs;
+          applySubs(data, subs);
         }
 
-        log('Subtitles added to data and playlist:', data.subtitles);
+        Lampa.Player.play(data);
+        return;
       }
+
+      loadedSubs = subs;
+      applySubs(data, subs);
     });
 
     Lampa.Player.listener.follow('start', async () => {
@@ -161,7 +215,8 @@
         const current = (playdata?.subtitles || []).map((s) => ({
           label: s.label,
           url: s.url,
-          lang: s.lang || '',
+          lang: s.lang || s.language || '',
+          language: s.language || s.lang || '',
         }));
 
         const all = [...current];
@@ -171,7 +226,7 @@
           }
         });
 
-        const idx = all.findIndex((s) => s.lang === 'en');
+        const idx = all.findIndex((s) => (s.lang || s.language) === 'en');
 
         try {
           Lampa.Player.subtitles(all, idx === -1 ? 0 : idx);
