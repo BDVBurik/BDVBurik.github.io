@@ -19,7 +19,7 @@
 
     if (/\.srt(\?|$|#)/i.test(s.url)) return s.url;
 
-    const fileName = (s.fileName || `${s.id || 'subtitle'}.srt`).replace(/[^\w.\-()\[\] ]+/g, '_');
+    const fileName = (s.fileName || `${s.id || 'subtitle'}.srt`).replace(/[^\w.\-()[\] ]+/g, '_');
     const safeName = /\.srt$/i.test(fileName) ? fileName : `${fileName}.srt`;
 
     if (/opensubtitles\.org/i.test(s.url)) {
@@ -49,7 +49,28 @@
     Lampa.Storage.set(STORAGE_KEY, parsed);
   }
 
-  function getMediaContext() {
+  /**
+   * Извлекает season/episode из URL как запасной вариант.
+   * Поддерживает форматы: s01e06, S01E06, s01/e06 и т.п.
+   */
+  function parseSeasonEpisodeFromUrl(url) {
+    if (!url) return { season: undefined, episode: undefined };
+    // Формат: s01e06 или S1E6
+    let m = url.match(/[Ss](\d+)[Ee](\d+)/);
+    if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+    // Формат: /s01/e06/ или /s01/from.../e06
+    m = url.match(/[/_-]s(\d+)[/_-].*?e(\d+)/i);
+    if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+    return { season: undefined, episode: undefined };
+  }
+
+  /**
+   * Получает контекст медиа из activity + данных плеера.
+   * При событии 'create' данные season/episode берутся из data,
+   * а не из playdata() (который ещё не обновился).
+   * @param {object} [playerData] - объект data из события 'create'
+   */
+  function getMediaContext(playerData) {
     const activity = Lampa.Activity.active?.();
     const movie = activity?.movie;
     if (!activity || !movie) return null;
@@ -57,13 +78,35 @@
     const tmdbId = movie.id || movie.tmdb_id;
     if (!tmdbId) return null;
 
-    const isSeries = !!movie.first_air_date;
-    const playdata = Lampa.Player.playdata?.();
-    const season = isSeries ? playdata?.season : undefined;
-    const episode = isSeries ? playdata?.episode : undefined;
+    const isSeries = !!(movie.first_air_date || movie.number_of_seasons);
+
+    let season, episode;
+
+    if (isSeries) {
+      if (playerData) {
+        // Данные напрямую из объекта data события 'create' — самый надёжный источник
+        season = playerData.season != null ? parseInt(playerData.season, 10) : undefined;
+        episode = playerData.episode != null ? parseInt(playerData.episode, 10) : undefined;
+
+        // Если парсер не передал season/episode — пробуем извлечь из URL
+        if (!season || !episode) {
+          const fromUrl = parseSeasonEpisodeFromUrl(playerData.url);
+          if (fromUrl.season) season = fromUrl.season;
+          if (fromUrl.episode) episode = fromUrl.episode;
+        }
+      }
+
+      // Финальный fallback: playdata (может быть устаревшим, но лучше чем ничего)
+      if (!season || !episode) {
+        const pd = Lampa.Player.playdata?.();
+        if (pd?.season) season = parseInt(pd.season, 10);
+        if (pd?.episode) episode = parseInt(pd.episode, 10);
+      }
+    }
+
     const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
 
-    return { tmdbId, season, episode, storageKey };
+    return { tmdbId, isSeries, season, episode, storageKey };
   }
 
   function mapSubs(osSubs) {
@@ -99,7 +142,8 @@
 
     for (const lang of languages) {
       try {
-        const base = season && episode
+        // Для сериала всегда передаём season+episode, даже если они 0
+        const base = (season && episode)
           ? `https://sub.wyzie.io/search?id=${tmdbId}&season=${season}&episode=${episode}&language=${lang}&source=${SOURCE}&key=${API_KEY}`
           : `https://sub.wyzie.io/search?id=${tmdbId}&language=${lang}&source=${SOURCE}&key=${API_KEY}`;
 
@@ -177,15 +221,21 @@
   log('Plugin initialized, setting up listeners');
 
   try {
+    // Prefetch для фильмов на карточке (full view)
+    // Для сериалов prefetch здесь не делаем — нет данных об эпизоде
     Lampa.Listener.follow('full', (e) => {
       if (e.type !== 'complite' || !e.data?.movie) return;
 
       const movie = e.data.movie;
       const tmdbId = movie.id || movie.tmdb_id;
-      if (!tmdbId || movie.first_air_date) return;
+      const isSeries = !!(movie.first_air_date || movie.number_of_seasons);
+
+      // Prefetch только для фильмов — у сериалов нет season/episode в этот момент
+      if (!tmdbId || isSeries) return;
 
       prefetchSubs({
         tmdbId,
+        isSeries: false,
         storageKey: `${tmdbId}_0_0`,
       });
     });
@@ -197,8 +247,10 @@
       }
 
       log('Player create event fired');
+      log('Player data:', { url: data.url, season: data.season, episode: data.episode, title: data.title });
 
-      const ctx = getMediaContext();
+      // Передаём data в getMediaContext — там season/episode берётся из data напрямую
+      const ctx = getMediaContext(data);
       if (!ctx) {
         log('Missing required data, aborting');
         return;
@@ -209,7 +261,7 @@
       let subs = getStoredSubs(ctx.storageKey);
 
       if (!subs?.length) {
-        log('Subtitles not cached, delaying playback for external player');
+        log('Subtitles not cached, delaying playback to fetch');
         abort();
 
         try {
