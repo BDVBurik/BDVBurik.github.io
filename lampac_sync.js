@@ -27,12 +27,16 @@
   }
 
   function getHost() {
-    var h = cleanString(Lampa.Storage.field("lampac_sync_host")) || cleanString(Lampa.Storage.get("lampac_sync_host"));
+    var h =
+      cleanString(Lampa.Storage.field("lampac_sync_host")) ||
+      cleanString(Lampa.Storage.get("lampac_sync_host"));
     return (h && h.replace(/\/+$/, "")) || DEFAULT_HOST;
   }
 
   function getEmail() {
-    var email = cleanString(Lampa.Storage.field("lampac_sync_email")) || cleanString(Lampa.Storage.get("lampac_sync_email"));
+    var email =
+      cleanString(Lampa.Storage.field("lampac_sync_email")) ||
+      cleanString(Lampa.Storage.get("lampac_sync_email"));
     if (email) return email;
     try {
       var acc = Lampa.Storage.get("account", "{}");
@@ -93,11 +97,17 @@
             isJson = true;
           }
         }
-        
+
         if (isJson) {
-          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          xhr.setRequestHeader(
+            "Content-Type",
+            "application/json;charset=UTF-8",
+          );
         } else {
-          xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+          xhr.setRequestHeader(
+            "Content-Type",
+            "application/x-www-form-urlencoded",
+          );
         }
       }
 
@@ -109,10 +119,22 @@
         } catch (e) {}
 
         if (xhr.status >= 200 && xhr.status < 300) {
-          console.log("[LampacSync] Успешно отправлен запрос: " + method + " " + path, body ? "(размер: " + body.length + " симв.)" : "");
+          console.log(
+            "[LampacSync] Успешно отправлен запрос: " + method + " " + path,
+            body ? "(размер: " + body.length + " симв.)" : "",
+          );
           if (onSuccess) onSuccess(parsed, xhr.status);
         } else {
-          console.error("[LampacSync] Ошибка запроса: " + method + " " + path + " (HTTP " + xhr.status + ")", parsed);
+          console.error(
+            "[LampacSync] Ошибка запроса: " +
+              method +
+              " " +
+              path +
+              " (HTTP " +
+              xhr.status +
+              ")",
+            parsed,
+          );
           if (onError) onError(xhr.status, parsed);
         }
       };
