@@ -34,30 +34,40 @@
 
   async function getEnTitle(id, type) {
     try {
-      const data = await new Promise((res, rej) =>
-        Lampa.Api.sources.tmdb.get(
-          `${
-            type === "movie" ? "movie" : "tv"
-          }/${id}?append_to_response=translations`,
-          {},
-          res,
-          rej,
-        ),
-      );
+      var tmdbType = type === 'movie' ? 'movie' : 'tv';
+      var tmdbCacheKey = tmdbType + '_' + id;
 
-      const tr = data.translations?.translations;
+      // Спочатку перевіряємо спільний кеш (заповнює title.js)
+      window.__tmdbTranslationsCache = window.__tmdbTranslationsCache || {};
+      var cachedTr = window.__tmdbTranslationsCache[tmdbCacheKey];
+      var tr;
+
+      if (cachedTr) {
+        console.log('[RezkaComment] using shared translations cache for', tmdbCacheKey);
+        tr = cachedTr;
+      } else {
+        const data = await new Promise((res, rej) =>
+          Lampa.Api.sources.tmdb.get(
+            `${tmdbType}/${id}?append_to_response=translations`,
+            {},
+            res,
+            rej,
+          ),
+        );
+        tr = data.translations?.translations || [];
+        window.__tmdbTranslationsCache[tmdbCacheKey] = tr;
+      }
+
       const enTitle =
-        tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
+        tr.find((t) => t.iso_3166_1 === 'US' || t.iso_639_1 === 'en')?.data
           ?.title ||
-        tr.find((t) => t.iso_3166_1 === "US" || t.iso_639_1 === "en")?.data
-          ?.name ||
-        data.original_title ||
-        data.original_name;
+        tr.find((t) => t.iso_3166_1 === 'US' || t.iso_639_1 === 'en')?.data
+          ?.name;
       if (enTitle) {
         searchRezka(normalizeTitle(enTitle), year);
       }
     } catch (e) {
-      console.error("TMDB error", e);
+      console.error('TMDB error', e);
       Lampa.Loading.stop();
       return;
     }

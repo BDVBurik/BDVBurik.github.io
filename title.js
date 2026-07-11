@@ -190,19 +190,29 @@
 
         if (!ru || !en || !translit || !uk || !be) {
           var type = card.first_air_date ? 'tv' : 'movie';
-          console.log('[TitlePlugin] fetching translations for', type, card.id);
-          Lampa.Api.sources.tmdb.get(
-            type + '/' + card.id + '?append_to_response=translations',
-            {},
-            function (data) {
-              var tr = (data.translations && data.translations.translations) || [];
-              applyAndRender(tr);
-            },
-            function (e) {
-              console.error('[TitlePlugin] tmdb error:', e);
-              applyAndRender([]);
-            }
-          );
+          var tmdbCacheKey = type + '_' + card.id;
+
+          // Спільний кеш трансляцій з іншими плагінами (наприклад rezkacomment.js)
+          window.__tmdbTranslationsCache = window.__tmdbTranslationsCache || {};
+          if (window.__tmdbTranslationsCache[tmdbCacheKey]) {
+            console.log('[TitlePlugin] using shared translations cache for', tmdbCacheKey);
+            applyAndRender(window.__tmdbTranslationsCache[tmdbCacheKey]);
+          } else {
+            console.log('[TitlePlugin] fetching translations for', type, card.id);
+            Lampa.Api.sources.tmdb.get(
+              type + '/' + card.id + '?append_to_response=translations',
+              {},
+              function (data) {
+                var tr = (data.translations && data.translations.translations) || [];
+                window.__tmdbTranslationsCache[tmdbCacheKey] = tr;
+                applyAndRender(tr);
+              },
+              function (e) {
+                console.error('[TitlePlugin] tmdb error:', e);
+                applyAndRender([]);
+              }
+            );
+          }
         } else {
           renderTitles();
         }

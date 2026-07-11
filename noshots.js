@@ -93,21 +93,7 @@ function startPlugin() {
                 }
             })
 
-            // Also check periodically for dynamically added buttons
-            setInterval(() => {
-                const menu = Lampa.Menu.render()
-                if (menu && menu.length) {
-                    menu.find('.menu__item').each(function () {
-                        const $item = $(this)
-                        const text = $item.find('.menu__text').text()
-                        const hasShotsIcon = $item.find('use[xlink\\:href="#sprite-shots"]').length > 0
-
-                        if ((text && text.toLowerCase().indexOf('shots') >= 0) || hasShotsIcon) {
-                            $item.remove()
-                        }
-                    })
-                }
-            }, 1000)
+            // Periodic check moved to the unified interval below
         }
 
         // Remove Shots button from full view
@@ -170,11 +156,7 @@ function startPlugin() {
                 }
             }
 
-            // Periodically check and remove Shots buttons
-            setInterval(() => {
-                $('.shots-view-button, .view--online.shots-view-button, [class*="shots-view"]').remove()
-                $('.buttons--container .shots-view-button, .buttons--container .view--online.shots-view-button').remove()
-            }, 500)
+            // Periodic check moved to the unified interval below
         }
 
         // Remove Shots components
@@ -235,21 +217,7 @@ function startPlugin() {
                 </style>
             `)
 
-            // Also use JavaScript to remove elements that might not be caught by CSS
-            setInterval(() => {
-                $('[class*="shots-"], [id*="shots-"], [data-shots], .shots-view-button, .shots-player-segments, .shots-player-recorder, .shots-modal, .shots-lenta').remove()
-                // Remove red Shots button from player panel (it's a div, not button)
-                $('[data-controller="player_panel"]').each(function () {
-                    const $btn = $(this)
-                    const hasRedCircle = $btn.find('circle[fill="#FF0707"]').length > 0 ||
-                        $btn.find('circle[fill="#ff0707"]').length > 0 ||
-                        $btn.find('circle[fill="red"]').length > 0 ||
-                        ($btn.find('svg circle').length === 2 && $btn.find('svg circle').eq(1).attr('fill') === '#FF0707')
-                    if (hasRedCircle) {
-                        $btn.remove()
-                    }
-                })
-            }, 200)
+            // Periodic DOM cleanup moved to the unified interval below
         }
 
         // Remove Shots from player
@@ -324,11 +292,7 @@ function startPlugin() {
                 })
             }
 
-            // Also periodically check and remove Shots elements from player (more frequent)
-            setInterval(() => {
-                $('.shots-player-segments, .shots-player-recorder, [class*="shots-player"]').remove()
-                removeShotsPlayerButton()
-            }, 200)
+            // Periodic player cleanup moved to the unified interval below
         }
 
         // Initialize all removal functions
@@ -337,6 +301,38 @@ function startPlugin() {
         removeShotsComponents()
         hideShotsUI()
         removeShotsPlayerIntegration()
+
+        // ── Unified periodic cleanup (replaces 4 separate intervals) ──
+        // Consolidates menu (1000ms), buttons (500ms), DOM (200ms), player (200ms)
+        // into one 400ms interval — reduces DOM operations from ~12/sec to ~2.5/sec
+        setInterval(() => {
+            // 1. Shots DOM elements (CSS :has may not cover all cases)
+            $('[class*="shots-"], [id*="shots-"], [data-shots], .shots-view-button, .shots-player-segments, .shots-player-recorder, .shots-modal, .shots-lenta').remove()
+            // 2. Shots view buttons in full view
+            $('.shots-view-button, .view--online.shots-view-button, [class*="shots-view"]').remove()
+            $('.buttons--container .shots-view-button, .buttons--container .view--online.shots-view-button').remove()
+            // 3. Player Shots elements
+            $('.shots-player-segments, .shots-player-recorder, [class*="shots-player"]').remove()
+            // 4. Red circle record button in player panel
+            $('[data-controller="player_panel"]').each(function () {
+                const $btn = $(this)
+                const hasRedCircle = $btn.find('circle[fill="#FF0707"]').length > 0 ||
+                    $btn.find('circle[fill="#ff0707"]').length > 0 ||
+                    $btn.find('circle[fill="red"]').length > 0 ||
+                    ($btn.find('svg circle').length === 2 && $btn.find('svg circle').eq(1).attr('fill') === '#FF0707')
+                if (hasRedCircle) $btn.remove()
+            })
+            // 5. Shots menu items
+            const menu = Lampa.Menu.render()
+            if (menu && menu.length) {
+                menu.find('.menu__item').each(function () {
+                    const $item = $(this)
+                    const text = $item.find('.menu__text').text()
+                    const hasShotsIcon = $item.find('use[xlink\\:href="#sprite-shots"]').length > 0
+                    if ((text && text.toLowerCase().indexOf('shots') >= 0) || hasShotsIcon) $item.remove()
+                })
+            }
+        }, 400)
 
         console.log('No Shots', 'Initialized - All Shots functionality will be removed')
     }

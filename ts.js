@@ -83,7 +83,7 @@
       onRender: function (item) {
         setTimeout(function () {
           if ($('div[data-name="freetorrserv"]').length > 1) item.hide();
-          $('.settings-param__name', item).css('color', 'f3d900');
+          $('.settings-param__name', item).css('color', '#f3d900');
 		  $(".ad-server").hide();
           $('div[data-name="freetorrserv"]').insertAfter(
             'div[data-name="torrserver_use_link"]'

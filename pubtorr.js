@@ -45,7 +45,7 @@
 
   // ===== СБРОС СТАТУСОВ =====
   parsersInfo.forEach((_,i)=>{
-    Lampa.Storage.set(`FreeServ_${i}`, 'Offline');
+    Lampa.Storage.set(`PubParser_${i}`, 'Offline');
   });
 
   // ===== ПРОВЕРКА JACRED =====
@@ -61,9 +61,9 @@
       let t = await r.text();
       if(!t || t.length < 5) throw 1;
 
-      Lampa.Storage.set(`FreeServ_${index}`, 'Online');
+      Lampa.Storage.set(`PubParser_${index}`, 'Online');
     }catch(e){
-      Lampa.Storage.set(`FreeServ_${index}`, 'Offline');
+      Lampa.Storage.set(`PubParser_${index}`, 'Offline');
     }
   }
 
@@ -84,7 +84,7 @@
       parsersInfo.forEach((p,i)=>{
         if(title.indexOf(p.name) !== -1){
 
-          let st = Lampa.Storage.get(`FreeServ_${i}`);
+          let st = Lampa.Storage.get(`PubParser_${i}`);
 
           let label = st === 'Online'
             ? '<span style="color:#00ff9c"> Online</span>'
