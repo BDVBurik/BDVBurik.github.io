@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LampacSync Dashboard</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(18, 20, 32, 0.6);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --accent: #a855f7;
+      --accent-glow: rgba(168, 85, 247, 0.15);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.15);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, var(--primary-glow) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, var(--accent-glow) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    header {
+      padding: 2.5rem 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .auth-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.5rem 0.75rem 0.5rem 1rem;
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .auth-section input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      width: 220px;
+    }
+
+    .auth-section input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.25s ease;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      box-shadow: none;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 4px 12px var(--danger-glow);
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto 4rem auto;
+      padding: 0 2rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+    }
+
+    @media(max-width: 500px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(15px);
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .card-count {
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      color: var(--text-muted);
+    }
+
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    /* Scrollbar style */
+    .scroll-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scroll-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scroll-area::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    .scroll-area::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .item-row {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.2s;
+    }
+
+    .item-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-key {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+      word-break: break-all;
+    }
+
+    .item-details {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      margin-right: 0.35rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .tag-accent {
+      background: rgba(168, 85, 247, 0.15);
+      color: #d8b4fe;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      gap: 1rem;
+      font-size: 0.95rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .empty-state svg {
+      opacity: 0.3;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* Status Notifications */
+    .status-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1f2937;
+      border-left: 4px solid var(--primary);
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 1000;
+      transform: translateY(150%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-toast.show {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">L</div>
+      <div>
+        <h1>LampacSync Control Panel</h1>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+      <div class="auth-section">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        <input type="email" id="emailInput" placeholder="your@email.com" />
+      </div>
+      <button class="btn" id="refreshBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+        Обновить
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="dashboard-grid">
+      <!-- TIME CODES CARD -->
+      <div class="card">
+        <div class="card-title">
+          <span>Таймкоды воспроизведения</span>
+          <span class="card-count" id="timecodeCount">0</span>
+        </div>
+        <div class="scroll-area" id="timecodeList">
+          <div class="empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12,6 12,12 16,14"></polyline></svg>
+            <span>Введи почту и нажми «Обновить» для получения данных</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOOKMARKS CARD -->
+      <div class="card">
+        <div class="card-title">
+          <span>Списки избранного / Закладки</span>
+          <span class="card-count" id="bookmarkCount">0</span>
+        </div>
+        <div class="scroll-area" id="bookmarkList">
+          <div class="empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <span>Закладки не загружены</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORAGE BLOBS CARD -->
+      <div class="card">
+        <div class="card-title">
+          <span>Системные файлы / Кэш Lampa</span>
+          <span class="card-count" id="storageCount">0</span>
+        </div>
+        <div class="scroll-area" id="storageList">
+          <div class="empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <span>Системные данные отсутствуют</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="status-toast" id="toast">
+    <span id="toastMsg">Готово</span>
+  </div>
+
+  <script>
+    const emailInput = document.getElementById('emailInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+
+    const BASE_URL = 'https://lampac-compat.bdvburik.workers.dev';
+
+    // Load saved email
+    emailInput.value = localStorage.getItem('lampac_sync_email') || 'bdvburik@gmail.com';
+
+    emailInput.addEventListener('change', () => {
+      localStorage.setItem('lampac_sync_email', emailInput.value.trim());
+    });
+
+    function showToast(text, isError = false) {
+      toastMsg.innerText = text;
+      toast.style.borderLeftColor = isError ? 'var(--danger)' : 'var(--success)';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    async function makeRequest(method, path, body = null) {
+      const email = emailInput.value.trim();
+      if (!email) {
+        showToast('Укажите email аккаунта!', true);
+        return null;
+      }
+      const separator = path.includes('?') ? '&' : '?';
+      const url = `${BASE_URL}${path}${separator}account_email=${encodeURIComponent(email)}`;
+      
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: body ? { 'Content-Type': 'application/json' } : {},
+          body: body ? JSON.stringify(body) : null
+        });
+
+        if (response.status === 403) {
+          showToast('Доступ запрещен для этой почты!', true);
+          return null;
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (e) {
+        showToast(`Ошибка: ${e.message}`, true);
+        return null;
+      }
+    }
+
+    async function loadData() {
+      showToast('Загрузка данных...');
+      const data = await makeRequest('GET', '/api/dump');
+      if (!data) return;
+
+      const timecodeList = document.getElementById('timecodeList');
+      const bookmarkList = document.getElementById('bookmarkList');
+      const storageList = document.getElementById('storageList');
+
+      timecodeList.innerHTML = '';
+      bookmarkList.innerHTML = '';
+      storageList.innerHTML = '';
+
+      let timecodeCount = 0;
+      let bookmarkCount = 0;
+      let storageCount = 0;
+
+      Object.entries(data).forEach(([key, val]) => {
+        if (key.startsWith('timecode:')) {
+          timecodeCount++;
+          const parts = key.split(':');
+          const cardId = parts[2] || 'Неизвестно';
+          
+          let subDetailsHtml = '';
+          if (val && typeof val === 'object') {
+            Object.entries(val).forEach(([fileHash, roadStr]) => {
+              try {
+                const road = typeof roadStr === 'string' ? JSON.parse(roadStr) : roadStr;
+                const time = Math.round(road.time || 0);
+                const duration = Math.round(road.duration || 0);
+                const percent = road.percent || 0;
+                
+                const timeFormatted = Math.floor(time / 60) + 'м ' + (time % 60) + 'с';
+                const durationFormatted = Math.floor(duration / 60) + 'м';
+
+                subDetailsHtml += `
+                  <div style="margin-top: 0.5rem; padding-left: 0.5rem; border-left: 2px solid var(--accent); font-size: 0.8rem;">
+                    <strong>Файл:</strong> <span style="font-family: monospace;">${fileHash.slice(0, 8)}...</span><br>
+                    <strong>Прогресс:</strong> ${timeFormatted} / ${durationFormatted} (${percent}%)
+                  </div>
+                `;
+              } catch(e) {
+                subDetailsHtml += `<div style="font-size:0.8rem; color:var(--danger)">Ошибка парсинга записи</div>`;
+              }
+            });
+          }
+
+          timecodeList.appendChild(createRow(key, `
+            <div><strong>Карточка:</strong> <span class="tag">${cardId}</span></div>
+            ${subDetailsHtml}
+          `));
+
+        } else if (key.startsWith('bookmark:')) {
+          bookmarkCount++;
+          let bDetails = '';
+          if (val && typeof val === 'object') {
+            Object.entries(val).forEach(([category, ids]) => {
+              if (Array.isArray(ids) && ids.length) {
+                bDetails += `
+                  <div style="margin-bottom: 0.4rem;">
+                    <span class="tag tag-accent">${category}</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">IDs: ${ids.join(', ')}</span>
+                  </div>
+                `;
+              }
+            });
+          }
+          bookmarkList.appendChild(createRow(key, bDetails || 'Пустые списки'));
+
+        } else if (key.startsWith('storage:')) {
+          storageCount++;
+          const size = typeof val === 'string' ? val.length : JSON.stringify(val).length;
+          const sizeKb = (size / 1024).toFixed(1);
+          storageList.appendChild(createRow(key, `
+            <div>Размер в KV: <strong>${sizeKb} KB</strong></div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${typeof val === 'string' ? val.slice(0, 100) : JSON.stringify(val).slice(0, 100)}...
+            </div>
+          `));
+        }
+      });
+
+      document.getElementById('timecodeCount').innerText = timecodeCount;
+      document.getElementById('bookmarkCount').innerText = bookmarkCount;
+      document.getElementById('storageCount').innerText = storageCount;
+
+      if (!timecodeCount) showEmpty(timecodeList, 'Нет таймкодов на сервере');
+      if (!bookmarkCount) showEmpty(bookmarkList, 'Нет закладок на сервере');
+      if (!storageCount) showEmpty(storageList, 'Нет сохраненных кэш-файлов');
+
+      showToast('Данные обновлены');
+    }
+
+    function createRow(key, detailsHtml) {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="item-info">
+          <div class="item-key">${key}</div>
+          <div class="item-details">${detailsHtml}</div>
+        </div>
+        <button class="btn btn-danger" onclick="deleteKey('${key}')">Удалить</button>
+      `;
+      return row;
+    }
+
+    function showEmpty(container, message) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>${message}</span>
+        </div>
+      `;
+    }
+
+    async function deleteKey(key) {
+      if (!confirm(`Вы действительно хотите безвозвратно удалить ключ из базы?\n\n${key}`)) return;
+      
+      const res = await makeRequest('POST', `/api/delete?key=${encodeURIComponent(key)}`);
+      if (res && res.success) {
+        showToast('Ключ успешно удален');
+        loadData();
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadData);
+  </script>
+</body>
+</html>
