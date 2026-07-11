@@ -4,7 +4,12 @@
 //  Worker: https://lampac-compat.bdvburik.workers.dev
 //  GitHub: https://bdvburik.github.io/lampac_sync.js
 // =============================================================================
-
+// =============================================================================
+//  LampacSync — плагин для Lampa
+//  Синхронизирует таймкоды и закладки через Cloudflare Worker
+//  Worker: https://lampac-compat.bdvburik.workers.dev
+//  GitHub: https://bdvburik.github.io/lampac_sync.js
+// =============================================================================
 (function () {
   "use strict";
 
