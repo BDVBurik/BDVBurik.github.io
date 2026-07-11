@@ -49,7 +49,20 @@
     Lampa.Storage.set(STORAGE_KEY, parsed);
   }
 
-  function getMediaContext() {
+  function getEpisodeInfo(source) {
+    if (!source) return null;
+
+    const season = Number(source.season ?? source.season_number);
+    const episode = Number(source.episode ?? source.episode_number);
+
+    if (season > 0 && episode > 0) {
+      return { season, episode };
+    }
+
+    return null;
+  }
+
+  function getMediaContext(data) {
     const activity = Lampa.Activity.active?.();
     const movie = activity?.movie;
     if (!activity || !movie) return null;
@@ -57,13 +70,26 @@
     const tmdbId = movie.id || movie.tmdb_id;
     if (!tmdbId) return null;
 
-    const isSeries = !!movie.first_air_date;
+    const isSeries = !!(movie.first_air_date || movie.number_of_seasons || movie.original_name);
+    let season;
+    let episode;
+
+    const fromData = getEpisodeInfo(data);
+    const fromPlaylist = !fromData && data?.playlist?.length
+      ? getEpisodeInfo(data.playlist.find((item) => item.url === data.url) || data.playlist[0])
+      : null;
     const playdata = Lampa.Player.playdata?.();
-    const season = isSeries ? playdata?.season : undefined;
-    const episode = isSeries ? playdata?.episode : undefined;
+    const fromPlaydata = isSeries ? getEpisodeInfo(playdata) : null;
+    const episodeInfo = fromData || fromPlaylist || fromPlaydata;
+
+    if (episodeInfo) {
+      season = episodeInfo.season;
+      episode = episodeInfo.episode;
+    }
+
     const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
 
-    return { tmdbId, season, episode, storageKey };
+    return { tmdbId, season, episode, storageKey, isSeries };
   }
 
   function mapSubs(osSubs) {
@@ -137,6 +163,70 @@
     return subs;
   }
 
+  async function loadSubsForItem(tmdbId, season, episode) {
+    const storageKey = `${tmdbId}_${season || 0}_${episode || 0}`;
+    const stored = getStoredSubs(storageKey);
+    if (stored) return stored;
+
+    const subs = await fetchSubs(tmdbId, season, episode);
+    if (subs.length) setStoredSubs(storageKey, subs);
+    return subs;
+  }
+
+  function applySubsToItem(item, subs) {
+    if (!subs?.length) return;
+
+    item.subtitles = item.subtitles || [];
+    subs.forEach((s) => {
+      if (!item.subtitles.find((x) => x.url === s.url)) {
+        item.subtitles.push(s);
+      }
+    });
+  }
+
+  async function loadPlaylistSubs(data, ctx) {
+    if (!data?.playlist?.length || !ctx?.isSeries) return;
+
+    const seen = new Set();
+    const tasks = [];
+
+    data.playlist.forEach((item) => {
+      const ep = getEpisodeInfo(item);
+      if (!ep) return;
+
+      const key = `${ctx.tmdbId}_${ep.season}_${ep.episode}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      tasks.push(
+        loadSubsForItem(ctx.tmdbId, ep.season, ep.episode).then((subs) => {
+          data.playlist.forEach((playlistItem) => {
+            const itemEp = getEpisodeInfo(playlistItem);
+            if (!itemEp) return;
+            if (itemEp.season === ep.season && itemEp.episode === ep.episode) {
+              applySubsToItem(playlistItem, subs);
+            }
+          });
+        })
+      );
+    });
+
+    if (tasks.length) {
+      await Promise.all(tasks);
+      log('Playlist subtitles prepared for', tasks.length, 'episodes');
+    }
+  }
+
+  async function prepareSubs(data) {
+    const ctx = getMediaContext(data);
+    if (!ctx) return { ctx: null, subs: null };
+
+    const subs = await loadSubs(ctx);
+    await loadPlaylistSubs(data, ctx);
+
+    return { ctx, subs };
+  }
+
   function applySubs(data, subs) {
     if (!subs?.length) return;
 
@@ -153,13 +243,8 @@
 
     if (data.playlist && Array.isArray(data.playlist)) {
       data.playlist.forEach((item) => {
-        item.subtitles = item.subtitles || [];
         if (currentUrl && item.url && item.url !== currentUrl) return;
-        subs.forEach((s) => {
-          if (!item.subtitles.find((x) => x.url === s.url)) {
-            item.subtitles.push(s);
-          }
-        });
+        applySubsToItem(item, subs);
       });
     }
 
@@ -198,7 +283,7 @@
 
       log('Player create event fired');
 
-      const ctx = getMediaContext();
+      const ctx = getMediaContext(data);
       if (!ctx) {
         log('Missing required data, aborting');
         return;
@@ -206,31 +291,35 @@
 
       log('Media info:', ctx);
 
-      let subs = getStoredSubs(ctx.storageKey);
+      const cached = getStoredSubs(ctx.storageKey);
+      const playlistReady = !ctx.isSeries || !data.playlist?.length || data.playlist.every((item) => {
+        const ep = getEpisodeInfo(item);
+        if (!ep) return true;
+        return !!getStoredSubs(`${ctx.tmdbId}_${ep.season}_${ep.episode}`);
+      });
 
-      if (!subs?.length) {
-        log('Subtitles not cached, delaying playback for external player');
+      if (!cached?.length || !playlistReady) {
+        log('Subtitles not ready, delaying playback for external player');
         abort();
 
         try {
-          subs = await loadSubs(ctx);
+          const prepared = await prepareSubs(data);
+          if (prepared.subs?.length) {
+            loadedSubs = prepared.subs;
+            applySubs(data, prepared.subs);
+          }
         } catch (e) {
           log('Error fetching subtitles:', e);
         }
 
         data.__sub_os_done = true;
-
-        if (subs?.length) {
-          loadedSubs = subs;
-          applySubs(data, subs);
-        }
-
         Lampa.Player.play(data);
         return;
       }
 
-      loadedSubs = subs;
-      applySubs(data, subs);
+      loadedSubs = cached;
+      await loadPlaylistSubs(data, ctx);
+      applySubs(data, cached);
     });
 
     Lampa.Player.listener.follow('start', async () => {
