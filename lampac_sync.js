@@ -19,18 +19,28 @@
   //  Helpers
   // -------------------------------------------------------------------------
 
+  function cleanString(val) {
+    if (val === undefined || val === null) return "";
+    var s = String(val).trim();
+    if (s === "undefined" || s === "null" || s === "") return "";
+    return s;
+  }
+
   function getHost() {
-    var h = Lampa.Storage.field("lampac_sync_host");
+    var h = cleanString(Lampa.Storage.field("lampac_sync_host")) || cleanString(Lampa.Storage.get("lampac_sync_host"));
     return (h && h.replace(/\/+$/, "")) || DEFAULT_HOST;
   }
 
   function getEmail() {
-    var email = Lampa.Storage.field("lampac_sync_email");
+    var email = cleanString(Lampa.Storage.field("lampac_sync_email")) || cleanString(Lampa.Storage.get("lampac_sync_email"));
     if (email) return email;
     try {
       var acc = Lampa.Storage.get("account", "{}");
       if (typeof acc === "string") acc = JSON.parse(acc);
-      if (acc && acc.email) return acc.email;
+      if (acc && acc.email) {
+        var cleanAccEmail = cleanString(acc.email);
+        if (cleanAccEmail) return cleanAccEmail;
+      }
     } catch (e) {}
     return "";
   }
@@ -565,7 +575,7 @@
         description: T("lampac_sync_host_hint"),
       },
       onChange: function (v) {
-        Lampa.Storage.set("lampac_sync_host", v || DEFAULT_HOST);
+        Lampa.Storage.set("lampac_sync_host", cleanString(v) || DEFAULT_HOST);
         checkServer();
       },
     });
@@ -585,7 +595,7 @@
         description: T("lampac_sync_email_hint"),
       },
       onChange: function (v) {
-        Lampa.Storage.set("lampac_sync_email", v || "");
+        Lampa.Storage.set("lampac_sync_email", cleanString(v));
         checkServer();
       },
     });
