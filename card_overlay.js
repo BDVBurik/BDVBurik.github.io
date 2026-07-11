@@ -1563,7 +1563,9 @@
         return 'S' + seasonNumber + ':E' + episodeNumber;
     }
     function getCardTmdbId(card, meta) {
-        return (meta && meta.id) || $(card).data('id') || $(card).attr('data-id') || (card && card.card_data && card.card_data.id) || '';
+        var raw = (meta && meta.id) || $(card).data('id') || $(card).attr('data-id') || (card && card.card_data && card.card_data.id) || '';
+        // TMDB API requires a numeric integer ID; reject slugs / string identifiers
+        return (raw && /^\d+$/.test(String(raw))) ? raw : '';
     }
     function removeEpisodeLabel(card) {
         var view = card && card.querySelector && card.querySelector('.card__view');
@@ -1683,6 +1685,8 @@
             return;
         }
         removeEpisodeLabel(card);
+        // Extra guard: only query TMDB when tmdbId is a pure integer (not a slug)
+        if (!/^\d+$/.test(String(tmdbId))) { removeEpisodeLabel(card); return; }
         Lampa.Network.silent(
             Lampa.TMDB.api('tv/' + tmdbId + '?api_key=' + Lampa.TMDB.key()),
             function (tvInfo) {
