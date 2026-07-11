@@ -27,7 +27,7 @@
           "https://bdvburik.github.io/store.js",
           "https://bdvburik.github.io/franshrezka.js",
           "https://bdvburik.github.io/head_filter.js",
-
+          "https://bdvburik.github.io/lampac_sync.js",
           "https://skaztv.online/js/tricks.js",
 
           "https://lampame.github.io/main/trakttv.js",
