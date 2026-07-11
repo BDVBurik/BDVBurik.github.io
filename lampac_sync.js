@@ -12,7 +12,7 @@
   window.lampac_sync_plugin = true;
 
   var PLUGIN_NAME = "LampacSync";
-  var PLUGIN_VER = "1.0.0";
+  var PLUGIN_VER = "1.0.1";
   var DEFAULT_HOST = "https://lampac-compat.bdvburik.workers.dev";
 
   // -------------------------------------------------------------------------
@@ -85,17 +85,20 @@
       xhr.open(method, url, true);
       xhr.timeout = 10000;
 
-      if (
-        method === "POST" &&
-        typeof body === "string" &&
-        body.indexOf("=") !== -1
-      ) {
-        xhr.setRequestHeader(
-          "Content-Type",
-          "application/x-www-form-urlencoded",
-        );
-      } else if (method === "POST" && body) {
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      if (method === "POST" && body) {
+        var isJson = false;
+        if (typeof body === "string") {
+          var firstChar = body.trim().charAt(0);
+          if (firstChar === "{" || firstChar === "[") {
+            isJson = true;
+          }
+        }
+        
+        if (isJson) {
+          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        } else {
+          xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        }
       }
 
       xhr.onreadystatechange = function () {
