@@ -7,17 +7,18 @@
       clearInterval(timer);
 
       Lampa.Utils.putScriptAsync(
-        ["http://lampalampa.free.nf/uacoments.js",
+        [
+          "http://lampalampa.free.nf/uacoments.js",
           //"https://bdvburik.github.io/syncpro.js", //сінхолнізація
           "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
-         "https://bdvburik.github.io/noshots.js",
+          "https://bdvburik.github.io/noshots.js",
           "https://bdvburik.github.io/ts.js",
           //"https://bdvburik.github.io/labelse.js",
           "https://bdvburik.github.io/sub_os.js",
           "https://bdvburik.github.io/keys/kinopoisk.js",
           "https://bdvburik.github.io/card_overlay.js",
-          "https://bdvburik.github.io/kprating.js",
+          // "https://bdvburik.github.io/kprating.js",
           "https://bdvburik.github.io/title.js",
           "https://bdvburik.github.io/rezkacomment.js",
           "https://bdvburik.github.io/adss.js",
@@ -38,12 +39,11 @@
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
 
-
           "https://lampame.github.io/main/bo.js",
           "https://igorek1986.github.io/lampa-plugins/myshows.js",
-          "http://lampaua.mooo.com/remotekeyboard.js"
+          "http://lampaua.mooo.com/remotekeyboard.js",
         ],
-        function () { },
+        function () {},
       );
     }
   }, 200);
