@@ -4,12 +4,6 @@
 //  Worker: https://lampac-compat.bdvburik.workers.dev
 //  GitHub: https://bdvburik.github.io/lampac_sync.js
 // =============================================================================
-// =============================================================================
-//  LampacSync — плагин для Lampa
-//  Синхронизирует таймкоды и закладки через Cloudflare Worker
-//  Worker: https://lampac-compat.bdvburik.workers.dev
-//  GitHub: https://bdvburik.github.io/lampac_sync.js
-// =============================================================================
 (function () {
   "use strict";
 
@@ -568,31 +562,27 @@
           "online_last_balanser",
           "online_watched_last",
           "torrents_view",
-          "torrents_filter_data"
-        ]
+          "torrents_filter_data",
+        ],
       },
       {
         path: "sync_torrents",
-        keys: ["torrents_view", "torrents_filter_data"]
+        keys: ["torrents_view", "torrents_filter_data"],
       },
       {
         path: "search_history",
-        keys: ["search_recent", "search_history"]
+        keys: ["search_recent", "search_history"],
       },
       {
         path: "sync_plugins",
-        keys: ["plugins"]
-      }
+        keys: ["plugins"],
+      },
     ],
 
     enabled: function () {
       var v = Lampa.Storage.field("lampac_sync_storage");
       return (
-        v === undefined ||
-        v === null ||
-        v === true ||
-        v === "true" ||
-        v === 1
+        v === undefined || v === null || v === true || v === "true" || v === 1
       );
     },
 
@@ -687,7 +677,10 @@
                   Lampa.Storage.set(k, parsed, true);
                 });
                 self.localChangeTimes[def.path] = serverTime;
-                dbg("← storage/get ok, updated local storage for path:", def.path);
+                dbg(
+                  "← storage/get ok, updated local storage for path:",
+                  def.path,
+                );
               } catch (e) {
                 dbg("✗ storage/get parse error:", e.message);
               }
