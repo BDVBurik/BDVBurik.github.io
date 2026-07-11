@@ -17,7 +17,7 @@
   window.lampac_sync_plugin = true;
 
   var PLUGIN_NAME = "LampacSync";
-  var PLUGIN_VER = "1.0.2";
+  var PLUGIN_VER = "1.0.3";
   var DEFAULT_HOST = "https://lampac-compat.bdvburik.workers.dev";
 
   // -------------------------------------------------------------------------
@@ -206,6 +206,11 @@
         ru: "Синхронизировать закладки",
         en: "Sync bookmarks",
         uk: "Синхронізувати закладки",
+      },
+      lampac_sync_storage: {
+        ru: "Синхронизировать кэш / историю Lampa",
+        en: "Sync Lampa cache / history",
+        uk: "Синхронізувати кеш / історію Lampa",
       },
       lampac_sync_debug: {
         ru: "Отладка в консоли",
@@ -545,6 +550,224 @@
   };
 
   // -------------------------------------------------------------------------
+  //  Storage / System Files / Lampa Cache
+  // -------------------------------------------------------------------------
+
+  var StorageSync = {
+    bound: false,
+    timers: {},
+    localChangeTimes: {},
+
+    // Definitions for blobs to sync
+    defs: [
+      {
+        path: "sync_view",
+        keys: [
+          "file_view",
+          "online_view",
+          "online_last_balanser",
+          "online_watched_last",
+          "torrents_view",
+          "torrents_filter_data"
+        ]
+      },
+      {
+        path: "sync_torrents",
+        keys: ["torrents_view", "torrents_filter_data"]
+      },
+      {
+        path: "search_history",
+        keys: ["search_recent", "search_history"]
+      },
+      {
+        path: "sync_plugins",
+        keys: ["plugins"]
+      }
+    ],
+
+    enabled: function () {
+      var v = Lampa.Storage.field("lampac_sync_storage");
+      return (
+        v === undefined ||
+        v === null ||
+        v === true ||
+        v === "true" ||
+        v === 1
+      );
+    },
+
+    push: function (def) {
+      if (!this.enabled() || !getEmail()) return;
+
+      var bundle = {};
+      var profile_id = Lampa.Storage.get("lampac_profile_id", "");
+      if (!profile_id) {
+        var acc = Lampa.Storage.get("account", "{}");
+        if (typeof acc === "string") {
+          try {
+            acc = JSON.parse(acc);
+          } catch (e) {}
+        }
+        if (acc && acc.profile && acc.profile.id) profile_id = acc.profile.id;
+      }
+
+      var keysToSync = [].concat(def.keys);
+      if (def.path === "sync_view" && profile_id) {
+        keysToSync.push("file_view_" + profile_id);
+      }
+
+      var hasData = false;
+      keysToSync.forEach(function (k) {
+        try {
+          var v = Lampa.Storage.get(k, null);
+          if (v !== null && typeof v !== "undefined") {
+            bundle[k] = typeof v === "string" ? v : JSON.stringify(v);
+            hasData = true;
+          }
+        } catch (e) {}
+      });
+
+      if (!hasData) return;
+
+      var self = this;
+      var body = JSON.stringify(bundle);
+      dbg("→ storage/set", def.path, body.length, "bytes");
+      request(
+        "POST",
+        "/storage/set",
+        body,
+        function (res) {
+          if (res && res.success && res.fileInfo && res.fileInfo.changeTime) {
+            self.localChangeTimes[def.path] = res.fileInfo.changeTime;
+          }
+        },
+        null,
+        "path=" + encodeURIComponent(def.path),
+      );
+    },
+
+    schedulePush: function (def) {
+      var self = this;
+      if (self.timers[def.path]) clearTimeout(self.timers[def.path]);
+      self.timers[def.path] = setTimeout(function () {
+        self.push(def);
+      }, 2000);
+    },
+
+    pull: function (def, callback) {
+      if (!this.enabled() || !getEmail()) {
+        if (callback) callback();
+        return;
+      }
+
+      var self = this;
+      dbg("→ storage/get", def.path);
+      request(
+        "GET",
+        "/storage/get",
+        null,
+        function (res) {
+          if (res && res.success && res.data) {
+            var serverTime = (res.fileInfo && res.fileInfo.changeTime) || "";
+            var localTime = self.localChangeTimes[def.path] || "0";
+
+            if (serverTime > localTime) {
+              try {
+                var bundle = JSON.parse(res.data);
+                Object.keys(bundle).forEach(function (k) {
+                  var raw = bundle[k];
+                  if (typeof raw !== "string") return;
+                  var parsed = raw;
+                  try {
+                    var c = raw.charAt(0);
+                    if (c === "[" || c === "{") parsed = JSON.parse(raw);
+                    else if (raw === "true" || raw === "false")
+                      parsed = raw === "true";
+                  } catch (e) {}
+                  Lampa.Storage.set(k, parsed, true);
+                });
+                self.localChangeTimes[def.path] = serverTime;
+                dbg("← storage/get ok, updated local storage for path:", def.path);
+              } catch (e) {
+                dbg("✗ storage/get parse error:", e.message);
+              }
+            } else {
+              dbg("← storage/get up-to-date");
+            }
+          } else if (res && res.msg === "outFile") {
+            // На сервере нет файла — отправляем локальный
+            self.push(def);
+          }
+          if (callback) callback();
+        },
+        null,
+        "path=" + encodeURIComponent(def.path),
+      );
+    },
+
+    pullAll: function (callback) {
+      var self = this;
+      var index = 0;
+      function next() {
+        if (index >= self.defs.length) {
+          if (callback) callback();
+          return;
+        }
+        self.pull(self.defs[index++], next);
+      }
+      next();
+    },
+
+    pushAll: function () {
+      var self = this;
+      self.defs.forEach(function (def) {
+        self.push(def);
+      });
+    },
+
+    bind: function () {
+      if (this.bound) return;
+      this.bound = true;
+      var self = this;
+
+      if (Lampa.Storage.listener && Lampa.Storage.listener.follow) {
+        Lampa.Storage.listener.follow("change", function (e) {
+          if (!self.enabled()) return;
+
+          var profile_id = Lampa.Storage.get("lampac_profile_id", "");
+          if (!profile_id) {
+            var acc = Lampa.Storage.get("account", "{}");
+            if (typeof acc === "string") {
+              try {
+                acc = JSON.parse(acc);
+              } catch (e) {}
+            }
+            if (acc && acc.profile && acc.profile.id)
+              profile_id = acc.profile.id;
+          }
+
+          // Находим, к какому определению относится изменившийся ключ
+          self.defs.forEach(function (def) {
+            var keysToSync = [].concat(def.keys);
+            if (def.path === "sync_view" && profile_id) {
+              keysToSync.push("file_view_" + profile_id);
+            }
+
+            if (keysToSync.indexOf(e.name) !== -1) {
+              self.schedulePush(def);
+            }
+          });
+        });
+      }
+
+      // Обновляем при возврате в приложение
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden && self.enabled()) self.pullAll();
+      });
+    },
+  };
+
+  // -------------------------------------------------------------------------
   //  Settings UI
   // -------------------------------------------------------------------------
 
@@ -661,6 +884,14 @@
       onChange: function () {},
     });
 
+    // Кэш и системные файлы вкл/выкл
+    Lampa.SettingsApi.addParam({
+      component: "lampac_sync",
+      param: { name: "lampac_sync_storage", type: "trigger", default: true },
+      field: { name: T("lampac_sync_storage"), description: "" },
+      onChange: function () {},
+    });
+
     // Загрузить сейчас
     Lampa.SettingsApi.addParam({
       component: "lampac_sync",
@@ -669,6 +900,7 @@
       onChange: function () {
         Timecodes.pullForCurrent();
         Bookmarks.pull();
+        StorageSync.pullAll();
         setTimeout(function () {
           Lampa.Noty.show(T("lampac_sync_pulled"));
         }, 800);
@@ -682,6 +914,7 @@
       field: { name: T("lampac_sync_push_now"), description: "" },
       onChange: function () {
         Bookmarks.pushFull();
+        StorageSync.pushAll();
         setTimeout(function () {
           Lampa.Noty.show(T("lampac_sync_pushed"));
         }, 800);
@@ -724,18 +957,21 @@
     buildSettings();
     Timecodes.bind();
     Bookmarks.bind();
+    StorageSync.bind();
 
     // Первичная синхронизация — немного задерживаем чтобы Lampa успела загрузиться
     setTimeout(function () {
       if (getEmail()) {
         dbg("initial pull...");
         Bookmarks.pull();
+        StorageSync.pullAll();
       }
     }, 2000);
 
     Lampa.Listener.follow("app", function (e) {
       if (e.type === "ready" && getEmail()) {
         Bookmarks.pull();
+        StorageSync.pullAll();
       }
     });
 
