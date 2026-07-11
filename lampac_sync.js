@@ -25,7 +25,14 @@
   }
 
   function getEmail() {
-    return Lampa.Storage.field("lampac_sync_email") || "";
+    var email = Lampa.Storage.field("lampac_sync_email");
+    if (email) return email;
+    try {
+      var acc = Lampa.Storage.get("account", "{}");
+      if (typeof acc === "string") acc = JSON.parse(acc);
+      if (acc && acc.email) return acc.email;
+    } catch (e) {}
+    return "";
   }
 
   function buildUrl(path, extra) {
