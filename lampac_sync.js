@@ -12,7 +12,7 @@
   window.lampac_sync_plugin = true;
 
   var PLUGIN_NAME = "LampacSync";
-  var PLUGIN_VER = "1.0.1";
+  var PLUGIN_VER = "1.0.2";
   var DEFAULT_HOST = "https://lampac-compat.bdvburik.workers.dev";
 
   // -------------------------------------------------------------------------
@@ -109,9 +109,10 @@
         } catch (e) {}
 
         if (xhr.status >= 200 && xhr.status < 300) {
+          console.log("[LampacSync] Успешно отправлен запрос: " + method + " " + path, body ? "(размер: " + body.length + " симв.)" : "");
           if (onSuccess) onSuccess(parsed, xhr.status);
         } else {
-          dbg("✗", method, path, xhr.status, parsed);
+          console.error("[LampacSync] Ошибка запроса: " + method + " " + path + " (HTTP " + xhr.status + ")", parsed);
           if (onError) onError(xhr.status, parsed);
         }
       };
