@@ -7,16 +7,26 @@
   let namemovie;
   let savedHTML = null;
 
-  let kp_prox = "https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/";
-  let url = "https://rezka.ag/ajax/get_comments/?t=1714093694732&news_id=";
+  function getSettings() {
+    let host = (Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag') || 'https://rezka.ag').trim().replace(/\/+$/, '');
+    let cookie = (Lampa.Storage.get('rezka_comment_cookie', '') || '').trim();
+    let proxy = (Lampa.Storage.get('rezka_comment_proxy', 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/') || 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/').trim();
+    if (proxy && !proxy.endsWith('/')) {
+      proxy += '/';
+    }
+    return { host, cookie, proxy };
+  }
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
     try {
-      let searchUrl = kp_prox +
-        "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
-        encodeURIComponent(name) +
-        (ye ? "+" + ye : "");
+      let { host, cookie, proxy } = getSettings();
+      let path = host + "/search/?do=search&subaction=search&q=" + encodeURIComponent(name) + (ye ? "+" + ye : "");
+      let searchUrl = proxy;
+      if (cookie) {
+        searchUrl += "param/Cookie=" + encodeURIComponent(cookie) + "/";
+      }
+      searchUrl += path;
 
       console.log('[RezkaComment] searching hdrezka with url:', searchUrl);
 
@@ -35,14 +45,20 @@
       const item = dom.querySelector(".b-content__inline_item");
       if (!item) {
         console.warn('[RezkaComment] show not found on Rezka:', name, ye);
-        Lampa.Noty.show('Фильм/сериал не найден на Rezka');
+        if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
+          Lampa.Noty.show('Защита от ботов на Rezka. Настройте Cookie в настройках плагина.');
+        } else {
+          Lampa.Noty.show('Фильм/сериал не найден на Rezka');
+        }
         Lampa.Loading.stop();
         return;
       }
 
       namemovie =
         item.querySelector(".b-content__inline_item-link")?.innerText || "";
-      await comment_rezka(item.dataset.id);
+      
+      let itemUrl = item.querySelector(".b-content__inline_item-link")?.getAttribute("href") || "";
+      await comment_rezka(item.dataset.id, itemUrl);
     } catch (e) {
       console.error('[RezkaComment] searchRezka error:', e);
       Lampa.Noty.show('Ошибка поиска на Rezka: ' + e.message);
@@ -165,12 +181,20 @@
   }
 
   // === Основная обработка комментариев Rezka с storage на сутки ===
-  async function comment_rezka(id) {
+  async function comment_rezka(id, pageUrl) {
     try {
-      let commentsUrl = kp_prox +
-        url +
-        (id ? id : "1") +
-        "&cstart=1&type=0&comment_id=0&skin=hdrezka";
+      let { host, cookie, proxy } = getSettings();
+      let t = Date.now();
+      let path = host + "/ajax/get_comments/?t=" + t + "&news_id=" + (id ? id : "1") + "&cstart=1&type=0&comment_id=0&skin=hdrezka";
+
+      let commentsUrl = proxy;
+      if (cookie) {
+        commentsUrl += "param/Cookie=" + encodeURIComponent(cookie) + "/";
+      }
+      if (pageUrl) {
+        commentsUrl += "param/Referer=" + encodeURIComponent(pageUrl) + "/";
+      }
+      commentsUrl += path;
 
       console.log('[RezkaComment] fetching comments from:', commentsUrl);
 
@@ -181,14 +205,22 @@
         if (!r.ok) {
           throw new Error('HTTP status ' + r.status);
         }
-        return r.json();
+        return r.text();
       });
 
-      if (!fc || !fc.comments) {
+      // Check if the response is actually HTML challenge instead of JSON
+      if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
+        Lampa.Noty.show('Защита от ботов на Rezka. Настройте Cookie в настройках плагина.');
+        Lampa.Loading.stop();
+        return;
+      }
+
+      let json = JSON.parse(fc);
+      if (!json || !json.comments) {
         throw new Error('Пустой ответ от сервера комментариев');
       }
 
-      let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+      let dom = new DOMParser().parseFromString(json.comments, "text/html");
       dom
         .querySelectorAll(".actions, i, .share-link")
         .forEach((elem) => elem.remove());
@@ -274,6 +306,72 @@
   // Функция для начала работы плагина
   function startPlugin() {
     window.comment_plugin = true;
+
+    try {
+      // Регистрация настроек
+      Lampa.SettingsApi.addComponent({
+        component: 'rezka_comment',
+        name: 'Rezka Comments',
+        icon: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+      });
+
+      Lampa.SettingsApi.addParam({
+        component: 'rezka_comment',
+        param: {
+          name: 'rezka_comment_host',
+          type: 'input',
+          placeholder: 'https://rezka.ag',
+          values: Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag'),
+          default: 'https://rezka.ag'
+        },
+        field: {
+          name: 'Зеркало hdrezka',
+          description: 'Адрес зеркала hdrezka (например, https://hdrezka.me)'
+        },
+        onChange: function(value) {
+          Lampa.Storage.set('rezka_comment_host', value);
+        }
+      });
+
+      Lampa.SettingsApi.addParam({
+        component: 'rezka_comment',
+        param: {
+          name: 'rezka_comment_cookie',
+          type: 'input',
+          placeholder: 'вставьте cookie',
+          values: Lampa.Storage.get('rezka_comment_cookie', ''),
+          default: ''
+        },
+        field: {
+          name: 'Cookie авторизации',
+          description: 'Cookie из вашего браузера для обхода защиты (Anubis / PHPSESSID)'
+        },
+        onChange: function(value) {
+          Lampa.Storage.set('rezka_comment_cookie', value);
+        }
+      });
+
+      Lampa.SettingsApi.addParam({
+        component: 'rezka_comment',
+        param: {
+          name: 'rezka_comment_proxy',
+          type: 'input',
+          placeholder: 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/',
+          values: Lampa.Storage.get('rezka_comment_proxy', 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/'),
+          default: 'https://worker-patient-dream-26d8.bdvburik.workers.dev:8443/'
+        },
+        field: {
+          name: 'CORS Прокси',
+          description: 'Ваш Cloudflare Worker прокси (обязательно с / на конце)'
+        },
+        onChange: function(value) {
+          Lampa.Storage.set('rezka_comment_proxy', value);
+        }
+      });
+    } catch (e) {
+      console.error('[RezkaComment] Settings init error:', e);
+    }
+
     Lampa.Listener.follow("full", function (e) {
       if (e.type == "complite") {
         $(".button--comment").remove();
