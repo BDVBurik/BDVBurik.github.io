@@ -12,26 +12,45 @@
 
   // Функция для поиска на сайте hdrezka
   async function searchRezka(name, ye) {
-    let fc = await fetch(
-      kp_prox +
+    try {
+      let searchUrl = kp_prox +
         "https://hdrezka.ag/search/?do=search&subaction=search&q=" +
-        name +
-        (ye ? "+" + ye : ""),
-      { method: "GET", headers: { "Content-Type": "text/html" } },
-    ).then((response) => response.text());
+        encodeURIComponent(name) +
+        (ye ? "+" + ye : "");
 
-    let dom = new DOMParser().parseFromString(fc, "text/html");
+      console.log('[RezkaComment] searching hdrezka with url:', searchUrl);
 
-    const item = dom.querySelector(".b-content__inline_item");
-    if (!item) return;
+      let fc = await fetch(searchUrl, {
+        method: "GET",
+        headers: { "Content-Type": "text/html" }
+      }).then((response) => {
+        if (!response.ok) {
+          throw new Error('HTTP status ' + response.status);
+        }
+        return response.text();
+      });
 
-    namemovie =
-      item.querySelector(".b-content__inline_item-link")?.innerText || "";
-    comment_rezka(item.dataset.id);
+      let dom = new DOMParser().parseFromString(fc, "text/html");
+
+      const item = dom.querySelector(".b-content__inline_item");
+      if (!item) {
+        console.warn('[RezkaComment] show not found on Rezka:', name, ye);
+        Lampa.Noty.show('Фильм/сериал не найден на Rezka');
+        Lampa.Loading.stop();
+        return;
+      }
+
+      namemovie =
+        item.querySelector(".b-content__inline_item-link")?.innerText || "";
+      await comment_rezka(item.dataset.id);
+    } catch (e) {
+      console.error('[RezkaComment] searchRezka error:', e);
+      Lampa.Noty.show('Ошибка поиска на Rezka: ' + e.message);
+      Lampa.Loading.stop();
+    }
   }
 
   // Функция для получения английского названия фильма или сериала
-
   async function getEnTitle(id, type) {
     try {
       var tmdbType = type === 'movie' ? 'movie' : 'tv';
@@ -58,18 +77,20 @@
         window.__tmdbTranslationsCache[tmdbCacheKey] = tr;
       }
 
-      const enTitle =
-        tr.find((t) => t.iso_3166_1 === 'US' || t.iso_639_1 === 'en')?.data
-          ?.title ||
-        tr.find((t) => t.iso_3166_1 === 'US' || t.iso_639_1 === 'en')?.data
-          ?.name;
+      const enTranslation = tr.find((t) => t.iso_3166_1 === 'US' || t.iso_639_1 === 'en');
+      const enTitle = enTranslation?.data?.title || enTranslation?.data?.name;
+
       if (enTitle) {
-        searchRezka(normalizeTitle(enTitle), year);
+        await searchRezka(normalizeTitle(enTitle), year);
+      } else {
+        console.warn('[RezkaComment] English title not found for', tmdbCacheKey, tr);
+        Lampa.Noty.show('Английское название не найдено');
+        Lampa.Loading.stop();
       }
     } catch (e) {
-      console.error('TMDB error', e);
+      console.error('[RezkaComment] TMDB error', e);
+      Lampa.Noty.show('Ошибка получения данных TMDB');
       Lampa.Loading.stop();
-      return;
     }
   }
 
@@ -145,64 +166,48 @@
 
   // === Основная обработка комментариев Rezka с storage на сутки ===
   async function comment_rezka(id) {
-    // const storageKey = "rezkaComments_" + id;
-    // const storageTimeKey = storageKey + "_time";
-    // const oneDay = 24 * 60 * 60 * 1000;
-    // const now = Date.now();
+    try {
+      let commentsUrl = kp_prox +
+        url +
+        (id ? id : "1") +
+        "&cstart=1&type=0&comment_id=0&skin=hdrezka";
 
-    // 1. Показываем из storage сразу
-    //let savedHTML = localStorage.getItem(storageKey);
-    // let savedTime = parseInt(localStorage.getItem(storageTimeKey) || "0", 10);
-    // if (savedHTML && now - savedTime < oneDay) {
-    //   const container = document.createElement("div");
-    //   container.innerHTML = savedHTML;
-    //   openModal(container); // показываем сразу
-    // }
+      console.log('[RezkaComment] fetching comments from:', commentsUrl);
 
-    // 2. Обновляем в фоне
-    (async () => {
-      try {
-        let fc = await fetch(
-          kp_prox +
-            url +
-            (id ? id : "1") +
-            "&cstart=1&type=0&comment_id=0&skin=hdrezka",
-          {
-            method: "GET",
-            headers: { "Content-Type": "text/plain" },
-          },
-        ).then((r) => r.json());
+      let fc = await fetch(commentsUrl, {
+        method: "GET",
+        headers: { "Content-Type": "text/plain" },
+      }).then((r) => {
+        if (!r.ok) {
+          throw new Error('HTTP status ' + r.status);
+        }
+        return r.json();
+      });
 
-        let dom = new DOMParser().parseFromString(fc.comments, "text/html");
-        dom
-          .querySelectorAll(".actions, i, .share-link")
-          .forEach((elem) => elem.remove());
-        let rootList = dom.querySelector(".comments-tree-list");
-        let newTree = buildTree(rootList);
-
-        // Сохраняем в storage
-        // const container = document.createElement("div");
-        // container.appendChild(newTree.cloneNode(true));
-        // localStorage.setItem(storageKey, container.innerHTML);
-        // localStorage.setItem(storageTimeKey, Date.now().toString());
-
-        // Если уже показали старое, обновляем содержимое
-        // if (savedHTML && now - savedTime < oneDay) {
-        //   const commentWrapper = document.querySelector(
-        //     ".broadcast__text .comment",
-        //   );
-        //   if (commentWrapper) {
-        //     commentWrapper.innerHTML = "";
-        //     commentWrapper.appendChild(newTree);
-        //   }
-        // } else {
-        openModal(newTree);
-        // }
-      } catch (e) {
-        console.error(e);
-        Lampa.Loading.stop();
+      if (!fc || !fc.comments) {
+        throw new Error('Пустой ответ от сервера комментариев');
       }
-    })();
+
+      let dom = new DOMParser().parseFromString(fc.comments, "text/html");
+      dom
+        .querySelectorAll(".actions, i, .share-link")
+        .forEach((elem) => elem.remove());
+
+      let rootList = dom.querySelector(".comments-tree-list");
+      if (!rootList) {
+        console.warn('[RezkaComment] comments-tree-list not found in parsed HTML for', id);
+        Lampa.Noty.show('Комментарии к фильму/сериалу отсутствуют');
+        Lampa.Loading.stop();
+        return;
+      }
+
+      let newTree = buildTree(rootList);
+      openModal(newTree);
+    } catch (e) {
+      console.error('[RezkaComment] comment_rezka error:', e);
+      Lampa.Noty.show('Ошибка получения комментариев: ' + e.message);
+      Lampa.Loading.stop();
+    }
 
     function openModal(treeContent) {
       Lampa.Loading.stop();
