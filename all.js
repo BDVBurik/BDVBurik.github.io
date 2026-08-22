@@ -9,7 +9,6 @@
       Lampa.Utils.putScriptAsync(
         [
           "http://lampalampa.free.nf/uacoments.js",
-          //"https://bdvburik.github.io/syncpro.js", //сінхолнізація
           "http://wtch.ch/m", //хз что
           "http://bwa.ad/rc",
           "https://bdvburik.github.io/noshots.js",
@@ -20,7 +19,7 @@
           "https://bdvburik.github.io/card_overlay.js",
           // "https://bdvburik.github.io/kprating.js",
           "https://bdvburik.github.io/title.js",
-          "https://bdvburik.github.io/rezkacomment.js",
+         // "https://bdvburik.github.io/rezkacomment.js",
           "https://bdvburik.github.io/adss.js",
           "https://bdvburik.github.io/rembutt.js",
           "https://bdvburik.github.io/pubtorr.js",
@@ -30,7 +29,7 @@
           "https://bdvburik.github.io/lampac_sync.js",
           "https://skaztv.online/js/tricks.js",
 
-          "https://lampame.github.io/main/trakttv.js",
+         // "https://lampame.github.io/main/trakttv.js",
 
           "https://lampame.github.io/main/hikka.js",
           "https://lampame.github.io/main/cw.js",
@@ -40,7 +39,6 @@
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
 
           "https://nrsua.github.io/lampa-nrs/fligelo.js",
-          "nrsua.github.io/lampa-nrs/fligelo.js",
 
           "https://lampame.github.io/main/bo.js",
           "https://igorek1986.github.io/lampa-plugins/myshows.js",
