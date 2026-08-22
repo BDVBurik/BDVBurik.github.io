@@ -39,6 +39,9 @@
           "https://icantrytodo.github.io/lampa/torrent_styles_v2.js",
           "https://darkestclouds.github.io/plugins/easytorrent/easytorrent.min.js",
 
+          "https://nrsua.github.io/lampa-nrs/fligelo.js",
+          "nrsua.github.io/lampa-nrs/fligelo.js",
+
           "https://lampame.github.io/main/bo.js",
           "https://igorek1986.github.io/lampa-plugins/myshows.js",
           "http://lampaua.mooo.com/remotekeyboard.js",
