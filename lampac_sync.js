@@ -413,18 +413,34 @@
         var local = this.readLocal();
         var summary = [];
 
-        // Обновляем только id-списки (не card-кэш)
+        // Объединяем серверные id-списки с локальными (merge без дубликатов)
         Object.keys(data).forEach(function (k) {
           if (k === "success" || k === "dbInNotInitialization" || k === "card")
             return;
           if (!Array.isArray(data[k])) return;
-          local[k] = data[k]
+          var serverIds = data[k]
             .map(function (item) {
               return Bookmarks.extractId(item);
             })
             .filter(function (id) {
               return id != null;
             });
+
+          var localList = Array.isArray(local[k]) ? local[k] : [];
+          var localIds = [];
+          localList.forEach(function (item) {
+            var id = Bookmarks.extractId(item);
+            if (id != null && localIds.indexOf(id) === -1) localIds.push(id);
+          });
+
+          // Добавляем серверные ID, которых нет локально
+          serverIds.forEach(function (sid) {
+            if (localIds.indexOf(sid) === -1) {
+              localIds.push(sid);
+            }
+          });
+
+          local[k] = localIds;
           summary.push(k + "(" + local[k].length + ")");
         });
 
