@@ -618,11 +618,18 @@
         } catch (e) {}
       });
 
-      if (!hasData) return;
+      if (!hasData) {
+        dbg("→ storage/set SKIP (no data)", def.path, "keys checked:", keysToSync);
+        return;
+      }
 
       var self = this;
       var body = JSON.stringify(bundle);
-      dbg("→ storage/set", def.path, body.length, "bytes");
+      dbg(
+        "→ storage/set", def.path,
+        "|", body.length, "bytes",
+        "| keys:", Object.keys(bundle).join(", ")
+      );
       request(
         "POST",
         "/storage/set",
@@ -630,6 +637,7 @@
         function (res) {
           if (res && res.success && res.fileInfo && res.fileInfo.changeTime) {
             self.localChangeTimes[def.path] = res.fileInfo.changeTime;
+            dbg("← storage/set ok", def.path, "changeTime:", res.fileInfo.changeTime);
           }
         },
         null,
@@ -662,9 +670,17 @@
             var serverTime = (res.fileInfo && res.fileInfo.changeTime) || "";
             var localTime = self.localChangeTimes[def.path] || "0";
 
+            dbg(
+              "← storage/get", def.path,
+              "| serverTime:", serverTime,
+              "| localTime:", localTime,
+              "| dataSize:", res.data.length, "bytes"
+            );
+
             if (serverTime > localTime) {
               try {
                 var bundle = JSON.parse(res.data);
+                var appliedKeys = [];
                 Object.keys(bundle).forEach(function (k) {
                   var raw = bundle[k];
                   if (typeof raw !== "string") return;
@@ -676,21 +692,25 @@
                       parsed = raw === "true";
                   } catch (e) {}
                   Lampa.Storage.set(k, parsed, true);
+                  appliedKeys.push(k + "(" + String(raw).length + "b)");
                 });
                 self.localChangeTimes[def.path] = serverTime;
                 dbg(
-                  "← storage/get ok, updated local storage for path:",
-                  def.path,
+                  "← storage/get APPLIED", def.path,
+                  "| keys:", appliedKeys.join(", ")
                 );
               } catch (e) {
                 dbg("✗ storage/get parse error:", e.message);
               }
             } else {
-              dbg("← storage/get up-to-date");
+              dbg("← storage/get up-to-date (no changes since last pull)", def.path);
             }
           } else if (res && res.msg === "outFile") {
             // На сервере нет файла — отправляем локальный
+            dbg("← storage/get outFile (not on server) → pushing local", def.path);
             self.push(def);
+          } else {
+            dbg("← storage/get unexpected response", def.path, res);
           }
           if (callback) callback();
         },
