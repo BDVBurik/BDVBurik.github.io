@@ -411,6 +411,7 @@
       this.applying = true;
       try {
         var local = this.readLocal();
+        var summary = [];
 
         // Обновляем только id-списки (не card-кэш)
         Object.keys(data).forEach(function (k) {
@@ -424,7 +425,10 @@
             .filter(function (id) {
               return id != null;
             });
+          summary.push(k + "(" + local[k].length + ")");
         });
+
+        dbg("← bookmarks apply:", summary.length ? summary.join(", ") : "(empty)");
 
         Lampa.Storage.set("favorite", local, true);
         if (Lampa.Favorite && typeof Lampa.Favorite.read === "function") {
@@ -435,6 +439,17 @@
         ) {
           Lampa.Favorite.init();
         }
+        // Дополнительный fallback: посылаем событие через listener
+        // чтобы компоненты (история, закладки) перерисовались
+        try {
+          if (
+            Lampa.Favorite &&
+            Lampa.Favorite.listener &&
+            typeof Lampa.Favorite.listener.send === "function"
+          ) {
+            Lampa.Favorite.listener.send("update", {});
+          }
+        } catch (e) {}
         dbg("← bookmarks applied");
       } catch (e) {
         dbg("✗ applyFromServer", e.message);
@@ -458,6 +473,13 @@
             self.pushFull();
             return;
           }
+          // Показываем что пришло с сервера
+          var cats = Object.keys(json).filter(function(k) {
+            return Array.isArray(json[k]) && k !== "card";
+          });
+          dbg("← bookmark/list received:",
+            cats.map(function(k) { return k + "(" + json[k].length + ")"; }).join(", ") || "(empty)"
+          );
           self.applyFromServer(json);
         },
         function (status) {

@@ -1,3 +1,42 @@
+const cachedCookies = {};
+
+async function solveChallenge(challengeObj) {
+  const { id, randomData, difficulty } = challengeObj;
+  let nonce = 0;
+  const encoder = new TextEncoder();
+  const c = Math.floor(difficulty / 2);
+  const l = (difficulty % 2 !== 0);
+
+  while (true) {
+    const input = randomData + nonce;
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = new Uint8Array(hashBuffer);
+    
+    let ok = true;
+    for (let n = 0; n < c; n++) {
+      if (hashArray[n] !== 0) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && l && (hashArray[c] >> 4 !== 0)) {
+      ok = false;
+    }
+    
+    if (ok) {
+      const hashHex = Array.from(hashArray)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      return { nonce, response: hashHex };
+    }
+    nonce++;
+    if (nonce > 10000000) {
+      throw new Error("Could not solve PoW challenge within 10M iterations");
+    }
+  }
+}
+
 export default {
   async fetch(request) {
     const corsHeaders = {
@@ -15,18 +54,60 @@ export default {
       const url = new URL(request.url);
       let api_pos = url.origin.length + 1;
       let api = url.href.substring(api_pos);
+      let proxy_url = url.href;
+      let proxy = "";
+      let proxy_enc = "";
+      let enc = "";
       let ip = "";
       let redirect = request.method === "POST" ? "manual" : "follow";
       let get_cookie = false;
+      let cookie_plus = false;
+      let get_redirect = false;
+      let force_head = false;
+      let remove_compression = false;
       let params = [];
       let cdn_info = "cdn_X8v8IbU8";
 
       if (api === "headers") {
         let body = "";
-        request.headers.forEach((value, key) => body += key + " = " + value + "\n");
+        request.headers.forEach(
+          (value, key) => (body += key + " = " + value + "\n"),
+        );
         body += "request_url" + " = " + request.url + "\n";
-        body += "worker_version = 1.03\n";
+        body += "worker_version = 1.18\n";
         return new Response(body, corsHeaders);
+      }
+
+      let real_ip = "";
+      let forwarded_for = request.headers.get("X-Forwarded-For");
+      if (forwarded_for)
+        real_ip =
+          forwarded_for
+            .split(",")
+            .map((s) => s.trim())
+            .find(
+              (s) =>
+                s &&
+                !s.match(
+                  /^(127\.|10\.|172\.1[6-9]|172\.2[0-9]|172\.3[01]|192\.168\.)/,
+                ),
+            ) || "";
+      if (!real_ip) real_ip = request.headers.get("cf-connecting-ip");
+      if (!real_ip) real_ip = request.headers.get("X-Real-IP");
+
+      if (api === "jsonip") {
+        return new Response(JSON.stringify({ ip: real_ip }), {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            Vary: "Origin",
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        });
+      }
+
+      if (api.startsWith("?")) {
+        api_pos += 1;
+        api = api.substring(1);
       }
 
       let next_param = true;
@@ -57,6 +138,20 @@ export default {
           get_cookie = true;
           api_pos += 11;
           api = api.substring(11);
+        } else if (api.startsWith("cookie_plus/")) {
+          cookie_plus = true;
+          remove_compression = true;
+          api_pos += 12;
+          api = api.substring(12);
+        } else if (api.startsWith("get_redirect/")) {
+          get_redirect = true;
+          redirect = "manual";
+          api_pos += 13;
+          api = api.substring(13);
+        } else if (api.startsWith("head/")) {
+          force_head = true;
+          api_pos += 5;
+          api = api.substring(5);
         } else if (api.startsWith("param?") || api.startsWith("param/")) {
           api_pos += 6;
           api = api.substring(6);
@@ -71,24 +166,60 @@ export default {
             api_pos += api.length;
             api = "";
           }
-          params.push(param.split("="));
+          pos = param.indexOf("=");
+          if (pos !== -1) {
+            params.push([param.substring(0, pos), param.substring(pos + 1)]);
+          } else {
+            params.push([param]);
+          }
+        } else if (
+          api.startsWith("enc/") ||
+          api.startsWith("enc1/") ||
+          api.startsWith("enc2/")
+        ) {
+          let cur_enc = api.substring(0, api.indexOf("/"));
+          api = api.substring(cur_enc.length + 1);
+          let pos = api.indexOf("/");
+          if (enc) {
+            proxy_enc += proxy_url.substring(0, api_pos);
+          } else {
+            proxy += proxy_url.substring(0, api_pos);
+            enc = cur_enc;
+            if (
+              enc === "enc2" &&
+              pos !== -1 &&
+              api.indexOf("?jacred.test", pos + 1) !== -1
+            ) {
+              enc = "enc2t";
+            }
+          }
+          if (pos !== -1) {
+            api =
+              atob(decodeURIComponent(api.substring(0, pos))) +
+              (cur_enc === "enc2" ? "" : api.substring(pos + 1));
+          } else {
+            api = atob(decodeURIComponent(api.substring(0)));
+          }
+          proxy_url = api;
+          api_pos = 0;
         } else {
           next_param = false;
         }
       }
 
-      let proxy = url.href.substring(0, api_pos);
+      if (enc) {
+        proxy_enc += proxy_url.substring(0, api_pos);
+      } else {
+        proxy += proxy_url.substring(0, api_pos);
+      }
 
       let forwarded_proto = request.headers.get("X-Forwarded-Proto");
-      if (forwarded_proto) forwarded_proto = forwarded_proto.split(",")[0].trim();
-      if (forwarded_proto === "https") proxy = proxy.replace('http://', 'https://');
+      if (forwarded_proto)
+        forwarded_proto = forwarded_proto.split(",")[0].trim();
+      if (forwarded_proto === "https")
+        proxy = proxy.replace("http://", "https://");
 
-      if (!ip) {
-        let forwarded_for = request.headers.get("X-Forwarded-For");
-        if (forwarded_for) ip = forwarded_for.split(",")[0].trim();
-      }
-      if (!ip) ip = request.headers.get("cf-connecting-ip");
-      if (!ip) ip = request.headers.get("X-Real-IP");
+      if (!ip) ip = real_ip;
 
       if (!api || !/^https?:\/\/[^\/]/.test(api)) {
         let error = "Malformed URL";
@@ -98,6 +229,30 @@ export default {
           statusText: error,
         });
       }
+
+      let clientUserAgent = request.headers.get("User-Agent") || "";
+      let clientOrigin = request.headers.get("Origin") || "";
+      if (!clientOrigin) {
+        let clientReferer = request.headers.get("Referer") || "";
+        let found = clientReferer.match(/^https?:\/\/([^\/?#]*)/);
+        if (found) clientOrigin = found[1];
+      }
+      if (
+        /\blampishe\b|\bprisma_client\b/.test(clientUserAgent) ||
+        clientOrigin.endsWith("lampishe.cc") ||
+        clientOrigin.endsWith("prisma.ws") ||
+        clientOrigin.endsWith("lampa.walsy.synology.me") ||
+        clientOrigin.endsWith("tg.pp.ru") ||
+        clientOrigin.endsWith("bylampa.online")
+      ) {
+        let error = "Malformed URL";
+        return new Response(error + ": " + api, {
+          ...corsHeaders,
+          status: 404,
+          statusText: error,
+        });
+      }
+
       const apiUrl = new URL(api);
       let apiBase = apiUrl.href.substring(0, apiUrl.href.lastIndexOf("/") + 1);
 
@@ -105,6 +260,9 @@ export default {
       // so you can add the correct Origin header to make the API server think
       // that this request is not cross-site.
       request = new Request(api, request);
+      if (force_head) {
+        request = new Request(request, { method: "HEAD" });
+      }
 
       let cdn_loop = request.headers.get("CDN-Loop");
       if (cdn_loop && cdn_loop.indexOf(cdn_info) !== -1) {
@@ -139,50 +297,177 @@ export default {
         request.headers.delete("cf-ray");
         request.headers.delete("cf-visitor");
       }
-      if (ip) {
+      if (ip && ip !== "no") {
         //request.headers.set("X-Forwarded-For", ip);
         //request.headers.set("X-Forwarded-Proto", "https");
         request.headers.set("X-Real-IP", ip);
         request.headers.set("cf-connecting-ip", ip);
       }
-      if (apiUrl.hostname === "rezka.ag" || apiUrl.hostname === "hdrezka.ag" || apiUrl.hostname === "hdrezka.me" || apiUrl.hostname === "hdrezka.sh" || apiUrl.hostname === "hdrezka.cm" || apiUrl.hostname === "hdrezka.kim" || apiUrl.hostname === "hdrezka.la" || apiUrl.hostname === "rezka.pub" || apiUrl.hostname === "kinopub.me") {
-        request.headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36");
+      if (remove_compression) {
+        let encoding = request.headers.get("Accept-Encoding") || "";
+        if (encoding.includes("zstd") || encoding.includes("deflate")) {
+          encoding =
+            encoding
+              .split(",")
+              .filter(
+                (enc) => !(enc.includes("zstd") || enc.includes("deflate")),
+              )
+              .join(",") || "identity";
+          request.headers.set("Accept-Encoding", encoding);
+        }
       }
-      if (apiUrl.hostname.endsWith(".svetacdn.in")) {
-        request.headers.set("Origin", "https://videocdn.tv");
-        request.headers.set("Referer", "https://videocdn.tv/");
-      }
-      if (apiUrl.hostname.endsWith("cdnmovies-stream.online") || apiUrl.hostname.endsWith("cdnmovies-hls-stream.online") || apiUrl.hostname.endsWith(".sarnage.cc")) {
-        request.headers.set("Origin", "https://cdnmovies.net");
-        request.headers.set("Referer", "https://cdnmovies.net/");
-      }
-      if (apiUrl.hostname.endsWith(".bazon.site")) {
-        request.headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36");
-        request.headers.set("Origin", "https://bazon.cc");
-        request.headers.set("Referer", "https://bazon.cc/");
-      }
-      if (["kodikapi.com", "kodik.biz", "kodik.info"].indexOf(apiUrl.hostname) !== -1) {
-        request.headers.delete("Origin");
-        request.headers.delete("Referer");
-      }
-      if (apiUrl.hostname === "kinoplay.site" || apiUrl.hostname === "kinoplay1.site" || apiUrl.hostname === "kinoplay2.site") {
-        request.headers.set("Cookie", "invite=a246a3f46c82fe439a45c3dbbbb24ad5");
-      }
-      params.forEach(param => {
+      params.forEach((param) => {
         if (param[0]) {
           if (param[1]) {
-            request.headers.set(decodeURIComponent(param[0]), decodeURIComponent(param[1] || ""));
+            request.headers.set(
+              decodeURIComponent(param[0]),
+              decodeURIComponent(param[1] || ""),
+            );
           } else {
             request.headers.delete(decodeURIComponent(param[0]));
           }
         }
       });
+      // Inject cached cookie if it exists
+      let originCookie = cachedCookies[apiUrl.origin] || "";
+      if (originCookie) {
+        let existingCookie = request.headers.get("Cookie") || "";
+        if (existingCookie) {
+          request.headers.set("Cookie", existingCookie + "; " + originCookie);
+        } else {
+          request.headers.set("Cookie", originCookie);
+        }
+      }
+
       let response = await fetch(request, {
         redirect: redirect,
       });
 
-      // Recreate the response so you can modify the headers
-      response = new Response(response.body, response);
+      let contentType = (
+        response.headers.get("Content-Type") || ""
+      ).toLowerCase();
+      if (
+        contentType.includes("text/html") ||
+        contentType.includes("text/plain")
+      ) {
+        let text = await response.text();
+        if (
+          text.includes('id="anubis_challenge"') ||
+          text.includes("Проверяем, что вы не бот")
+        ) {
+          console.log("[Worker Anubis Solver] Challenge detected! Solving...");
+          let challengeMatch = text.match(
+            /<script[^>]*id="anubis_challenge"[^>]*>([\s\S]*?)<\/script>/,
+          );
+          if (challengeMatch) {
+            try {
+              let challengeData = JSON.parse(challengeMatch[1]);
+              let challengeObj = challengeData.challenge;
+              console.log(
+                "[Worker Anubis Solver] Extracted challenge ID:",
+                challengeObj.id,
+              );
+
+              // Submit the solution
+              let solveStartTime = Date.now();
+              let solution = await solveChallenge(challengeObj);
+              let elapsedTime = Date.now() - solveStartTime;
+              console.log(
+                "[Worker Anubis Solver] Solved! Nonce:",
+                solution.nonce,
+                "in",
+                elapsedTime,
+                "ms"
+              );
+
+              // Submit the solution
+              let passUrl = `${apiUrl.origin}/.within.website/x/cmd/anubis/api/pass-challenge?id=${challengeObj.id}&response=${solution.response}&nonce=${solution.nonce}&redir=${encodeURIComponent(apiUrl.origin + "/")}&elapsedTime=${elapsedTime}`;
+              let passHeaders = new Headers();
+              passHeaders.set("User-Agent", request.headers.get("User-Agent") || "Mozilla/5.0");
+              passHeaders.set("Accept", "*/*");
+              if (ip) {
+                passHeaders.set("X-Real-IP", ip);
+                passHeaders.set("X-Forwarded-For", ip);
+              }
+              
+              let passRes = await fetch(passUrl, {
+                method: "GET",
+                headers: passHeaders,
+                redirect: "manual",
+              });
+
+              console.log(
+                "[Worker Anubis Solver] pass-challenge response status:",
+                passRes.status,
+                passRes.statusText,
+              );
+              passRes.headers.forEach((v, k) =>
+                console.log(`[Worker Anubis Solver] Header: ${k} = ${v}`),
+              );
+
+              let setCookieHeaders = passRes.headers.getSetCookie
+                ? passRes.headers.getSetCookie()
+                : [passRes.headers.get("Set-Cookie")];
+              let combinedCookies = setCookieHeaders
+                .filter(Boolean)
+                .map((c) => c.split(";")[0])
+                .join("; ");
+
+              if (combinedCookies) {
+                console.log(
+                  "[Worker Anubis Solver] Successfully obtained session cookies:",
+                  combinedCookies,
+                );
+                cachedCookies[apiUrl.origin] = combinedCookies;
+
+                // Retry the original request
+                let retryHeaders = new Headers(request.headers);
+                let existingCookie = retryHeaders.get("Cookie") || "";
+                if (existingCookie) {
+                  retryHeaders.set(
+                    "Cookie",
+                    existingCookie + "; " + combinedCookies,
+                  );
+                } else {
+                  retryHeaders.set("Cookie", combinedCookies);
+                }
+
+                let retryRequest = new Request(apiUrl.href, {
+                  method: request.method,
+                  headers: retryHeaders,
+                  body:
+                    request.method !== "GET" && request.method !== "HEAD"
+                      ? request.body
+                      : undefined,
+                  redirect: redirect,
+                });
+                let retryRes = await fetch(retryRequest);
+                response = new Response(retryRes.body, retryRes);
+              } else {
+                console.warn(
+                  "[Worker Anubis Solver] No cookies returned from pass-challenge",
+                );
+                response = new Response(text, response);
+              }
+            } catch (e) {
+              console.error(
+                "[Worker Anubis Solver] Error solving challenge:",
+                e,
+              );
+              response = new Response(text, response);
+            }
+          } else {
+            response = new Response(text, response);
+          }
+        } else {
+          response = new Response(text, response);
+        }
+      } else {
+        // Recreate response to allow header modification
+        response = new Response(response.body, response);
+      }
+
+      let currentUrl = response.url;
 
       // Set CORS headers
       response.headers.set("Access-Control-Allow-Origin", "*");
@@ -190,14 +475,53 @@ export default {
       // Append to/Add Vary header so browser will cache response correctly
       response.headers.append("Vary", "Origin");
 
-      if (response.status >= 200 && response.status < 300) {
-        if (get_cookie) {
+      if (
+        response.status >= 200 &&
+        response.status < (get_redirect ? 400 : 300)
+      ) {
+        let ctype = (response.headers.get("Content-Type") || "")
+          .split(";")[0]
+          .toLowerCase();
+        if (get_cookie || cookie_plus || get_redirect) {
           let json = {};
-          json.cookie = response.headers.getSetCookie();
+          json.currentUrl = currentUrl;
+          if (get_redirect) {
+            let target = response.headers.get("Location");
+            if (target) {
+              json.redirectUrl = fixLink(target, apiUrl, apiBase);
+              response.headers.set("Location", json.redirectUrl);
+            }
+          }
+          if (get_cookie || cookie_plus) {
+            json.cookie = response.headers.getSetCookie();
+          }
+          if (cookie_plus) {
+            let headers = {};
+            for (let key of response.headers.keys()) {
+              if (key === "set-cookie") {
+                headers[key] = json.cookie;
+              } else {
+                headers[key] = response.headers.get(key);
+              }
+            }
+            json.headers = headers;
+            if (
+              ctype.startsWith("text/") ||
+              [
+                "application/json",
+                "application/xml",
+                "application/x-mpegurl",
+                "application/vnd.apple.mpegurl",
+                "application/dash+xml",
+              ].indexOf(ctype) !== -1
+            ) {
+              json.body = await response.text();
+            }
+          }
           return new Response(JSON.stringify(json), {
             headers: {
               "Access-Control-Allow-Origin": "*",
-              "Vary": "Origin",
+              Vary: "Origin",
               "Content-Type": "application/json; charset=utf-8",
             },
           });
@@ -208,21 +532,96 @@ export default {
       if (response.status >= 300 && response.status < 400) {
         let target = response.headers.get("Location");
         if (target) {
-          response.headers.set("Location", fixLink(target, proxy, apiUrl, apiBase));
+          response.headers.set(
+            "Location",
+            proxyLink(fixLink(target, apiUrl, apiBase), proxy, proxy_enc, enc),
+          );
         }
       }
 
       return response;
     }
 
-    function fixLink(link, proxy, url, base) {
+    function randomWords(words, len) {
+      words = words || [];
+      len = len || 0;
+
+      let words_len = words.length;
+      if (!words_len) return "";
+
+      let str = "";
+      for (let i = 0; i < len; i++) {
+        str += words[Math.floor(Math.random() * words_len)];
+      }
+      return str;
+    }
+
+    function randomChars(chars, len) {
+      return randomWords((chars || "").split(""), len);
+    }
+
+    function randomHex(len) {
+      return randomChars("0123456789abcdef", len);
+    }
+
+    function fixLink(link, url, base) {
       if (link) {
-        if (link.indexOf("://") !== -1) return proxy + link;
-        if (link.startsWith("//")) return proxy + url.protocol + link;
-        if (link.startsWith("/")) return proxy + url.origin + link;
-        if (link.startsWith("?")) return proxy + url.origin + url.pathname + link;
-        if (link.startsWith("#")) return proxy + url.origin + url.pathname + url.search + link;
-        return proxy + base + link;
+        if (link.indexOf("://") !== -1) return link;
+        if (link.startsWith("//")) return url.protocol + link;
+        if (link.startsWith("/")) return url.origin + link;
+        if (link.startsWith("?")) return url.origin + url.pathname + link;
+        if (link.startsWith("#"))
+          return url.origin + url.pathname + url.search + link;
+        return base + link;
+      }
+      return link;
+    }
+
+    function proxyLink(link, proxy, proxy_enc, enc) {
+      if (link) {
+        if (enc === "enc") {
+          let pos = link.indexOf("/");
+          if (pos !== -1 && link.charAt(pos + 1) === "/") pos++;
+          let part1 = pos !== -1 ? link.substring(0, pos + 1) : "";
+          let part2 = pos !== -1 ? link.substring(pos + 1) : link;
+          return (
+            proxy +
+            "enc/" +
+            encodeURIComponent(btoa(proxy_enc + part1)) +
+            "/" +
+            part2
+          );
+        }
+        if (enc === "enc1") {
+          let pos = link.lastIndexOf("/");
+          let part1 = pos !== -1 ? link.substring(0, pos + 1) : "";
+          let part2 = pos !== -1 ? link.substring(pos + 1) : link;
+          return (
+            proxy +
+            "enc1/" +
+            encodeURIComponent(btoa(proxy_enc + part1)) +
+            "/" +
+            part2
+          );
+        }
+        if (enc === "enc2" || enc === "enc2t") {
+          let posEnd = link.lastIndexOf("?");
+          let posStart = link.lastIndexOf("://");
+          if (posEnd === -1 || posEnd <= posStart) posEnd = link.length;
+          if (posStart === -1) posStart = -3;
+          let name = link.substring(posStart + 3, posEnd);
+          posStart = name.lastIndexOf("/");
+          name = posStart !== -1 ? name.substring(posStart + 1) : "";
+          return (
+            proxy +
+            "enc2/" +
+            encodeURIComponent(btoa(proxy_enc + link)) +
+            "/" +
+            name +
+            (enc === "enc2t" ? "?jacred.test" : "")
+          );
+        }
+        return proxy + proxy_enc + link;
       }
       return link;
     }
@@ -238,7 +637,7 @@ export default {
           headers: {
             ...corsOptionsHeaders,
             "Access-Control-Allow-Headers": request.headers.get(
-              "Access-Control-Request-Headers"
+              "Access-Control-Request-Headers",
             ),
           },
         });
@@ -274,10 +673,10 @@ export default {
     } catch (err) {
       let error = "Internal Server Error";
       return new Response(error + ": " + err + "\n" + (err.stack || ""), {
-          ...corsHeaders,
+        ...corsHeaders,
         status: 500,
         statusText: error,
       });
     }
   },
-}; 
+};
