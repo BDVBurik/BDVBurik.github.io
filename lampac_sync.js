@@ -375,13 +375,85 @@
     },
 
     readLocal: function () {
+      var fav = {};
       try {
         var f = Lampa.Storage.get("favorite", "{}");
         if (typeof f === "string") f = JSON.parse(f);
-        return f && typeof f === "object" ? f : {};
+        if (f && typeof f === "object") fav = f;
+      } catch (e) {}
+
+      // Автовыгрузка из CUB если локально пусто / не все данные
+      try {
+        if (Lampa.Account && Lampa.Account.Bookmarks) {
+          var categories = [
+            "history",
+            "book",
+            "like",
+            "watch",
+            "wath",
+            "look",
+            "viewed",
+            "scheduled",
+            "continued",
+            "thrown",
+          ];
+
+          // Стягиваем все карточки (постеры, названия) из CUB
+          if (typeof Lampa.Account.Bookmarks.all === "function") {
+            var cubCards = Lampa.Account.Bookmarks.all() || [];
+            if (Array.isArray(cubCards) && cubCards.length) {
+              if (!Array.isArray(fav.card)) fav.card = [];
+              cubCards.forEach(function (c) {
+                if (c && c.id != null) {
+                  var exists = fav.card.some(function (item) {
+                    return item && item.id === c.id;
+                  });
+                  if (!exists) {
+                    fav.card.push({
+                      id: c.id,
+                      title: c.title || c.name || c.original_title,
+                      name: c.name || c.title,
+                      original_title: c.original_title,
+                      poster_path: c.poster_path || c.img,
+                      release_date: c.release_date || "",
+                      vote_average: c.vote_average || 0,
+                    });
+                  }
+                }
+              });
+            }
+          }
+
+          // Стягиваем id по всем категориям из CUB
+          if (typeof Lampa.Account.Bookmarks.get === "function") {
+            categories.forEach(function (cat) {
+              try {
+                var items = Lampa.Account.Bookmarks.get({ type: cat });
+                if (Array.isArray(items) && items.length) {
+                  var ids = items
+                    .map(function (item) {
+                      return item.id;
+                    })
+                    .filter(function (id) {
+                      return id != null;
+                    });
+                  if (ids.length) {
+                    var localList = Array.isArray(fav[cat]) ? fav[cat] : [];
+                    ids.forEach(function (id) {
+                      if (localList.indexOf(id) === -1) localList.push(id);
+                    });
+                    fav[cat] = localList;
+                  }
+                }
+              } catch (err) {}
+            });
+          }
+        }
       } catch (e) {
-        return {};
+        dbg("✗ readLocal CUB export:", e.message);
       }
+
+      return fav;
     },
 
     extractId: function (item) {
@@ -393,9 +465,12 @@
 
     compactFav: function (fav) {
       var out = {};
-      var SKIP_KEYS = ["card"];
       Object.keys(fav).forEach(function (k) {
-        if (!Array.isArray(fav[k]) || SKIP_KEYS.indexOf(k) !== -1) return;
+        if (!Array.isArray(fav[k])) return;
+        if (k === "card") {
+          out.card = fav.card;
+          return;
+        }
         var ids = [];
         fav[k].forEach(function (item) {
           var id = Bookmarks.extractId(item);
@@ -443,6 +518,20 @@
           local[k] = localIds;
           summary.push(k + "(" + local[k].length + ")");
         });
+
+        // Сохраняем карточки (постеры, названия)
+        if (Array.isArray(data.card) && data.card.length) {
+          if (!Array.isArray(local.card)) local.card = [];
+          data.card.forEach(function (c) {
+            if (c && c.id != null) {
+              var exists = local.card.some(function (item) {
+                return item && item.id === c.id;
+              });
+              if (!exists) local.card.push(c);
+            }
+          });
+          summary.push("cards(" + local.card.length + ")");
+        }
 
         dbg("← bookmarks apply:", summary.length ? summary.join(", ") : "(empty)");
 
