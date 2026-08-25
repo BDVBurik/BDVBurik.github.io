@@ -549,6 +549,7 @@
 
   var StorageSync = {
     bound: false,
+    changeBound: false,
     timers: {},
     localChangeTimes: {},
 
@@ -723,6 +724,19 @@
       this.bound = true;
       var self = this;
 
+      // Обновляем при возврате в приложение
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden && self.enabled()) self.pullAll();
+      });
+    },
+
+    // Подписка на изменения Storage вызывается ПОСЛЕ первого pull,
+    // чтобы push не гонялся с начальным pull и не выставлял localChangeTimes раньше времени
+    bindChangeListener: function () {
+      if (this.changeBound) return;
+      this.changeBound = true;
+      var self = this;
+
       if (Lampa.Storage.listener && Lampa.Storage.listener.follow) {
         Lampa.Storage.listener.follow("change", function (e) {
           if (!self.enabled()) return;
@@ -752,11 +766,6 @@
           });
         });
       }
-
-      // Обновляем при возврате в приложение
-      document.addEventListener("visibilitychange", function () {
-        if (!document.hidden && self.enabled()) self.pullAll();
-      });
     },
   };
 
@@ -950,21 +959,28 @@
     buildSettings();
     Timecodes.bind();
     Bookmarks.bind();
-    StorageSync.bind();
+    StorageSync.bind(); // только visibilitychange; storage-change listener — после pull
 
-    // Первичная синхронизация — немного задерживаем чтобы Lampa успела загрузиться
+    // Первичная синхронизация — немного задерживаем чтобы Lampa успела загрузиться.
+    // bindChangeListener вызывается в коллбеке pullAll, чтобы push не блокировал pull.
     setTimeout(function () {
       if (getEmail()) {
         dbg("initial pull...");
         Bookmarks.pull();
-        StorageSync.pullAll();
+        StorageSync.pullAll(function () {
+          StorageSync.bindChangeListener();
+        });
+      } else {
+        StorageSync.bindChangeListener();
       }
     }, 2000);
 
     Lampa.Listener.follow("app", function (e) {
       if (e.type === "ready" && getEmail()) {
         Bookmarks.pull();
-        StorageSync.pullAll();
+        StorageSync.pullAll(function () {
+          StorageSync.bindChangeListener();
+        });
       }
     });
 
