@@ -888,7 +888,7 @@
     // Загрузить сейчас
     Lampa.SettingsApi.addParam({
       component: "lampac_sync",
-      param: { type: "button" },
+      param: { type: "button", name: "lampac_sync_pull_now" },
       field: { name: T("lampac_sync_pull_now"), description: "" },
       onChange: function () {
         Timecodes.pullForCurrent();
@@ -903,7 +903,7 @@
     // Отправить сейчас
     Lampa.SettingsApi.addParam({
       component: "lampac_sync",
-      param: { type: "button" },
+      param: { type: "button", name: "lampac_sync_push_now" },
       field: { name: T("lampac_sync_push_now"), description: "" },
       onChange: function () {
         Bookmarks.pushFull();
